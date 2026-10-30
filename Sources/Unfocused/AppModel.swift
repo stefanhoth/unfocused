@@ -7,6 +7,7 @@ import UnfocusedCore
 @Observable
 final class AppModel {
   private(set) var openLoops: [Loop] = []
+  private(set) var focusedLoop: Loop?
   private(set) var hotKey: HotKeyChoice = .default
   /// Why the chosen hotkey can't be used, shown in Settings.
   private(set) var hotKeyProblem: String?
@@ -24,6 +25,7 @@ final class AppModel {
   func refresh() {
     do {
       openLoops = try core.openLoops()
+      focusedLoop = try core.focusedLoop()
     } catch {
       report(error, while: "loading Loops")
     }
@@ -47,6 +49,43 @@ final class AppModel {
       report(error, while: "capturing")
       return nil
     }
+  }
+
+  /// Focuses `loop`. Returns the Loop the user just left, so they can say where they left off.
+  @discardableResult
+  func focus(_ loop: Loop) -> Loop? {
+    let previous = focusedLoop
+    do {
+      try core.focus(loop.id)
+      log.info("Focused Loop \(loop.id)")
+    } catch {
+      report(error, while: "focusing")
+    }
+    refresh()
+    return previous?.id == loop.id ? nil : previous
+  }
+
+  /// Ends the current Focus. Returns the Loop the user just left.
+  @discardableResult
+  func unfocus() -> Loop? {
+    let previous = focusedLoop
+    do {
+      try core.unfocus()
+      log.info("Unfocused")
+    } catch {
+      report(error, while: "unfocusing")
+    }
+    refresh()
+    return previous
+  }
+
+  func setWhereILeftOff(_ loop: Loop, to note: String) {
+    do {
+      try core.setWhereILeftOff(loop.id, to: note)
+    } catch {
+      report(error, while: "saving where you left off")
+    }
+    refresh()
   }
 
   // MARK: Hotkey

@@ -18,23 +18,36 @@ final class PanelController {
     isVisible ? hide() : show()
   }
 
+  /// Opens the panel to search and Capture.
   func show() {
-    let panel = panel ?? makePanel()
-    self.panel = panel
-    // A fresh view each time, so the query starts empty.
-    panel.contentView = NSHostingView(rootView: PanelView(model: model, dismiss: { [weak self] in self?.hide() }))
-    panel.center()
-    panel.makeKeyAndOrderFront(nil)
-    NSApp.activate()
+    present(.search)
+  }
+
+  /// Opens the panel only to ask where the user left off on `loop`.
+  func askWhereILeftOff(_ loop: Loop) {
+    present(.leftOff(loop))
   }
 
   func hide() {
     panel?.orderOut(nil)
   }
 
+  private func present(_ mode: PanelMode) {
+    model.refresh()
+    let panel = panel ?? makePanel()
+    self.panel = panel
+    // A fresh view each time, so the panel always starts clean.
+    panel.contentView = NSHostingView(
+      rootView: PanelView(model: model, initialMode: mode, dismiss: { [weak self] in self?.hide() })
+    )
+    panel.center()
+    panel.makeKeyAndOrderFront(nil)
+    NSApp.activate()
+  }
+
   private func makePanel() -> FloatingPanel {
     let panel = FloatingPanel(
-      contentRect: NSRect(x: 0, y: 0, width: 640, height: 360),
+      contentRect: NSRect(x: 0, y: 0, width: 640, height: 380),
       styleMask: [.titled, .fullSizeContentView, .nonactivatingPanel],
       backing: .buffered,
       defer: false
@@ -62,93 +75,174 @@ final class FloatingPanel: NSPanel {
   }
 }
 
-/// Search Open Loops; ⌘Enter Captures what was typed.
+enum PanelMode: Equatable {
+  /// Search Open Loops, Focus one, or Capture a new one.
+  case search
+  /// Ask for an optional Where I left off for a Loop the user just left.
+  case leftOff(Loop)
+}
+
 struct PanelView: View {
   let model: AppModel
   let dismiss: () -> Void
 
-  @State private var query = ""
+  @State private var mode: PanelMode
+  @State private var text = ""
   @State private var selection = 0
   @FocusState private var fieldFocused: Bool
 
-  private var results: [UnfocusedLoopRow] {
-    model.search(query).prefix(8).map(UnfocusedLoopRow.init)
+  init(model: AppModel, initialMode: PanelMode, dismiss: @escaping () -> Void) {
+    self.model = model
+    self.dismiss = dismiss
+    _mode = State(initialValue: initialMode)
+  }
+
+  /// Search results, without the Focused Loop when nothing is typed (it has its own section).
+  private var results: [Loop] {
+    let matches = model.search(text)
+    let shown = text.isEmpty ? matches.filter { $0.id != model.focusedLoop?.id } : matches
+    return Array(shown.prefix(8))
   }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      TextField("Search your Loops, or type something new…", text: $query)
-        .textFieldStyle(.plain)
-        .font(.title2)
-        .padding(16)
-        .focused($fieldFocused)
-        .onChange(of: query) { selection = 0 }
-        .onKeyPress(.return, phases: .down) { press in
-          guard press.modifiers.contains(.command) else { return .ignored }
-          if model.capture(title: query) != nil { dismiss() }
-          return .handled
-        }
-        .onKeyPress(.downArrow) {
-          selection = min(selection + 1, max(results.count - 1, 0))
-          return .handled
-        }
-        .onKeyPress(.upArrow) {
-          selection = max(selection - 1, 0)
-          return .handled
-        }
-        .onKeyPress(.escape) {
-          dismiss()
-          return .handled
-        }
-
-      Divider()
-
-      if results.isEmpty {
-        Text(query.isEmpty ? "No Open Loops yet." : "No matching Loop.")
-          .foregroundStyle(.secondary)
-          .padding(16)
-      } else {
-        VStack(alignment: .leading, spacing: 2) {
-          ForEach(Array(results.enumerated()), id: \.element.id) { index, row in
-            Text(row.title)
-              .lineLimit(1)
-              .padding(.horizontal, 12)
-              .padding(.vertical, 6)
-              .frame(maxWidth: .infinity, alignment: .leading)
-              .background(
-                index == selection ? Color.accentColor.opacity(0.2) : .clear,
-                in: RoundedRectangle(cornerRadius: 6)
-              )
-          }
-        }
-        .padding(8)
+      switch mode {
+      case .search: searchContent
+      case .leftOff(let loop): leftOffContent(loop)
       }
-
-      Spacer(minLength: 0)
-
-      HStack {
-        Text("⌘↩ Capture as new Loop")
-        Spacer()
-        Text("esc Close")
-      }
-      .font(.caption)
-      .foregroundStyle(.secondary)
-      .padding(.horizontal, 16)
-      .padding(.vertical, 10)
     }
-    .frame(width: 640, height: 360)
+    .frame(width: 640, height: 380)
     .background(.regularMaterial)
     .onAppear { fieldFocused = true }
   }
-}
 
-struct UnfocusedLoopRow: Identifiable {
-  let id: UUID
-  let title: String
-}
+  // MARK: Search
 
-extension UnfocusedLoopRow {
-  init(_ loop: UnfocusedCore.Loop) {
-    self.init(id: loop.id, title: loop.title)
+  @ViewBuilder private var searchContent: some View {
+    inputField("Search your Loops, or type something new…")
+      .onChange(of: text) { selection = 0 }
+      .onKeyPress(.return, phases: .down) { press in
+        press.modifiers.contains(.command) ? captureTyped() : focusSelected()
+        return .handled
+      }
+      .onKeyPress(.downArrow) {
+        selection = min(selection + 1, max(results.count - 1, 0))
+        return .handled
+      }
+      .onKeyPress(.upArrow) {
+        selection = max(selection - 1, 0)
+        return .handled
+      }
+
+    Divider()
+
+    if text.isEmpty, let focused = model.focusedLoop {
+      VStack(alignment: .leading, spacing: 4) {
+        Label("Focused", systemImage: "scope").font(.caption).foregroundStyle(.secondary)
+        Text(focused.title).font(.headline)
+        if let note = focused.whereILeftOff {
+          Text("Where I left off: \(note)").foregroundStyle(.secondary)
+        }
+      }
+      .padding(16)
+      Divider()
+    }
+
+    if results.isEmpty {
+      Text(text.isEmpty ? "No other Open Loops." : "No matching Loop. ⌘↩ captures it.")
+        .foregroundStyle(.secondary)
+        .padding(16)
+    } else {
+      VStack(alignment: .leading, spacing: 2) {
+        ForEach(Array(results.enumerated()), id: \.element.id) { index, loop in
+          HStack {
+            Text(loop.title).lineLimit(1)
+            Spacer()
+            if loop.id == model.focusedLoop?.id {
+              Image(systemName: "scope").foregroundStyle(.secondary)
+            }
+          }
+          .padding(.horizontal, 12)
+          .padding(.vertical, 6)
+          .background(
+            index == selection ? Color.accentColor.opacity(0.2) : .clear,
+            in: RoundedRectangle(cornerRadius: 6)
+          )
+        }
+      }
+      .padding(8)
+    }
+
+    Spacer(minLength: 0)
+    hints(["↩ Focus", "⌘↩ Capture as new Loop", "esc Close"])
+  }
+
+  private func focusSelected() {
+    guard results.indices.contains(selection) else { return }
+    if let left = model.focus(results[selection]) {
+      askWhereILeftOff(left)
+    } else {
+      dismiss()
+    }
+  }
+
+  private func captureTyped() {
+    guard let loop = model.capture(title: text) else { return }
+    if let left = model.focus(loop) {
+      askWhereILeftOff(left)
+    } else {
+      dismiss()
+    }
+  }
+
+  private func askWhereILeftOff(_ loop: Loop) {
+    text = ""
+    mode = .leftOff(loop)
+    fieldFocused = true
+  }
+
+  // MARK: Where I left off
+
+  @ViewBuilder private func leftOffContent(_ loop: Loop) -> some View {
+    VStack(alignment: .leading, spacing: 4) {
+      Text("Where did you leave off?").font(.caption).foregroundStyle(.secondary)
+      Text(loop.title).font(.headline)
+    }
+    .padding([.horizontal, .top], 16)
+
+    inputField(loop.whereILeftOff ?? "One line to get back in quickly (optional)")
+      .onKeyPress(.return) {
+        model.setWhereILeftOff(loop, to: text)
+        dismiss()
+        return .handled
+      }
+
+    Spacer(minLength: 0)
+    hints(["↩ Save", "esc Skip"])
+  }
+
+  // MARK: Shared
+
+  private func inputField(_ prompt: String) -> some View {
+    TextField(prompt, text: $text)
+      .textFieldStyle(.plain)
+      .font(.title2)
+      .padding(16)
+      .focused($fieldFocused)
+      .onKeyPress(.escape) {
+        dismiss()
+        return .handled
+      }
+  }
+
+  private func hints(_ items: [String]) -> some View {
+    HStack(spacing: 16) {
+      ForEach(items, id: \.self) { Text($0) }
+      Spacer()
+    }
+    .font(.caption)
+    .foregroundStyle(.secondary)
+    .padding(.horizontal, 16)
+    .padding(.vertical, 10)
   }
 }
