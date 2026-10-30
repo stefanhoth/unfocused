@@ -73,6 +73,17 @@ public final class UnfocusedDatabase: Sendable {
         table.column("capturedAt", .double).notNull().indexed()
       }
     }
+    migrator.registerMigration("v3-focus") { db in
+      try db.alter(table: "loop") { table in
+        table.add(column: "whereILeftOff", .text)
+      }
+      try db.create(table: "focusSession") { table in
+        table.autoIncrementedPrimaryKey("id")
+        table.column("loopId", .text).notNull().indexed().references("loop", onDelete: .cascade)
+        table.column("start", .double).notNull()
+        table.column("end", .double)
+      }
+    }
     return migrator
   }()
 }
