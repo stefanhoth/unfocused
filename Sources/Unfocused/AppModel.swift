@@ -37,9 +37,9 @@ final class AppModel {
 
   /// Returns the new Loop, or `nil` if nothing was captured.
   @discardableResult
-  func capture(title: String) -> Loop? {
+  func capture(title: String, anchor: Anchor? = nil) -> Loop? {
     do {
-      let loop = try core.capture(title: title)
+      let loop = try core.capture(title: title, anchor: anchor)
       log.info("Captured Loop \(loop.id)")
       refresh()
       return loop
@@ -51,13 +51,15 @@ final class AppModel {
     }
   }
 
-  /// Focuses `loop`. Returns the Loop the user just left, so they can say where they left off.
+  /// Focuses `loop` and opens its Anchors. Returns the Loop the user just left, so they can say where
+  /// they left off. Pass `openAnchors: false` when the user is already where the Loop lives.
   @discardableResult
-  func focus(_ loop: Loop) -> Loop? {
+  func focus(_ loop: Loop, openAnchors: Bool = true) -> Loop? {
     let previous = focusedLoop
     do {
       try core.focus(loop.id)
       log.info("Focused Loop \(loop.id)")
+      if openAnchors, previous?.id != loop.id { anchors(of: loop).forEach(AnchorOpener.open) }
     } catch {
       report(error, while: "focusing")
     }
@@ -93,6 +95,10 @@ final class AppModel {
 
   func reopen(_ loop: Loop) {
     _ = changeState(of: loop, "reopening") { try core.reopen(loop.id) }
+  }
+
+  func anchors(of loop: Loop) -> [Anchor] {
+    (try? core.anchors(of: loop.id)) ?? []
   }
 
   func loops(in state: LoopState) -> [Loop] {

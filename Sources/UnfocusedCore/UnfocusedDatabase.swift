@@ -97,6 +97,17 @@ public final class UnfocusedDatabase: Sendable {
       }
       try db.execute(sql: "INSERT INTO loopEvent (loopId, change, at) SELECT id, 'captured', capturedAt FROM loop")
     }
+    migrator.registerMigration("v5-anchors") { db in
+      try db.create(table: "anchor") { table in
+        table.autoIncrementedPrimaryKey("id")
+        table.column("loopId", .text).notNull().indexed().references("loop", onDelete: .cascade)
+        table.column("source", .text).notNull()
+        table.column("identifier", .text).notNull().indexed()
+        table.column("link", .text).notNull()
+        table.column("title", .text).notNull()
+        table.column("addedAt", .double).notNull()
+      }
+    }
     return migrator
   }()
 }

@@ -18,10 +18,13 @@ final class PanelController {
     isVisible ? hide() : show()
   }
 
-  /// Opens the panel to search and Capture.
+  /// Opens the panel to search and Capture, with whatever was in front of the user as context.
   func show() {
+    context = ContextReader.read(NSWorkspace.shared.frontmostApplication)
     present(.search)
   }
+
+  private var context: CaptureContext?
 
   /// Opens the panel only to ask where the user left off on `loop`.
   func askWhereILeftOff(_ loop: Loop) {
@@ -38,7 +41,12 @@ final class PanelController {
     self.panel = panel
     // A fresh view each time, so the panel always starts clean.
     panel.contentView = NSHostingView(
-      rootView: PanelView(model: model, initialMode: mode, dismiss: { [weak self] in self?.hide() })
+      rootView: PanelView(
+        model: model,
+        context: mode == .search ? context : nil,
+        initialMode: mode,
+        dismiss: { [weak self] in self?.hide() }
+      )
     )
     panel.center()
     panel.makeKeyAndOrderFront(nil)
@@ -84,6 +92,7 @@ enum PanelMode: Equatable {
 
 struct PanelView: View {
   let model: AppModel
+  let context: CaptureContext?
   let dismiss: () -> Void
 
   @State private var mode: PanelMode
@@ -91,8 +100,9 @@ struct PanelView: View {
   @State private var selection = 0
   @FocusState private var fieldFocused: Bool
 
-  init(model: AppModel, initialMode: PanelMode, dismiss: @escaping () -> Void) {
+  init(model: AppModel, context: CaptureContext?, initialMode: PanelMode, dismiss: @escaping () -> Void) {
     self.model = model
+    self.context = context
     self.dismiss = dismiss
     _mode = State(initialValue: initialMode)
   }
@@ -125,6 +135,11 @@ struct PanelView: View {
         press.modifiers.contains(.command) ? captureTyped() : focusSelected()
         return .handled
       }
+      .onKeyPress(.tab) {
+        guard let context, text.isEmpty else { return .ignored }
+        text = context.anchor.title
+        return .handled
+      }
       .onKeyPress(characters: ["k", "d"], phases: .down) { press in
         guard press.modifiers.contains(.command), results.indices.contains(selection) else { return .ignored }
         let loop = results[selection]
@@ -142,6 +157,10 @@ struct PanelView: View {
         return .handled
       }
 
+    if let context {
+      contextLine(context)
+    }
+
     Divider()
 
     if text.isEmpty, let focused = model.focusedLoop {
@@ -157,7 +176,7 @@ struct PanelView: View {
     }
 
     if results.isEmpty {
-      Text(text.isEmpty ? "No other Open Loops." : "No matching Loop. ⌘↩ captures it.")
+      Text(emptyHint)
         .foregroundStyle(.secondary)
         .padding(16)
     } else {
@@ -185,6 +204,12 @@ struct PanelView: View {
     hints(["↩ Focus", "⌘↩ Capture new", "⌘K Close Loop", "⌘D Drop Loop", "esc Hide"])
   }
 
+  private var emptyHint: String {
+    if !text.isEmpty { return "No matching Loop. ⌘↩ captures it." }
+    if context != nil { return "⌘↩ captures what's in front of you." }
+    return "No other Open Loops."
+  }
+
   private func focusSelected() {
     guard results.indices.contains(selection) else { return }
     if let left = model.focus(results[selection]) {
@@ -195,8 +220,9 @@ struct PanelView: View {
   }
 
   private func captureTyped() {
-    guard let loop = model.capture(title: text) else { return }
-    if let left = model.focus(loop) {
+    guard let loop = model.capture(title: text, anchor: context?.anchor) else { return }
+    // The user is already where the new Loop lives; don't reopen it.
+    if let left = model.focus(loop, openAnchors: false) {
       askWhereILeftOff(left)
     } else {
       dismiss()
@@ -207,6 +233,30 @@ struct PanelView: View {
     text = ""
     mode = .leftOff(loop)
     fieldFocused = true
+  }
+
+  private func contextLine(_ context: CaptureContext) -> some View {
+    VStack(alignment: .leading, spacing: 6) {
+      Label {
+        Text(context.anchor.title).lineLimit(1)
+      } icon: {
+        Image(systemName: "link")
+      }
+      .font(.callout)
+      .foregroundStyle(.secondary)
+      .help("⌘↩ captures with this as its Anchor; ⇥ copies the title into the field")
+      if context.missingAccessibility {
+        HStack {
+          Text("Allow Accessibility so unfocused can see window titles.")
+          Button("Allow…") { Permissions.requestAccessibility() }
+            .buttonStyle(.link)
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+      }
+    }
+    .padding(.horizontal, 16)
+    .padding(.bottom, 10)
   }
 
   // MARK: Where I left off
