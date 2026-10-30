@@ -9,6 +9,7 @@ final class AppModel {
   private(set) var openLoops: [Loop] = []
   private(set) var focusedLoop: Loop?
   private(set) var people: [Person] = []
+  private(set) var activityPaused = false
   private(set) var hotKey: HotKeyChoice = .default
   /// Why the chosen hotkey can't be used, shown in Settings.
   private(set) var hotKeyProblem: String?
@@ -28,6 +29,7 @@ final class AppModel {
       openLoops = try core.openLoops()
       focusedLoop = try core.focusedLoop()
       people = try core.people()
+      activityPaused = try core.isActivityPaused()
     } catch {
       report(error, while: "loading Loops")
     }
@@ -205,6 +207,29 @@ final class AppModel {
       report(error, while: action)
     }
     refresh()
+  }
+
+  // MARK: Activity
+
+  func setActivityPaused(_ paused: Bool) {
+    perform(paused ? "pausing Activity" : "resuming Activity") { try core.setActivityPaused(paused) }
+  }
+
+  /// Activity of one calendar day, oldest first.
+  func activity(on day: Date) -> [ActivityStretch] {
+    let start = Calendar.current.startOfDay(for: day)
+    let end = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? start
+    return (try? core.activity(from: start, to: end)) ?? []
+  }
+
+  var excludedApps: [String] {
+    get { (try? core.excludedApps()) ?? [] }
+    set { perform("saving excluded apps") { try core.setExcludedApps(newValue) } }
+  }
+
+  var activityRetentionDays: Int {
+    get { (try? core.activityRetentionDays()) ?? 90 }
+    set { perform("saving Activity retention") { try core.setActivityRetentionDays(newValue) } }
   }
 
   // MARK: Hotkey

@@ -219,9 +219,29 @@ struct SettingsView: View {
         Label(problem, systemImage: "exclamationmark.triangle")
           .foregroundStyle(.orange)
       }
+      Section("Activity") {
+        Stepper(
+          "Keep Activity for \(model.activityRetentionDays) days",
+          value: Binding(get: { model.activityRetentionDays }, set: { model.activityRetentionDays = $0 }),
+          in: 7...365,
+          step: 7
+        )
+        VStack(alignment: .leading) {
+          Text("Never record these apps (bundle identifiers, one per line):")
+          TextEditor(
+            text: Binding(
+              get: { model.excludedApps.joined(separator: "\n") },
+              set: { model.excludedApps = $0.split(separator: "\n").map(String.init) }
+            )
+          )
+          .font(.body.monospaced())
+          .frame(height: 80)
+          Text("Private browser windows are never recorded.").font(.caption).foregroundStyle(.secondary)
+        }
+      }
     }
     .formStyle(.grouped)
-    .frame(width: 420)
+    .frame(width: 460)
     .padding()
   }
 }
