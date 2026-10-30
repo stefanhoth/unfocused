@@ -1,0 +1,28 @@
+name: PR Title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  lint:
+    name: Conventional commit title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate conventional commit format
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const pattern = /^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9./_-]+\))?!?: .+/;
+            const title = context.payload.pull_request.title;
+            if (pattern.test(title)) {
+              core.info(`PR title OK: ${title}`);
+            } else {
+              core.setFailed(
+                `PR title doesn't follow Conventional Commits: "${title}"\n` +
+                `Expected: type(scope): description, e.g. feat(capture): add Slack anchors`
+              );
+            }

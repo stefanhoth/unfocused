@@ -1,0 +1,36 @@
+name: Auto-update PR branches
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    name: Update oldest open PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Update oldest open PR branch
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { data: prs } = await github.rest.pulls.list({
+              owner, repo, base: "main", state: "open", sort: "created", direction: "asc", per_page: 100,
+            });
+            const target = prs.find((pr) => !pr.draft);
+            if (!target) {
+              core.info("No open PRs to update.");
+              return;
+            }
+            try {
+              await github.rest.pulls.updateBranch({ owner, repo, pull_number: target.number });
+              core.info(`Updated PR #${target.number}`);
+            } catch (e) {
+              core.info(`PR #${target.number} skipped (conflicts or already up to date): ${e.message}`);
+            }

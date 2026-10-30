@@ -1,0 +1,23 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits", ":pinDigests"],
+  "timezone": "Europe/Berlin",
+  "labels": ["dependencies"],
+  "lockFileMaintenance": { "enabled": true, "automerge": true },
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    { "matchUpdateTypes": ["major"], "automerge": false },
+    { "matchManagers": ["github-actions"], "groupName": "GitHub Actions" },
+    {
+      "description": "The database layer holds all user data; review its updates by hand",
+      "matchPackageNames": ["https://github.com/groue/GRDB.swift.git", "groue/GRDB.swift"],
+      "automerge": false,
+      "labels": ["dependencies", "review-required"]
+    }
+  ]
+}
