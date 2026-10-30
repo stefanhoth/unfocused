@@ -37,3 +37,7 @@ Built with SwiftPM only, no Xcode project (ADR 0006). Command Line Tools are eno
 - One topic per PR, squash-merged; the PR title is a conventional commit with scope, e.g. `feat(capture): add Slack anchors`.
 - Branch from fresh `origin/main`, keep `make lint test` green, rebase before pushing, open the PR, auto-merge on green.
 - Required checks: `Lint`, `Build`, `Test`, `Conventional commit title`. Renaming a CI job means updating `.github/rulesets/main-branch-protection.json` too.
+
+## Releases
+
+Manual CalVer releases via the Release workflow; `docs/release-checklist.md` lists the manual checks. Signing uses a stable self-signed certificate (Actions secrets); `scripts/sign-app.sh` only works on CI because trusting the certificate needs sudo.
