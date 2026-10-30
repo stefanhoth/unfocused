@@ -84,6 +84,19 @@ public final class UnfocusedDatabase: Sendable {
         table.column("end", .double)
       }
     }
+    migrator.registerMigration("v4-lifecycle") { db in
+      try db.alter(table: "loop") { table in
+        table.add(column: "stateChangedAt", .double).notNull().defaults(to: 0)
+      }
+      try db.execute(sql: "UPDATE loop SET stateChangedAt = capturedAt")
+      try db.create(table: "loopEvent") { table in
+        table.autoIncrementedPrimaryKey("id")
+        table.column("loopId", .text).notNull().indexed().references("loop", onDelete: .cascade)
+        table.column("change", .text).notNull()
+        table.column("at", .double).notNull()
+      }
+      try db.execute(sql: "INSERT INTO loopEvent (loopId, change, at) SELECT id, 'captured', capturedAt FROM loop")
+    }
     return migrator
   }()
 }
