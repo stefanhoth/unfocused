@@ -1,0 +1,97 @@
+name: Release
+
+# Run by hand (Actions → Release → Run workflow). Each run publishes a CalVer
+# release (YYYY.MM.DD, then YYYY.MM.DD.2, …) and points the Homebrew cask at it.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build and sign only; don't publish a release or update the cask
+        type: boolean
+        default: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build app
+    runs-on: macos-26
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Pick the CalVer version
+        id: version
+        run: |
+          base="$(date -u +%Y.%m.%d)"
+          version="$base"
+          n=2
+          while git rev-parse -q --verify "refs/tags/v$version" >/dev/null; do
+            version="$base.$n"
+            n=$((n + 1))
+          done
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Releasing $version"
+      - name: Build unsigned app bundle
+        env:
+          UNFOCUSED_VERSION: ${{ steps.version.outputs.version }}
+        run: make app
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unsigned-app
+          path: build/Unfocused.app
+          retention-days: 1
+
+  # Holds the signing secrets, so it never builds or resolves dependencies (secret isolation).
+  publish:
+    name: Sign and publish
+    needs: build
+    runs-on: macos-26
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: unsigned-app
+          path: build/Unfocused.app
+      - name: Sign with the stable self-signed certificate
+        env:
+          P12_BASE64: ${{ secrets.SIGNING_CERT_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
+        run: scripts/sign-app.sh build/Unfocused.app
+      - name: Package
+        run: |
+          ditto -c -k --keepParent build/Unfocused.app "Unfocused-$VERSION.zip"
+          shasum -a 256 "Unfocused-$VERSION.zip" | tee checksum.txt
+      - name: Publish GitHub Release
+        if: ${{ env.DRY_RUN != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v$VERSION" "Unfocused-$VERSION.zip" \
+            --target "$GITHUB_SHA" --title "unfocused $VERSION" --generate-notes
+      - name: Point the Homebrew cask at the new release
+        if: ${{ env.DRY_RUN != 'true' }}
+        run: |
+          sha256="$(cut -d' ' -f1 checksum.txt)"
+          scripts/write-cask.sh "$VERSION" "$sha256" > Casks/unfocused.rb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/unfocused.rb
+          git commit -m "chore(release): unfocused $VERSION"
+          git pull --rebase origin main
+          git push origin HEAD:main

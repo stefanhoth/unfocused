@@ -6,6 +6,15 @@ No server, no account. Your data, logs and on-device AI stay on your Mac.
 
 > Status: early development. See the [v1 spec](https://github.com/stefanhoth/unfocused/issues/1).
 
+## Install
+
+```bash
+brew tap stefanhoth/unfocused https://github.com/stefanhoth/unfocused
+brew install --cask stefanhoth/unfocused/unfocused
+```
+
+Update with `brew upgrade --cask unfocused`. Builds aren't notarized yet (ADR 0003): on first launch after installing or updating, approve unfocused in **System Settings → Privacy & Security → Open Anyway**.
+
 ## Requirements
 
 - macOS 26 or later
