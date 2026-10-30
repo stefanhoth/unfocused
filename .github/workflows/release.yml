@@ -43,11 +43,14 @@ jobs:
       - name: Build unsigned app bundle
         env:
           UNFOCUSED_VERSION: ${{ steps.version.outputs.version }}
-        run: make app
+        run: |
+          make app
+          # Artifacts drop file modes; a tarball keeps the executable bit.
+          tar -C build -czf build/unsigned-app.tar.gz Unfocused.app
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unsigned-app
-          path: build/Unfocused.app
+          path: build/unsigned-app.tar.gz
           retention-days: 1
 
   # Holds the signing secrets, so it never builds or resolves dependencies (secret isolation).
@@ -67,7 +70,9 @@ jobs:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: unsigned-app
-          path: build/Unfocused.app
+          path: build
+      - name: Unpack
+        run: tar -C build -xzf build/unsigned-app.tar.gz
       - name: Sign with the stable self-signed certificate
         env:
           P12_BASE64: ${{ secrets.SIGNING_CERT_P12_BASE64 }}
