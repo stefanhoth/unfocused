@@ -77,3 +77,33 @@ struct LoopEventRecord: Codable, FetchableRecord, MutablePersistableRecord {
     LoopEvent(change: LoopChange(rawValue: change) ?? .captured, at: Date(timeIntervalSince1970: at))
   }
 }
+
+/// Database row for an Anchor of a Loop.
+struct AnchorRecord: Codable, FetchableRecord, MutablePersistableRecord {
+  static let databaseTableName = "anchor"
+
+  var id: Int64?
+  var loopId: String
+  var source: String
+  var identifier: String
+  var link: String
+  var title: String
+  var addedAt: Double
+
+  init(loopID: UUID, anchor: Anchor, addedAt: Date) {
+    loopId = loopID.uuidString
+    source = anchor.source.stored
+    identifier = anchor.identifier
+    link = anchor.link
+    title = anchor.title
+    self.addedAt = addedAt.timeIntervalSince1970
+  }
+
+  mutating func didInsert(_ inserted: InsertionSuccess) {
+    id = inserted.rowID
+  }
+
+  var anchor: Anchor {
+    Anchor(source: Source(stored: source), identifier: identifier, link: link, title: title)
+  }
+}

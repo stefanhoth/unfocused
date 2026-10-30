@@ -13,16 +13,21 @@ public final class Core: Sendable {
 
   // MARK: Commands
 
-  /// Captures a new Open Loop with the given title.
+  /// Captures a new Open Loop. With an Anchor, an empty title falls back to the Anchor's title.
   @discardableResult
-  public func capture(title: String) throws -> Loop {
-    let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+  public func capture(title: String, anchor: Anchor? = nil) throws -> Loop {
+    var trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.isEmpty, let anchor { trimmed = anchor.title }
     guard !trimmed.isEmpty else { throw CoreError.emptyTitle }
     let loop = Loop(id: UUID(), title: trimmed, state: .open, capturedAt: time.now)
     try database.writer.write { db in
       try LoopRecord(loop).insert(db)
       var event = LoopEventRecord(loopID: loop.id, change: .captured, at: loop.capturedAt)
       try event.insert(db)
+      if let anchor {
+        var record = AnchorRecord(loopID: loop.id, anchor: anchor, addedAt: loop.capturedAt)
+        try record.insert(db)
+      }
     }
     return loop
   }
@@ -100,6 +105,17 @@ public final class Core: Sendable {
         .order(Column("stateChangedAt").desc, Column("capturedAt").desc)
         .fetchAll(db)
         .map(\.loop)
+    }
+  }
+
+  /// A Loop's Anchors, in the order they were added.
+  public func anchors(of loopID: UUID) throws -> [Anchor] {
+    try database.writer.read { db in
+      try AnchorRecord
+        .filter(Column("loopId") == loopID.uuidString)
+        .order(Column("addedAt"), Column("id"))
+        .fetchAll(db)
+        .map(\.anchor)
     }
   }
 
