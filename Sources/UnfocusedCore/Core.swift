@@ -14,22 +14,33 @@ public final class Core: Sendable {
   // MARK: Commands
 
   /// Captures a new Open Loop. With an Anchor, an empty title falls back to the Anchor's title.
+  /// `@name` mentions in the title involve those People (created if new), as Owed unless
+  /// `directions` says otherwise; the `@` is dropped from the title.
   @discardableResult
-  public func capture(title: String, anchor: Anchor? = nil) throws -> Loop {
-    var trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-    if trimmed.isEmpty, let anchor { trimmed = anchor.title }
-    guard !trimmed.isEmpty else { throw CoreError.emptyTitle }
-    let loop = Loop(id: UUID(), title: trimmed, state: .open, capturedAt: time.now)
-    try database.writer.write { db in
+  public func capture(title: String, anchor: Anchor? = nil, directions: [String: Direction] = [:]) throws -> Loop {
+    let now = time.now
+    return try database.writer.write { db in
+      let known = try PersonRecord.fetchAll(db).map(\.name)
+      let parsed = Mentions.parse(title, knownNames: known)
+      var trimmed = parsed.title.trimmingCharacters(in: .whitespacesAndNewlines)
+      if trimmed.isEmpty, let anchor { trimmed = anchor.title }
+      guard !trimmed.isEmpty else { throw CoreError.emptyTitle }
+      let loop = Loop(id: UUID(), title: trimmed, state: .open, capturedAt: now)
       try LoopRecord(loop).insert(db)
+      for name in parsed.names {
+        let person = try Self.person(named: name, evenIfSimilar: true, db)
+        let direction = directions.first { NameMatching.key($0.key) == NameMatching.key(name) }?.value ?? .owed
+        try InvolvementRecord(loopId: loop.id.uuidString, personId: person.id.uuidString, direction: direction.rawValue)
+          .insert(db, onConflict: .replace)
+      }
       var event = LoopEventRecord(loopID: loop.id, change: .captured, at: loop.capturedAt)
       try event.insert(db)
       if let anchor {
         var record = AnchorRecord(loopID: loop.id, anchor: anchor, addedAt: loop.capturedAt)
         try record.insert(db)
       }
+      return loop
     }
-    return loop
   }
 
   /// Makes `loopID` the Focused Loop, ending any other Focus.
