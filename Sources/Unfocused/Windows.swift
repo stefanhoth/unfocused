@@ -1,41 +1,152 @@
 import SwiftUI
 import UnfocusedCore
 
-/// The full window listing Open Loops.
+/// The full window: Loops by state, with each Loop's details and history.
 struct LoopsWindow: View {
   let model: AppModel
 
+  @State private var state: LoopState = .open
+  @State private var selectedID: Loop.ID?
+
+  private var loops: [Loop] {
+    state == .open ? model.openLoops : model.loops(in: state)
+  }
+
   var body: some View {
-    Group {
-      if model.openLoops.isEmpty {
-        ContentUnavailableView(
-          "No Open Loops",
-          systemImage: "circle.dashed",
-          description: Text("Press \(model.hotKey.label) anywhere to capture one.")
-        )
+    NavigationSplitView {
+      List(loops, selection: $selectedID) { loop in
+        LoopRow(loop: loop, isFocused: loop.id == model.focusedLoop?.id)
+          .contextMenu { actions(for: loop) }
+      }
+      .overlay {
+        if loops.isEmpty { emptyState }
+      }
+      .safeAreaInset(edge: .top) {
+        Picker("Show", selection: $state) {
+          Text("Open").tag(LoopState.open)
+          Text("Closed").tag(LoopState.closed)
+          Text("Dropped").tag(LoopState.dropped)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .padding(8)
+      }
+      .navigationSplitViewColumnWidth(min: 260, ideal: 320)
+    } detail: {
+      if let loop = loops.first(where: { $0.id == selectedID }) {
+        LoopDetail(model: model, loop: loop)
       } else {
-        List(model.openLoops) { loop in
-          VStack(alignment: .leading, spacing: 2) {
-            HStack {
-              Text(loop.title)
-              if loop.id == model.focusedLoop?.id {
-                Image(systemName: "scope").help("Focused")
-              }
-            }
-            if let note = loop.whereILeftOff {
-              Text("Where I left off: \(note)").font(.callout).foregroundStyle(.secondary)
-            }
-            Text(loop.capturedAt, format: .relative(presentation: .named))
-              .font(.caption)
-              .foregroundStyle(.secondary)
+        Text("Select a Loop").foregroundStyle(.secondary)
+      }
+    }
+    .frame(minWidth: 680, minHeight: 400)
+    .navigationTitle("Loops")
+    .onAppear { model.refresh() }
+    .onChange(of: state) { selectedID = nil }
+  }
+
+  @ViewBuilder private var emptyState: some View {
+    switch state {
+    case .open:
+      ContentUnavailableView(
+        "No Open Loops",
+        systemImage: "circle.dashed",
+        description: Text("Press \(model.hotKey.label) anywhere to capture one.")
+      )
+    case .closed:
+      ContentUnavailableView("Nothing Closed yet", systemImage: "checkmark.circle")
+    case .dropped:
+      ContentUnavailableView("Nothing Dropped", systemImage: "arrow.down.circle")
+    }
+  }
+
+  @ViewBuilder private func actions(for loop: Loop) -> some View {
+    if loop.state == .open {
+      Button("Focus") { model.focus(loop) }
+      Button("Close") { model.close(loop) }
+      Button("Drop") { model.drop(loop) }
+    } else {
+      Button("Reopen") { model.reopen(loop) }
+    }
+  }
+}
+
+private struct LoopRow: View {
+  let loop: Loop
+  let isFocused: Bool
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 2) {
+      HStack {
+        Text(loop.title).lineLimit(2)
+        if isFocused { Image(systemName: "scope").help("Focused") }
+      }
+      if let note = loop.whereILeftOff {
+        Text(note).font(.callout).foregroundStyle(.secondary).lineLimit(1)
+      }
+    }
+    .padding(.vertical, 2)
+  }
+}
+
+private struct LoopDetail: View {
+  let model: AppModel
+  let loop: Loop
+
+  var body: some View {
+    let sessions = model.focusSessions(for: loop)
+    let focusedTime = sessions.reduce(0) { $0 + $1.duration }
+    Form {
+      Section {
+        Text(loop.title).font(.title2)
+        if let note = loop.whereILeftOff {
+          LabeledContent("Where I left off", value: note)
+        }
+        if focusedTime > 0 {
+          LabeledContent("Focused for", value: Duration.seconds(focusedTime).formatted(.units(width: .abbreviated)))
+        }
+      }
+      Section {
+        HStack {
+          if loop.state == .open {
+            Button("Focus") { model.focus(loop) }
+            Button("Close") { model.close(loop) }
+            Button("Drop") { model.drop(loop) }
+          } else {
+            Button("Reopen") { model.reopen(loop) }
           }
-          .padding(.vertical, 2)
+        }
+      }
+      Section("History") {
+        ForEach(Array(model.history(for: loop).enumerated()), id: \.offset) { _, event in
+          LabeledContent(event.change.label) {
+            Text(event.at, format: .dateTime.day().month().hour().minute())
+          }
+        }
+        ForEach(Array(sessions.enumerated()), id: \.offset) { _, session in
+          LabeledContent("Focused") {
+            Text(session.start, format: .dateTime.day().month().hour().minute())
+            if session.end != nil {
+              Text("· \(Duration.seconds(session.duration).formatted(.units(width: .abbreviated)))")
+            } else {
+              Text("· now")
+            }
+          }
         }
       }
     }
-    .frame(minWidth: 420, minHeight: 320)
-    .navigationTitle("Open Loops")
-    .onAppear { model.refresh() }
+    .formStyle(.grouped)
+  }
+}
+
+extension LoopChange {
+  var label: String {
+    switch self {
+    case .captured: "Captured"
+    case .closed: "Closed"
+    case .dropped: "Dropped"
+    case .reopened: "Reopened"
+    }
   }
 }
 
