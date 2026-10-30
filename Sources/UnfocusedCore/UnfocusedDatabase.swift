@@ -6,7 +6,7 @@ import GRDB
 /// All persistent state lives here. Schema changes only happen through
 /// versioned migrations, so a database written by an older build always opens.
 public final class UnfocusedDatabase: Sendable {
-  private let writer: any DatabaseWriter
+  let writer: any DatabaseWriter
 
   private init(writer: any DatabaseWriter) throws {
     self.writer = writer
@@ -63,6 +63,14 @@ public final class UnfocusedDatabase: Sendable {
       try db.create(table: "setting") { table in
         table.primaryKey("key", .text)
         table.column("value", .text).notNull()
+      }
+    }
+    migrator.registerMigration("v2-loops") { db in
+      try db.create(table: "loop") { table in
+        table.primaryKey("id", .text)
+        table.column("title", .text).notNull()
+        table.column("state", .text).notNull()
+        table.column("capturedAt", .double).notNull().indexed()
       }
     }
     return migrator
