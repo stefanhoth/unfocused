@@ -79,6 +79,46 @@ final class AppModel {
     return previous
   }
 
+  /// Closes `loop`. Returns it when it was the Focused Loop, so the user can say where they left off.
+  @discardableResult
+  func close(_ loop: Loop) -> Loop? {
+    changeState(of: loop, "closing") { try core.close(loop.id) }
+  }
+
+  /// Drops `loop`. Returns it when it was the Focused Loop.
+  @discardableResult
+  func drop(_ loop: Loop) -> Loop? {
+    changeState(of: loop, "dropping") { try core.drop(loop.id) }
+  }
+
+  func reopen(_ loop: Loop) {
+    _ = changeState(of: loop, "reopening") { try core.reopen(loop.id) }
+  }
+
+  func loops(in state: LoopState) -> [Loop] {
+    (try? core.loops(in: state)) ?? []
+  }
+
+  func history(for loop: Loop) -> [LoopEvent] {
+    (try? core.history(for: loop.id)) ?? []
+  }
+
+  func focusSessions(for loop: Loop) -> [FocusSession] {
+    (try? core.focusSessions(for: loop.id)) ?? []
+  }
+
+  private func changeState(of loop: Loop, _ action: String, _ change: () throws -> Void) -> Loop? {
+    let wasFocused = focusedLoop?.id == loop.id
+    do {
+      try change()
+      log.info("Finished \(action) Loop \(loop.id)")
+    } catch {
+      report(error, while: "\(action) a Loop")
+    }
+    refresh()
+    return wasFocused ? loop : nil
+  }
+
   func setWhereILeftOff(_ loop: Loop, to note: String) {
     do {
       try core.setWhereILeftOff(loop.id, to: note)

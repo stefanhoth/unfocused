@@ -125,6 +125,14 @@ struct PanelView: View {
         press.modifiers.contains(.command) ? captureTyped() : focusSelected()
         return .handled
       }
+      .onKeyPress(characters: ["k", "d"], phases: .down) { press in
+        guard press.modifiers.contains(.command), results.indices.contains(selection) else { return .ignored }
+        let loop = results[selection]
+        let left = press.characters == "k" ? model.close(loop) : model.drop(loop)
+        if let left { askWhereILeftOff(left) }
+        selection = min(selection, max(results.count - 1, 0))
+        return .handled
+      }
       .onKeyPress(.downArrow) {
         selection = min(selection + 1, max(results.count - 1, 0))
         return .handled
@@ -174,7 +182,7 @@ struct PanelView: View {
     }
 
     Spacer(minLength: 0)
-    hints(["↩ Focus", "⌘↩ Capture as new Loop", "esc Close"])
+    hints(["↩ Focus", "⌘↩ Capture new", "⌘K Close Loop", "⌘D Drop Loop", "esc Hide"])
   }
 
   private func focusSelected() {

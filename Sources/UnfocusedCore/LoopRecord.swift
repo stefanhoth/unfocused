@@ -10,6 +10,7 @@ struct LoopRecord: Codable, FetchableRecord, PersistableRecord {
   var state: String
   var capturedAt: Double
   var whereILeftOff: String?
+  var stateChangedAt: Double
 
   init(_ loop: Loop) {
     id = loop.id.uuidString
@@ -17,6 +18,7 @@ struct LoopRecord: Codable, FetchableRecord, PersistableRecord {
     state = loop.state.rawValue
     capturedAt = loop.capturedAt.timeIntervalSince1970
     whereILeftOff = loop.whereILeftOff
+    stateChangedAt = loop.capturedAt.timeIntervalSince1970
   }
 
   var loop: Loop {
@@ -49,5 +51,29 @@ struct FocusSessionRecord: Codable, FetchableRecord, MutablePersistableRecord {
       start: Date(timeIntervalSince1970: start),
       end: end.map(Date.init(timeIntervalSince1970:))
     )
+  }
+}
+
+/// Database row for one entry in a Loop's history.
+struct LoopEventRecord: Codable, FetchableRecord, MutablePersistableRecord {
+  static let databaseTableName = "loopEvent"
+
+  var id: Int64?
+  var loopId: String
+  var change: String
+  var at: Double
+
+  init(loopID: UUID, change: LoopChange, at: Date) {
+    self.loopId = loopID.uuidString
+    self.change = change.rawValue
+    self.at = at.timeIntervalSince1970
+  }
+
+  mutating func didInsert(_ inserted: InsertionSuccess) {
+    id = inserted.rowID
+  }
+
+  var event: LoopEvent {
+    LoopEvent(change: LoopChange(rawValue: change) ?? .captured, at: Date(timeIntervalSince1970: at))
   }
 }

@@ -7,7 +7,7 @@ struct UnfocusedDatabaseTests {
   @Test("a new database has all migrations applied")
   func appliesMigrations() throws {
     let database = try UnfocusedDatabase.inMemory()
-    #expect(try database.appliedMigrations() == ["v1-settings", "v2-loops", "v3-focus"])
+    #expect(try database.appliedMigrations() == ["v1-settings", "v2-loops", "v3-focus", "v4-lifecycle"])
   }
 
   @Test("settings can be stored, replaced and removed")
@@ -34,6 +34,6 @@ struct UnfocusedDatabaseTests {
     let reopened = try UnfocusedDatabase.open(at: url)
 
     #expect(try reopened.setting("looseEndDays") == "3")
-    #expect(try reopened.appliedMigrations() == ["v1-settings", "v2-loops", "v3-focus"])
+    #expect(try reopened.appliedMigrations() == ["v1-settings", "v2-loops", "v3-focus", "v4-lifecycle"])
   }
 }

@@ -18,7 +18,7 @@ struct UnfocusedApp: App {
       MenuBarLabel(model: appDelegate.model)
     }
 
-    Window("Open Loops", id: WindowID.loops) {
+    Window("Loops", id: WindowID.loops) {
       if let model = appDelegate.model { LoopsWindow(model: model) }
     }
 
@@ -45,13 +45,19 @@ struct MenuContent: View {
       Button("Unfocus") {
         if let left = model.unfocus() { panel?.askWhereILeftOff(left) }
       }
+      Button("Close Loop") {
+        if let left = model.close(focused) { panel?.askWhereILeftOff(left) }
+      }
+      Button("Drop Loop") {
+        if let left = model.drop(focused) { panel?.askWhereILeftOff(left) }
+      }
       Divider()
     } else {
       Text("Unfocused")
       Divider()
     }
     Button("Open Panel (\(model.hotKey.label))") { panel?.show() }
-    Button("Open Loops…") {
+    Button("Loops…") {
       NSApp.activate()
       openWindow(id: WindowID.loops)
     }

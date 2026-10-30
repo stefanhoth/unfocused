@@ -44,4 +44,26 @@ public enum LoopState: String, Sendable, CaseIterable {
 public enum CoreError: Error, Equatable {
   case emptyTitle
   case loopNotFound
+  /// The Loop must be Open for this, e.g. to be Focused.
+  case loopNotOpen
+  /// The Loop's current state doesn't allow this change (e.g. reopening an Open Loop).
+  case invalidStateChange
+}
+
+/// Something that happened to a Loop, as shown in its history.
+public enum LoopChange: String, Sendable, CaseIterable {
+  case captured
+  case closed
+  case dropped
+  case reopened
+}
+
+public struct LoopEvent: Hashable, Sendable {
+  public let change: LoopChange
+  public let at: Date
+
+  public init(change: LoopChange, at: Date) {
+    self.change = change
+    self.at = at
+  }
 }
