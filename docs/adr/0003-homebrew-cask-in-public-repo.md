@@ -1,3 +1,7 @@
+---
+status: accepted
+---
+
 # Ship via a Homebrew cask in this public repo, without a paid Developer ID for now
 
 unfocused is distributed as a Homebrew cask, not through the Mac App Store, because the App Store sandbox blocks the Accessibility and Apple Events access that Capture and Activity depend on.
