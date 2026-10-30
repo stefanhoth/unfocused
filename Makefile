@@ -2,6 +2,13 @@
 SWIFT_SOURCES := Package.swift Sources Tests
 CONFIG ?= debug
 
+# Build against the macOS 26 SDK, like CI. With only the Command Line Tools,
+# newer SDKs need SwiftUI macro plugins that ship with full Xcode only.
+SDK_26 := $(wildcard $(shell xcode-select -p 2>/dev/null)/SDKs/MacOSX26.sdk)
+ifneq ($(SDK_26),)
+export SDKROOT := $(SDK_26)
+endif
+
 .PHONY: setup lint format build test app run clean
 
 setup: ## Install the git pre-commit hook

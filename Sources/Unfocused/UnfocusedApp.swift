@@ -8,31 +8,77 @@ struct UnfocusedApp: App {
 
   var body: some Scene {
     MenuBarExtra("unfocused", systemImage: "circle.dashed") {
-      Text("unfocused")
-      Divider()
-      Button("Quit unfocused") { NSApplication.shared.terminate(nil) }
-        .keyboardShortcut("q")
+      if let model = appDelegate.model {
+        MenuContent(model: model, panel: appDelegate.panel)
+      } else {
+        Text("unfocused couldn't start. See ~/Library/Logs/unfocused.")
+        Button("Quit unfocused") { NSApplication.shared.terminate(nil) }
+      }
     }
+
+    Window("Open Loops", id: WindowID.loops) {
+      if let model = appDelegate.model { LoopsWindow(model: model) }
+    }
+
+    Settings {
+      if let model = appDelegate.model { SettingsView(model: model) }
+    }
+  }
+}
+
+enum WindowID {
+  static let loops = "loops"
+}
+
+struct MenuContent: View {
+  let model: AppModel
+  let panel: PanelController?
+  @Environment(\.openWindow) private var openWindow
+  @Environment(\.openSettings) private var openSettings
+
+  var body: some View {
+    Button("Open Panel (\(model.hotKey.label))") { panel?.show() }
+    Button("Open Loops…") {
+      NSApp.activate()
+      openWindow(id: WindowID.loops)
+    }
+    Divider()
+    Button("Settings…") {
+      NSApp.activate()
+      openSettings()
+    }
+    .keyboardShortcut(",")
+    Button("Quit unfocused") { NSApplication.shared.terminate(nil) }
+      .keyboardShortcut("q")
   }
 }
 
 /// Owns app-wide services for the lifetime of the process.
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
-  private(set) var environment: AppEnvironment?
+final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
+  private(set) var model: AppModel?
+  private(set) var panel: PanelController?
 
   func applicationWillFinishLaunching(_ notification: Notification) {
     // Menu bar only: no Dock icon, also when run unbundled via `swift run`.
     NSApplication.shared.setActivationPolicy(.accessory)
+    do {
+      let environment = try AppEnvironment.live()
+      let model = AppModel(core: Core(database: environment.database), log: environment.log)
+      let panel = PanelController(model: model)
+      HotKeyCenter.shared.onPress = { panel.toggle() }
+      self.model = model
+      self.panel = panel
+      environment.log.info("Launched, database ready")
+    } catch {
+      Log(category: "app", file: nil).error("Startup failed: \(error)")
+    }
   }
 
   func applicationDidFinishLaunching(_ notification: Notification) {
-    do {
-      environment = try AppEnvironment.live()
-      environment?.log.info("Launched, database ready")
-    } catch {
-      let fallback = Log(category: "app", file: nil)
-      fallback.error("Startup failed: \(error)")
-    }
+    guard let model, !model.activateSavedHotKey() else { return }
+    // First launch with a taken hotkey: ask for another one right away.
+    NSApp.activate()
+    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
   }
 }

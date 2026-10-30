@@ -4,6 +4,10 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+SDK_26="$(xcode-select -p 2>/dev/null)/SDKs/MacOSX26.sdk"
+if [[ -z "${SDKROOT:-}" && -d "$SDK_26" ]]; then
+  export SDKROOT="$SDK_26"
+fi
 VERSION="${UNFOCUSED_VERSION:-0.0.0-dev}"
 APP="build/Unfocused.app"
 
