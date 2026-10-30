@@ -7,13 +7,15 @@ struct UnfocusedApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
   var body: some Scene {
-    MenuBarExtra("unfocused", systemImage: "circle.dashed") {
+    MenuBarExtra {
       if let model = appDelegate.model {
         MenuContent(model: model, panel: appDelegate.panel)
       } else {
         Text("unfocused couldn't start. See ~/Library/Logs/unfocused.")
         Button("Quit unfocused") { NSApplication.shared.terminate(nil) }
       }
+    } label: {
+      MenuBarLabel(model: appDelegate.model)
     }
 
     Window("Open Loops", id: WindowID.loops) {
@@ -37,6 +39,17 @@ struct MenuContent: View {
   @Environment(\.openSettings) private var openSettings
 
   var body: some View {
+    if let focused = model.focusedLoop {
+      Text("Focused: \(focused.title)")
+      if let note = focused.whereILeftOff { Text("Where I left off: \(note)") }
+      Button("Unfocus") {
+        if let left = model.unfocus() { panel?.askWhereILeftOff(left) }
+      }
+      Divider()
+    } else {
+      Text("Unfocused")
+      Divider()
+    }
     Button("Open Panel (\(model.hotKey.label))") { panel?.show() }
     Button("Open Loops…") {
       NSApp.activate()
@@ -53,11 +66,25 @@ struct MenuContent: View {
   }
 }
 
+/// The menu bar item: the ring, plus the Focused Loop's title when there is one.
+struct MenuBarLabel: View {
+  let model: AppModel?
+
+  var body: some View {
+    if let title = model?.focusedLoop?.title {
+      Label(title.count > 24 ? title.prefix(23) + "…" : title, systemImage: "scope")
+        .labelStyle(.titleAndIcon)
+    } else {
+      Image(systemName: "circle.dashed")
+    }
+  }
+}
+
 /// Owns app-wide services for the lifetime of the process.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
-  private(set) var model: AppModel?
-  private(set) var panel: PanelController?
+  @Published private(set) var model: AppModel?
+  @Published private(set) var panel: PanelController?
 
   func applicationWillFinishLaunching(_ notification: Notification) {
     // Menu bar only: no Dock icon, also when run unbundled via `swift run`.

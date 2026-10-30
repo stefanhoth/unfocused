@@ -7,6 +7,9 @@ CONFIG ?= debug
 SDK_26 := $(wildcard $(shell xcode-select -p 2>/dev/null)/SDKs/MacOSX26.sdk)
 ifneq ($(SDK_26),)
 export SDKROOT := $(SDK_26)
+# With an overridden SDK the Swift Testing macro plugin isn't found on its own.
+TESTING_PLUGINS := $(wildcard $(shell xcode-select -p)/usr/lib/swift/host/plugins/testing)
+TEST_FLAGS := $(if $(TESTING_PLUGINS),-Xswiftc -plugin-path -Xswiftc $(TESTING_PLUGINS))
 endif
 
 .PHONY: setup lint format build test app run clean
@@ -25,7 +28,7 @@ build: ## Build all targets
 	swift build -c $(CONFIG) -Xswiftc -warnings-as-errors
 
 test: ## Run all tests
-	swift test -Xswiftc -warnings-as-errors
+	swift test -Xswiftc -warnings-as-errors $(TEST_FLAGS)
 
 app: ## Assemble build/Unfocused.app (release, ad-hoc signed)
 	scripts/build-app.sh

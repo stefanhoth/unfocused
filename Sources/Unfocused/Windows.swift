@@ -16,7 +16,15 @@ struct LoopsWindow: View {
       } else {
         List(model.openLoops) { loop in
           VStack(alignment: .leading, spacing: 2) {
-            Text(loop.title)
+            HStack {
+              Text(loop.title)
+              if loop.id == model.focusedLoop?.id {
+                Image(systemName: "scope").help("Focused")
+              }
+            }
+            if let note = loop.whereILeftOff {
+              Text("Where I left off: \(note)").font(.callout).foregroundStyle(.secondary)
+            }
             Text(loop.capturedAt, format: .relative(presentation: .named))
               .font(.caption)
               .foregroundStyle(.secondary)
