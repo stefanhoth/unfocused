@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Fast check before each commit; CI runs the full suite.
+set -euo pipefail
+swift format lint --strict --recursive Package.swift Sources Tests
