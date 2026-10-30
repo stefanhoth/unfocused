@@ -106,6 +106,19 @@ private struct LoopDetail: View {
           LabeledContent("Focused for", value: Duration.seconds(focusedTime).formatted(.units(width: .abbreviated)))
         }
       }
+      let anchors = model.anchors(of: loop)
+      if !anchors.isEmpty {
+        Section("Anchors") {
+          ForEach(Array(anchors.enumerated()), id: \.offset) { _, anchor in
+            Button {
+              AnchorOpener.open(anchor)
+            } label: {
+              Label(anchor.title, systemImage: "link").lineLimit(1)
+            }
+            .buttonStyle(.link)
+          }
+        }
+      }
       Section {
         HStack {
           if loop.state == .open {
