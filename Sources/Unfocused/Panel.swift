@@ -98,6 +98,8 @@ struct PanelView: View {
   @State private var mode: PanelMode
   @State private var text = ""
   @State private var selection = 0
+  /// Direction per mentioned name; unmentioned names default to Owed.
+  @State private var directions: [String: Direction] = [:]
   @FocusState private var fieldFocused: Bool
 
   init(model: AppModel, context: CaptureContext?, initialMode: PanelMode, dismiss: @escaping () -> Void) {
@@ -106,6 +108,21 @@ struct PanelView: View {
     self.dismiss = dismiss
     _mode = State(initialValue: initialMode)
   }
+
+  /// The `@word` being typed at the end of the field, if any.
+  private var mentionQuery: String? {
+    guard let last = text.split(separator: " ", omittingEmptySubsequences: false).last, last.hasPrefix("@") else {
+      return nil
+    }
+    return String(last.dropFirst())
+  }
+
+  private var suggestions: [Person] {
+    guard let query = mentionQuery else { return [] }
+    return Array(model.searchPeople(query).prefix(6))
+  }
+
+  private var mentioned: [String] { model.mentionedNames(in: text) }
 
   /// Search results, without the Focused Loop when nothing is typed (it has its own section).
   private var results: [Loop] {
@@ -132,12 +149,25 @@ struct PanelView: View {
     inputField("Search your Loops, or type something new…")
       .onChange(of: text) { selection = 0 }
       .onKeyPress(.return, phases: .down) { press in
-        press.modifiers.contains(.command) ? captureTyped() : focusSelected()
+        if press.modifiers.contains(.command) {
+          captureTyped()
+        } else if !suggestions.isEmpty {
+          completeMention()
+        } else {
+          focusSelected()
+        }
         return .handled
       }
       .onKeyPress(.tab) {
-        guard let context, text.isEmpty else { return .ignored }
-        text = context.anchor.title
+        if !suggestions.isEmpty {
+          completeMention()
+        } else if let context, text.isEmpty {
+          text = context.anchor.title
+        } else if let last = mentioned.last {
+          directions[last] = (directions[last] ?? .owed).toggled
+        } else {
+          return .ignored
+        }
         return .handled
       }
       .onKeyPress(characters: ["k", "d"], phases: .down) { press in
@@ -149,7 +179,8 @@ struct PanelView: View {
         return .handled
       }
       .onKeyPress(.downArrow) {
-        selection = min(selection + 1, max(results.count - 1, 0))
+        let count = suggestions.isEmpty ? results.count : suggestions.count
+        selection = min(selection + 1, max(count - 1, 0))
         return .handled
       }
       .onKeyPress(.upArrow) {
@@ -161,8 +192,34 @@ struct PanelView: View {
       contextLine(context)
     }
 
+    if !mentioned.isEmpty {
+      mentionChips
+    }
+
     Divider()
 
+    if !suggestions.isEmpty {
+      VStack(alignment: .leading, spacing: 2) {
+        ForEach(Array(suggestions.enumerated()), id: \.element.id) { index, person in
+          Label(person.name, systemImage: "person")
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+              index == selection ? Color.accentColor.opacity(0.2) : .clear,
+              in: RoundedRectangle(cornerRadius: 6)
+            )
+        }
+      }
+      .padding(8)
+      Spacer(minLength: 0)
+      hints(["↩ or ⇥ Add Person", "esc Hide"])
+    } else {
+      searchResults
+    }
+  }
+
+  @ViewBuilder private var searchResults: some View {
     if text.isEmpty, let focused = model.focusedLoop {
       VStack(alignment: .leading, spacing: 4) {
         Label("Focused", systemImage: "scope").font(.caption).foregroundStyle(.secondary)
@@ -201,7 +258,31 @@ struct PanelView: View {
     }
 
     Spacer(minLength: 0)
-    hints(["↩ Focus", "⌘↩ Capture new", "⌘K Close Loop", "⌘D Drop Loop", "esc Hide"])
+    hints(["↩ Focus", "⌘↩ Capture new", "⌘K Close", "⌘D Drop", "@ Person", "esc Hide"])
+  }
+
+  private var mentionChips: some View {
+    HStack(spacing: 8) {
+      ForEach(mentioned, id: \.self) { name in
+        let direction = directions[name] ?? .owed
+        Label("\(name) · \(direction.label)", systemImage: direction == .owed ? "arrow.left" : "arrow.right")
+          .font(.caption)
+          .padding(.horizontal, 8)
+          .padding(.vertical, 3)
+          .background(.quaternary, in: Capsule())
+          .help(direction.help)
+      }
+      Text("⇥ switches Owed/Waiting").font(.caption2).foregroundStyle(.tertiary)
+      Spacer()
+    }
+    .padding(.horizontal, 16)
+    .padding(.bottom, 10)
+  }
+
+  private func completeMention() {
+    guard suggestions.indices.contains(selection), let query = mentionQuery else { return }
+    text = String(text.dropLast(query.count + 1)) + "@\(suggestions[selection].name) "
+    selection = 0
   }
 
   private var emptyHint: String {
@@ -220,7 +301,7 @@ struct PanelView: View {
   }
 
   private func captureTyped() {
-    guard let loop = model.capture(title: text, anchor: context?.anchor) else { return }
+    guard let loop = model.capture(title: text, anchor: context?.anchor, directions: directions) else { return }
     // The user is already where the new Loop lives; don't reopen it.
     if let left = model.focus(loop, openAnchors: false) {
       askWhereILeftOff(left)

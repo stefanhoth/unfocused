@@ -106,6 +106,7 @@ private struct LoopDetail: View {
           LabeledContent("Focused for", value: Duration.seconds(focusedTime).formatted(.units(width: .abbreviated)))
         }
       }
+      PeopleSection(model: model, loop: loop)
       let anchors = model.anchors(of: loop)
       if !anchors.isEmpty {
         Section("Anchors") {
@@ -149,6 +150,43 @@ private struct LoopDetail: View {
       }
     }
     .formStyle(.grouped)
+  }
+}
+
+private struct PeopleSection: View {
+  let model: AppModel
+  let loop: Loop
+  @State private var newName = ""
+
+  var body: some View {
+    Section("People") {
+      ForEach(model.involvements(of: loop), id: \.person.id) { involvement in
+        HStack {
+          Text(involvement.person.name)
+          Spacer()
+          Picker(
+            "Direction",
+            selection: Binding(
+              get: { involvement.direction },
+              set: { model.setDirection($0, of: involvement.person, in: loop) }
+            )
+          ) {
+            ForEach(Direction.allCases, id: \.self) { Text($0.label).help($0.help).tag($0) }
+          }
+          .pickerStyle(.segmented)
+          .labelsHidden()
+          .fixedSize()
+          Button("Remove", systemImage: "minus.circle") { model.remove(involvement.person, from: loop) }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+        }
+      }
+      TextField("Add a Person…", text: $newName)
+        .onSubmit {
+          model.involve(named: newName, in: loop)
+          newName = ""
+        }
+    }
   }
 }
 

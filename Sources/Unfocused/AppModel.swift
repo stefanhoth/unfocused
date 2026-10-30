@@ -8,6 +8,7 @@ import UnfocusedCore
 final class AppModel {
   private(set) var openLoops: [Loop] = []
   private(set) var focusedLoop: Loop?
+  private(set) var people: [Person] = []
   private(set) var hotKey: HotKeyChoice = .default
   /// Why the chosen hotkey can't be used, shown in Settings.
   private(set) var hotKeyProblem: String?
@@ -26,6 +27,7 @@ final class AppModel {
     do {
       openLoops = try core.openLoops()
       focusedLoop = try core.focusedLoop()
+      people = try core.people()
     } catch {
       report(error, while: "loading Loops")
     }
@@ -37,9 +39,9 @@ final class AppModel {
 
   /// Returns the new Loop, or `nil` if nothing was captured.
   @discardableResult
-  func capture(title: String, anchor: Anchor? = nil) -> Loop? {
+  func capture(title: String, anchor: Anchor? = nil, directions: [String: Direction] = [:]) -> Loop? {
     do {
-      let loop = try core.capture(title: title, anchor: anchor)
+      let loop = try core.capture(title: title, anchor: anchor, directions: directions)
       log.info("Captured Loop \(loop.id)")
       refresh()
       return loop
@@ -130,6 +132,77 @@ final class AppModel {
       try core.setWhereILeftOff(loop.id, to: note)
     } catch {
       report(error, while: "saving where you left off")
+    }
+    refresh()
+  }
+
+  // MARK: People
+
+  func searchPeople(_ query: String) -> [Person] {
+    (try? core.searchPeople(query)) ?? []
+  }
+
+  func mentionedNames(in text: String) -> [String] {
+    (try? core.mentionedNames(in: text)) ?? []
+  }
+
+  func importPeople(_ text: String) -> PeopleImport? {
+    defer { refresh() }
+    do {
+      let result = try core.importPeople(text)
+      log.info("Imported \(result.added.count) People, \(result.nearMatches.count) near matches")
+      return result
+    } catch {
+      report(error, while: "importing People")
+      return nil
+    }
+  }
+
+  /// The user decided a near-duplicate is a different Person.
+  func keepAsNewPerson(_ name: String) {
+    perform("adding a Person") { _ = try core.addPerson(named: name, evenIfSimilar: true) }
+  }
+
+  func rename(_ person: Person, to name: String) {
+    perform("renaming a Person") { try core.rename(person.id, to: name) }
+  }
+
+  func delete(_ person: Person) {
+    perform("deleting a Person") { try core.deletePerson(person.id) }
+  }
+
+  func merge(_ duplicate: Person, into person: Person) {
+    perform("merging People") { try core.merge(duplicate.id, into: person.id) }
+  }
+
+  func involvements(of loop: Loop) -> [Involvement] {
+    (try? core.people(of: loop.id)) ?? []
+  }
+
+  func loops(involving person: Person) -> [Loop] {
+    (try? core.loops(involving: person.id)) ?? []
+  }
+
+  func involve(named name: String, in loop: Loop, as direction: Direction = .owed) {
+    perform("adding a Person to a Loop") {
+      let person = try core.addPerson(named: name, evenIfSimilar: true)
+      try core.involve(person.id, in: loop.id, as: direction)
+    }
+  }
+
+  func setDirection(_ direction: Direction, of person: Person, in loop: Loop) {
+    perform("changing direction") { try core.involve(person.id, in: loop.id, as: direction) }
+  }
+
+  func remove(_ person: Person, from loop: Loop) {
+    perform("removing a Person from a Loop") { try core.removePerson(person.id, from: loop.id) }
+  }
+
+  private func perform(_ action: String, _ work: () throws -> Void) {
+    do {
+      try work()
+    } catch {
+      report(error, while: action)
     }
     refresh()
   }
