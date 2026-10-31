@@ -241,7 +241,7 @@ struct PanelView: View {
     }
     .frame(width: Style.panelSize.width, height: Style.panelSize.height)
     .calmGlass(cornerRadius: Style.panelRadius)
-    .background(GradientGlow(cornerRadius: Style.panelRadius))
+    .overlay(GradientGlow(cornerRadius: Style.panelRadius))
     .shadow(color: .black.opacity(0.25), radius: 24, y: 10)
     .padding(Style.glowMargin)
     // The view appears before its borderless panel is the key window, and SwiftUI drops a focus

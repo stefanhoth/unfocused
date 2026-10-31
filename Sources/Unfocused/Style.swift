@@ -43,7 +43,9 @@ enum Style {
 
   /// "10 seconds ago", "2 days ago", in the interface language.
   @MainActor static func relative(_ date: Date, to now: Date = Date()) -> String {
-    relativeFormatter.localizedString(for: date, relativeTo: now)
+    // Within a minute (including a moment "in the future" from clock jitter) it's just now.
+    if abs(now.timeIntervalSince(date)) < 60 { return "just now" }
+    return relativeFormatter.localizedString(for: date, relativeTo: now)
   }
 }
 
@@ -109,8 +111,8 @@ struct AppIcon: View {
   }
 }
 
-/// A soft glow in the logo's gradient around a floating surface, with a thin gradient edge. It
-/// drifts slowly; with Reduce Motion it stays still.
+/// A thin, crisp edge in the logo's gradient with a tight halo, drawn over a floating surface so
+/// it stands out from whatever is behind. It drifts slowly; with Reduce Motion it stays still.
 struct GradientGlow: View {
   let cornerRadius: CGFloat
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -124,9 +126,11 @@ struct GradientGlow: View {
       angle: .degrees(angle)
     )
     ZStack {
-      shape.stroke(gradient, lineWidth: 14).blur(radius: 22).opacity(0.55)
-      shape.strokeBorder(gradient, lineWidth: 1.5).opacity(0.85)
+      // A tight halo just outside the edge, then a crisp line on the edge itself.
+      shape.stroke(gradient, lineWidth: 3).blur(radius: 5).opacity(0.9)
+      shape.strokeBorder(gradient, lineWidth: 1.5)
     }
+    .allowsHitTesting(false)
     .onAppear {
       guard !reduceMotion else { return }
       withAnimation(.linear(duration: 12).repeatForever(autoreverses: false)) { angle = 360 }
