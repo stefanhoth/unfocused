@@ -67,9 +67,14 @@ final class PanelController {
   func focusFieldSoon() {
     for delay in [0.0, 0.05] {
       DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-        guard let panel = self?.panel, panel.isVisible else { return }
+        guard let self, let panel = self.panel, panel.isVisible else { return }
         panel.makeKey()
         Self.focusTextField(in: panel)
+        if delay > 0, Self.firstTextField(in: panel.contentView) != nil {
+          // Checked on every showing; the release checklist relies on this line.
+          let editing = panel.isKeyWindow && panel.firstResponder is NSTextView
+          self.model.log.info("Panel text field has the cursor: \(editing)")
+        }
       }
     }
   }
