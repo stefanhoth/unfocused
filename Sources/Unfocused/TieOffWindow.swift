@@ -169,7 +169,7 @@ struct TieOffView: View {
         Button {
           anchors.forEach(AnchorOpener.open)
         } label: {
-          keyLabel("Open Anchor", "O")
+          keyLabel("Open Anchors", "O")
         }
         .keyboardShortcut("o", modifiers: [])
         .buttonStyle(.glass)
