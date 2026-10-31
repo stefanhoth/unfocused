@@ -2,6 +2,7 @@
 
 Smaller calls that don't warrant an ADR. Newest first; add entries in the PR that makes the decision.
 
+- **2026-10-31**: Panel keys: ⌘D Close (D as in done, matching ⌘U Unfocus), ⌘⌫ Drop (the Mac's discard shortcut; it only Drops when a Loop is selected or Focused, otherwise it edits text). The label stays "Close": the glossary avoids "Done". The Tie-off keeps its single letters (C, D).
 - **2026-10-31**: Local builds are `build/Unfocused Dev.app` (display name "unfocused dev"); releases stay `build/Unfocused.app`. macOS shows apps by file name in Privacy & Security, so a dev build can't be mistaken for a release there.
 - **2026-10-31**: With Xcode selected (`xcode-select -s /Applications/Xcode.app`), local builds use the macOS 27 SDK; the macOS 26 SDK pin only applies when the Command Line Tools are selected. API renamed in the 27 SDK is chosen with `#if compiler(>=6.4)` while CI still builds with the macOS 26 SDK.
 - **2026-10-31**: Capturing a new Loop always takes ⌘↩, never plain ↩, even when nothing matches. The extra modifier is deliberate friction against starting too many Loops; ↩ only ever Focuses an existing one. When nothing matches, the panel shows the capture as an outlined row with ⌘↩ so it's easy to see.

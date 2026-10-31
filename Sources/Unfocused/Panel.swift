@@ -321,16 +321,16 @@ struct PanelView: View {
       if let left = model.focus(existing, openAnchors: false) { askWhereILeftOff(left) } else { dismiss() }
       return .handled
     }
-    .onKeyPress(characters: ["k", "d"], phases: .down) { press in
+    // ⌘D Close (as in done), ⌘⌫ Drop. ⌘⌫ only Drops when there's a Loop to act on; otherwise it
+    // edits the text as usual.
+    .onKeyPress(characters: ["d"], phases: .down) { press in
       guard press.modifiers.contains(.command), let loop = actionLoop else { return .ignored }
-      // A Closed or Dropped Loop needs no Where I left off; it's done or let go.
-      let wasHero = isHero
-      if press.characters == "k" { model.close(loop) } else { model.drop(loop) }
-      if wasHero {
-        dismiss()
-      } else {
-        selection = min(selection, results.count - 1)
-      }
+      finish(loop, close: true)
+      return .handled
+    }
+    .onKeyPress(.delete, phases: .down) { press in
+      guard press.modifiers.contains(.command), let loop = actionLoop else { return .ignored }
+      finish(loop, close: false)
       return .handled
     }
     .onKeyPress(characters: ["o"], phases: .down) { press in
@@ -370,7 +370,7 @@ struct PanelView: View {
     }
 
     if isHero {
-      hints(["⌘K Done", "⌘O Open", "⌘U Unfocus", "↓ Switch", "⌘↩ Capture new", "esc Hide"])
+      hints(["⌘D Close", "⌘O Open", "⌘U Unfocus", "↓ Switch", "⌘↩ Capture new", "esc Hide"])
     } else {
       searchBody
     }
@@ -419,7 +419,7 @@ struct PanelView: View {
   /// typing) away, so the panel doesn't invite jumping to something else.
   private var isHero: Bool { model.focusedLoop != nil && text.isEmpty && !browsing }
 
-  /// The Loop ⌘K, ⌘D and ⌘O act on: the Focused one in the hero view, otherwise the selected row.
+  /// The Loop ⌘D, ⌘⌫ and ⌘O act on: the Focused one in the hero view, otherwise the selected row.
   private var actionLoop: Loop? {
     if isHero { return model.focusedLoop }
     return results.indices.contains(selection) ? results[selection] : nil
@@ -506,8 +506,8 @@ struct PanelView: View {
     Spacer(minLength: 0)
     hints(
       context == nil
-        ? ["↩ Focus", "⌘↩ Capture new", "⌘O Open", "⌘K Close", "⌘D Drop", "@ Person", "esc Hide"]
-        : ["↩ Focus", "⌘↩ Capture new", "⌥↩ Add here", "⌘O Open", "⌘K Close", "⌘D Drop", "esc Hide"]
+        ? ["↩ Focus", "⌘↩ Capture new", "⌘O Open", "⌘D Close", "⌘⌫ Drop", "@ Person", "esc Hide"]
+        : ["↩ Focus", "⌘↩ Capture new", "⌥↩ Add here", "⌘O Open", "⌘D Close", "⌘⌫ Drop", "esc Hide"]
     )
   }
 
@@ -661,6 +661,18 @@ struct PanelView: View {
     }
   }
 
+  /// Closes or Drops `loop`. A Closed or Dropped Loop needs no Where I left off; it's finished or
+  /// let go. From the Focused view the panel hides; in the list it stays for the next one.
+  private func finish(_ loop: Loop, close: Bool) {
+    let wasHero = isHero
+    if close { model.close(loop) } else { model.drop(loop) }
+    if wasHero {
+      dismiss()
+    } else {
+      selection = min(selection, results.count - 1)
+    }
+  }
+
   /// Leaves the panel; after Where I left off, opens the Anchors of the Loop just Focused.
   private func close() {
     let pending = anchorsToOpenAfterLeftOff
@@ -801,12 +813,12 @@ struct PanelView: View {
         model.close(loop)
         dismiss()
       }
-      .keyboardShortcut("k", modifiers: .command)
+      .keyboardShortcut("d", modifiers: .command)
       Button("Drop") {
         model.drop(loop)
         dismiss()
       }
-      .keyboardShortcut("d", modifiers: .command)
+      .keyboardShortcut(.delete, modifiers: .command)
       Button("Unfocus") {
         model.dismissInterruptedFocus()
         askWhereILeftOff(loop)
@@ -818,7 +830,7 @@ struct PanelView: View {
     .padding(.horizontal, 16)
 
     Spacer(minLength: 0)
-    hints(["↩ Continue", "⌘K Close", "⌘D Drop", "⌘U Unfocus", "esc Ask me later"])
+    hints(["↩ Continue", "⌘D Close", "⌘⌫ Drop", "⌘U Unfocus", "esc Ask me later"])
   }
 
   // MARK: Shared
