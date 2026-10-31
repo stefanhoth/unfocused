@@ -36,13 +36,45 @@ enum ContextReader {
       if let anchor = selectedMailMessage() {
         return CaptureContext(anchor: anchor, missingAccessibility: false)
       }
+    case "com.apple.finder" where mayAsk:
+      if let anchor = selectedFinderItem() {
+        return CaptureContext(anchor: anchor, missingAccessibility: false)
+      }
     default:
       break
     }
 
-    let title = Permissions.hasAccessibility ? focusedWindowTitle(of: app) : nil
-    if bundleID == "com.tinyspeck.slackmacgap", let anchor = slackAnchor(windowTitle: title, prompting: prompting) {
-      return CaptureContext(anchor: anchor, missingAccessibility: false)
+    let window = Permissions.hasAccessibility ? focusedWindow(of: app) : nil
+    let title = window.flatMap { string($0, kAXTitleAttribute) }
+    switch bundleID {
+    case "com.tinyspeck.slackmacgap":
+      if let anchor = slackAnchor(windowTitle: title, prompting: prompting) {
+        return CaptureContext(anchor: anchor, missingAccessibility: false)
+      }
+    case "org.mozilla.firefox":
+      if let title, let page = Anchor.firefoxWindow(title: title) {
+        return CaptureContext(anchor: page.anchor, missingAccessibility: false, isPrivate: page.isPrivate)
+      }
+    case "md.obsidian":
+      if let anchor = title.flatMap(Anchor.obsidianWindow(title:)) {
+        return CaptureContext(anchor: anchor, missingAccessibility: false)
+      }
+    case "notion.id", "com.todoist.mac.Todoist":
+      if prompting, let copied = NSPasteboard.general.string(forType: .string),
+        let anchor = Anchor.copiedLink(copied, for: bundleID, title: title)
+      {
+        return CaptureContext(anchor: anchor, missingAccessibility: false)
+      }
+      if bundleID == "notion.id", let anchor = title.flatMap(Anchor.notionWindow(title:)) {
+        return CaptureContext(anchor: anchor, missingAccessibility: false)
+      }
+    default:
+      // Document-based apps (Pages, Numbers, Preview, TextEdit, …) name the open file.
+      if let document = window.flatMap({ string($0, kAXDocumentAttribute) }), let url = URL(string: document),
+        let anchor = Anchor.file(url: url, bundleID: bundleID)
+      {
+        return CaptureContext(anchor: anchor, missingAccessibility: false)
+      }
     }
     let anchor = Anchor.appWindow(bundleID: bundleID, appName: app.localizedName ?? bundleID, windowTitle: title)
     return CaptureContext(anchor: anchor, missingAccessibility: !Permissions.hasAccessibility)
@@ -107,6 +139,30 @@ enum ContextReader {
     return Anchor.mailMessage(messageID: id, subject: subject)
   }
 
+  // MARK: Finder (Apple Events)
+
+  private static let finderScript = """
+    tell application id "com.apple.finder"
+      set picked to selection
+      if (count of picked) > 0 then return POSIX path of (item 1 of picked as alias)
+      if (count of Finder windows) > 0 then return POSIX path of (target of front Finder window as alias)
+      return ""
+    end tell
+    """
+
+  /// The file or folder selected in Finder, or the front window's folder.
+  private static func selectedFinderItem() -> Anchor? {
+    var error: NSDictionary?
+    guard
+      let path = NSAppleScript(source: finderScript)?.executeAndReturnError(&error).stringValue,
+      !path.isEmpty
+    else {
+      if let error { Log(category: "context", file: nil).info("Couldn't read Finder: \(error)") }
+      return nil
+    }
+    return Anchor.file(url: URL(fileURLWithPath: path), bundleID: "com.apple.finder")
+  }
+
   // MARK: Slack (no scripting; a copied message link is exact, the window title is the conversation)
 
   /// During a Capture, a Slack message link on the clipboard ("Copy link") pins the exact thread.
@@ -133,22 +189,20 @@ enum ContextReader {
 
   // MARK: Fallback (Accessibility)
 
-  private static func focusedWindowTitle(of app: NSRunningApplication) -> String? {
+  private static func focusedWindow(of app: NSRunningApplication) -> AXUIElement? {
     let element = AXUIElementCreateApplication(app.processIdentifier)
     var window: CFTypeRef?
     guard
       AXUIElementCopyAttributeValue(element, kAXFocusedWindowAttribute as CFString, &window) == .success,
       let window, CFGetTypeID(window) == AXUIElementGetTypeID()
     else { return nil }
-    var title: CFTypeRef?
-    guard
-      AXUIElementCopyAttributeValue(
-        unsafeDowncast(window, to: AXUIElement.self),
-        kAXTitleAttribute as CFString,
-        &title
-      ) == .success
-    else { return nil }
-    return title as? String
+    return unsafeDowncast(window, to: AXUIElement.self)
+  }
+
+  private static func string(_ element: AXUIElement, _ attribute: String) -> String? {
+    var value: CFTypeRef?
+    guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success else { return nil }
+    return value as? String
   }
 }
 
@@ -178,8 +232,12 @@ enum AnchorOpener {
       guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return }
       NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
     default:
-      guard let url = URL(string: anchor.link) else { return }
-      NSWorkspace.shared.open(url)
+      if let url = URL(string: anchor.link), url.scheme != nil {
+        NSWorkspace.shared.open(url)
+      } else if let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: anchor.source.bundleID) {
+        // No address to go back to (Firefox): at least bring the app forward.
+        NSWorkspace.shared.openApplication(at: app, configuration: NSWorkspace.OpenConfiguration())
+      }
     }
   }
 }
