@@ -22,7 +22,9 @@ enum ContextReader {
       let bundleID = app.bundleIdentifier
     else { return nil }
 
-    let mayAsk = prompting || automationAllowed(bundleID)
+    // Only the apps unfocused scripts need the Automation check, and in the background it must never
+    // wait: the system call can block for a long time.
+    let mayAsk = prompting || (scriptedApps.contains(bundleID) && automationAllowed(bundleID))
     switch bundleID {
     case "com.apple.Safari" where mayAsk:
       if let (anchor, _) = browserPage(bundleID, source: .safari, script: safariScript) {
@@ -83,18 +85,22 @@ enum ContextReader {
   // MARK: Browsers (Apple Events; macOS asks for Automation permission on first use)
 
   private static let safariScript = """
+    with timeout of 3 seconds
     tell application id "com.apple.Safari"
       if (count of documents) is 0 then return {"", "", ""}
       return {URL of front document, name of front document, ""}
     end tell
+    end timeout
     """
 
   private static let chromeScript = """
+    with timeout of 3 seconds
     tell application id "com.google.Chrome"
       if (count of windows) is 0 then return {"", "", ""}
       set t to active tab of front window
       return {URL of t, title of t, mode of front window}
     end tell
+    end timeout
     """
 
   /// The front page and whether its window is private.
@@ -116,12 +122,14 @@ enum ContextReader {
   // MARK: Mail (Apple Events)
 
   private static let mailScript = """
+    with timeout of 3 seconds
     tell application id "com.apple.mail"
       set picked to selection
       if (count of picked) is 0 then return {"", ""}
       set m to item 1 of picked
       return {message id of m, subject of m}
     end tell
+    end timeout
     """
 
   /// The message selected in Mail, exactly.
@@ -142,12 +150,14 @@ enum ContextReader {
   // MARK: Finder (Apple Events)
 
   private static let finderScript = """
+    with timeout of 3 seconds
     tell application id "com.apple.finder"
       set picked to selection
       if (count of picked) > 0 then return POSIX path of (item 1 of picked as alias)
       if (count of Finder windows) > 0 then return POSIX path of (target of front Finder window as alias)
       return ""
     end tell
+    end timeout
     """
 
   /// The file or folder selected in Finder, or the front window's folder.
@@ -178,7 +188,35 @@ enum ContextReader {
   }
 
   /// Whether the user already allowed sending Apple Events to this app. Never prompts.
+  /// Apps unfocused reads over Apple Events.
+  private static let scriptedApps: Set<String> = [
+    "com.apple.Safari", "com.google.Chrome", "com.apple.mail", "com.apple.finder",
+  ]
+
+  /// Known answers to "may unfocused script this app?", refreshed in the background.
+  private static var automationAnswers: [String: (allowed: Bool, checked: Date)] = [:]
+  private static var automationChecks: Set<String> = []
+
+  /// Whether the user already allowed sending Apple Events to this app. Never prompts and never
+  /// blocks: it answers from what's known (false at first) and refreshes that in the background.
   private static func automationAllowed(_ bundleID: String) -> Bool {
+    let known = automationAnswers[bundleID]
+    if known == nil || Date().timeIntervalSince(known?.checked ?? .distantPast) > 60,
+      automationChecks.insert(bundleID).inserted
+    {
+      Task.detached(priority: .utility) {
+        let allowed = determineAutomation(bundleID)
+        await MainActor.run {
+          automationAnswers[bundleID] = (allowed, Date())
+          automationChecks.remove(bundleID)
+        }
+      }
+    }
+    return known?.allowed ?? false
+  }
+
+  /// The system's answer; may block, so only ever called off the main thread.
+  nonisolated private static func determineAutomation(_ bundleID: String) -> Bool {
     var target = AEAddressDesc()
     let bytes = Array(bundleID.utf8)
     guard AECreateDesc(DescType(typeApplicationBundleID), bytes, bytes.count, &target) == noErr else { return false }
