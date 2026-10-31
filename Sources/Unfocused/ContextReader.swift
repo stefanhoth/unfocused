@@ -212,9 +212,14 @@ enum Permissions {
   static var hasAccessibility: Bool { AXIsProcessTrusted() }
 
   /// Shows macOS's Accessibility prompt (it opens System Settings).
+  /// Adds unfocused to the Accessibility list (the prompt registers it; macOS shows it only once) and
+  /// opens that pane.
   static func requestAccessibility() {
     let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
     _ = AXIsProcessTrustedWithOptions(options)
+    if let pane = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+      NSWorkspace.shared.open(pane)
+    }
   }
 }
 

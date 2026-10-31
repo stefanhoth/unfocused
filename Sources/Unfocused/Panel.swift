@@ -505,13 +505,21 @@ struct PanelView: View {
       .foregroundStyle(.secondary)
       .help("⌘↩ captures with this as its Anchor; ⇥ copies the title into the field")
       if context.missingAccessibility {
-        HStack {
-          Text("Allow Accessibility so unfocused can see window titles.")
-          Button("Allow…") { Permissions.requestAccessibility() }
-            .buttonStyle(.link)
+        HStack(spacing: 10) {
+          Image(systemName: "hand.raised").font(.system(size: 15, weight: .medium)).foregroundStyle(Style.looseEnd)
+          VStack(alignment: .leading, spacing: 1) {
+            Text("unfocused can't see window titles yet").font(.callout.weight(.medium))
+            Text("Allow it under Accessibility in System Settings to capture the exact window.")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
+          Spacer()
+          Button("Open Settings") { Permissions.requestAccessibility() }
+            .buttonStyle(.glass)
+            .controlSize(.small)
         }
-        .font(.caption)
-        .foregroundStyle(.secondary)
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: Style.rowRadius).fill(Style.looseEnd.opacity(0.1)))
       }
     }
     .padding(.horizontal, 16)
