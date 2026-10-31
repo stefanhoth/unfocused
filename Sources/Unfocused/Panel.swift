@@ -54,8 +54,8 @@ final class PanelController {
       )
     )
     panel.center()
-    panel.makeKeyAndOrderFront(nil)
     NSApp.activate()
+    panel.makeKeyAndOrderFront(nil)
   }
 
   private func makePanel() -> FloatingPanel {
@@ -187,7 +187,12 @@ struct PanelView: View {
     }
     .frame(width: 640, height: 380)
     .calmGlass(cornerRadius: Style.panelRadius)
+    // The view appears before its borderless panel is the key window, and SwiftUI drops a focus
+    // request made then. Ask again once the panel has become key.
     .onAppear { fieldFocused = true }
+    .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { note in
+      if note.object is FloatingPanel { fieldFocused = true }
+    }
     .task {
       if let context { suggestedTitle = await model.captureTitle(for: context.anchor) }
     }
