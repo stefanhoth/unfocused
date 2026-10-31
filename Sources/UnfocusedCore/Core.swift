@@ -55,6 +55,7 @@ public final class Core: Sendable {
         if current.loopId == loopID.uuidString { return }
         try Self.end(current, at: now, db)
       }
+      try Self.clearSilentSwitchNotNow(db)
       var session = FocusSessionRecord(id: nil, loopId: loopID.uuidString, start: now, end: nil)
       try session.insert(db)
     }
@@ -65,6 +66,7 @@ public final class Core: Sendable {
     let now = time.now.timeIntervalSince1970
     try database.writer.write { db in
       try Self.clearInterruption(db)
+      try Self.clearSilentSwitchNotNow(db)
       if let current = try Self.openFocus(db) { try Self.end(current, at: now, db) }
     }
   }
