@@ -23,16 +23,6 @@ public struct RelatedLoop: Hashable, Sendable {
   }
 }
 
-extension Anchor {
-  /// Where the work lives: the website for web pages, the app otherwise.
-  var place: String {
-    if identifier.hasPrefix("web:") {
-      return String(identifier.dropFirst(4).prefix { $0 != "/" && $0 != "?" })
-    }
-    return source.stored
-  }
-}
-
 extension Core {
   /// How many Loose Ends make the panel mention them while capturing.
   static let looseEndNudgeMinimum = 3
