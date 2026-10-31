@@ -323,6 +323,10 @@ final class AppModel {
     return Dictionary(all.map { ($0.id, $0.title) }) { first, _ in first }
   }
 
+  func recap(day: Date) -> Recap? { try? core.recap(day: day) }
+
+  func recap(weekOf date: Date) -> Recap? { try? core.recap(weekOf: date) }
+
   var excludedApps: [String] {
     get { (try? core.excludedApps()) ?? [] }
     set { perform("saving excluded apps") { try core.setExcludedApps(newValue) } }
