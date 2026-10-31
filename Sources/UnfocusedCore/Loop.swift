@@ -48,6 +48,9 @@ public enum CoreError: Error, Equatable {
   case loopNotOpen
   /// The Loop's current state doesn't allow this change (e.g. reopening an Open Loop).
   case invalidStateChange
+  case personNotFound
+  /// A Person with a very similar name exists; add anyway with `evenIfSimilar`.
+  case similarPersonExists(Person)
 }
 
 /// Something that happened to a Loop, as shown in its history.

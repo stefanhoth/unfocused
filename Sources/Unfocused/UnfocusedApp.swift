@@ -22,6 +22,10 @@ struct UnfocusedApp: App {
       if let model = appDelegate.model { LoopsWindow(model: model) }
     }
 
+    Window("People", id: WindowID.people) {
+      if let model = appDelegate.model { PeopleWindow(model: model) }
+    }
+
     Settings {
       if let model = appDelegate.model { SettingsView(model: model) }
     }
@@ -30,6 +34,7 @@ struct UnfocusedApp: App {
 
 enum WindowID {
   static let loops = "loops"
+  static let people = "people"
 }
 
 struct MenuContent: View {
@@ -60,6 +65,10 @@ struct MenuContent: View {
     Button("Loops…") {
       NSApp.activate()
       openWindow(id: WindowID.loops)
+    }
+    Button("People…") {
+      NSApp.activate()
+      openWindow(id: WindowID.people)
     }
     Divider()
     Button("Settings…") {
