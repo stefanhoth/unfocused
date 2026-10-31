@@ -50,7 +50,7 @@ final class ActivityRecorder {
   func sample() {
     pruneDaily()
     judgeRecent()
-    let idle = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .null)
+    let idle = Self.secondsSinceLastInput
     let idleSince = Date().addingTimeInterval(-idle)
     if idle >= ((try? core.focusIdleThreshold()) ?? 1800) {
       interrupt(at: idleSince, .idle)
@@ -92,6 +92,14 @@ final class ActivityRecorder {
     guard let interruption = try? core.interruptedFocus(), interruption != askedAbout else { return }
     askedAbout = interruption
     onReturn?(interruption)
+  }
+
+  /// Seconds since the last keyboard, mouse or trackpad input. Asks for "any input type"
+  /// (`kCGAnyInputEventType`, all bits set): the `.null` event type never occurs, so asking for it
+  /// returns the time since boot and made every check look idle.
+  static var secondsSinceLastInput: TimeInterval {
+    guard let anyInput = CGEventType(rawValue: ~0) else { return 0 }
+    return CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: anyInput)
   }
 
   private func stop(at time: Date) {
