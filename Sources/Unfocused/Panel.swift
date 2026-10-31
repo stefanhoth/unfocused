@@ -168,6 +168,8 @@ struct PanelView: View {
   @State private var selection = -1
   /// While Focused: true once the user stepped from the Focused Loop into the list (↓).
   @State private var browsing = false
+  /// A short confirmation after Close Loop or Drop, with ⌘Z to undo.
+  @State private var confirmation: Confirmation?
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   /// The Loop just Focused, whose Anchors open once Where I left off is answered or skipped.
   @State private var anchorsToOpenAfterLeftOff: Loop?
@@ -247,6 +249,13 @@ struct PanelView: View {
     }
     .animation(reduceMotion ? .easeInOut(duration: 0.15) : .snappy, value: isHero)
     .tint(Style.brand)
+    .overlay(alignment: .bottom) {
+      if let confirmation {
+        ConfirmationBar(confirmation: confirmation)
+          .padding(.bottom, 56)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
     .frame(width: Style.panelSize.width, height: Style.panelSize.height)
     .calmGlass(cornerRadius: Style.panelRadius)
     .overlay(GradientGlow(cornerRadius: Style.panelRadius))
@@ -325,8 +334,22 @@ struct PanelView: View {
     // ⌘C Close Loop, ⌘D Drop, matching C and D in the Tie-off. With no Loop to act on, ⌘C copies
     // as usual. (⌘⌫ can't be used: the text field takes it for itself.)
     .onKeyPress(characters: ["c", "d"], phases: .down) { press in
-      guard press.modifiers.contains(.command), let loop = actionLoop else { return .ignored }
+      guard press.modifiers.contains(.command) else { return .ignored }
+      guard let loop = actionLoop else {
+        // ⌘C copies text as usual; ⌘D with nothing selected explains instead of doing nothing.
+        guard press.characters == "d" else { return .ignored }
+        confirm(Confirmation(text: "Select a Loop first: ↓", systemImage: "arrow.down", celebrate: false, undo: nil))
+        return .handled
+      }
       finish(loop, close: press.characters == "c")
+      return .handled
+    }
+    .onKeyPress(characters: ["z"], phases: .down) { press in
+      guard press.modifiers.contains(.command), let undo = confirmation?.undo else { return .ignored }
+      withAnimation(reduceMotion ? .easeInOut(duration: 0.15) : .snappy) {
+        undo()
+        confirmation = nil
+      }
       return .handled
     }
     .onKeyPress(characters: ["o"], phases: .down) { press in
@@ -661,12 +684,31 @@ struct PanelView: View {
   /// Closes or Drops `loop`. A Closed or Dropped Loop needs no Where I left off; it's finished or
   /// let go. From the Focused view the panel hides; in the list it stays for the next one.
   private func finish(_ loop: Loop, close: Bool) {
-    let wasHero = isHero
-    if close { model.close(loop) } else { model.drop(loop) }
-    if wasHero {
-      dismiss()
-    } else {
+    withAnimation(reduceMotion ? .easeInOut(duration: 0.15) : .snappy) {
+      if close { model.close(loop) } else { model.drop(loop) }
+      browsing = false
       selection = min(selection, results.count - 1)
+    }
+    if close { NSSound(named: "Glass")?.play() }
+    confirm(
+      Confirmation(
+        text: close ? "Closed “\(loop.title)”" : "Dropped “\(loop.title)”",
+        systemImage: close ? "checkmark.circle.fill" : "arrow.down.circle",
+        celebrate: close,
+        undo: { [model] in model.reopen(loop) }
+      )
+    )
+  }
+
+  /// Shows `confirmation` above the key hints for a few seconds.
+  private func confirm(_ confirmation: Confirmation) {
+    withAnimation(reduceMotion ? .easeInOut(duration: 0.15) : .snappy) { self.confirmation = confirmation }
+    let id = confirmation.id
+    Task {
+      try? await Task.sleep(for: .seconds(4))
+      if self.confirmation?.id == id {
+        withAnimation(.easeOut(duration: 0.3)) { self.confirmation = nil }
+      }
     }
   }
 
@@ -856,4 +898,36 @@ struct PanelView: View {
     KeyHints(items: items)
   }
 
+}
+
+/// What the panel just did, shown briefly with an undo.
+struct Confirmation: Identifiable {
+  let id = UUID()
+  let text: String
+  let systemImage: String
+  /// Closing a Loop gets the logo gradient; Drop and hints stay neutral.
+  let celebrate: Bool
+  let undo: (() -> Void)?
+}
+
+private struct ConfirmationBar: View {
+  let confirmation: Confirmation
+
+  var body: some View {
+    HStack(spacing: 10) {
+      Image(systemName: confirmation.systemImage)
+        .font(.system(size: 17, weight: .semibold))
+        .foregroundStyle(confirmation.celebrate ? AnyShapeStyle(Style.logoLinearGradient) : AnyShapeStyle(.secondary))
+      Text(confirmation.text).font(.callout.weight(.medium)).lineLimit(1)
+      if confirmation.undo != nil {
+        KeyHints.Keycap(key: "⌘Z")
+        Text("Undo").font(.callout).foregroundStyle(.secondary)
+      }
+    }
+    .padding(.horizontal, 16)
+    .padding(.vertical, 10)
+    .background(Capsule().fill(Color(nsColor: .windowBackgroundColor)))
+    .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12)))
+    .shadow(color: .black.opacity(0.2), radius: 10, y: 4)
+  }
 }
