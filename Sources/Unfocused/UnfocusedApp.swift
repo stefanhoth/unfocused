@@ -15,7 +15,7 @@ struct UnfocusedApp: App {
         Button("Quit unfocused") { NSApplication.shared.terminate(nil) }
       }
     } label: {
-      MenuBarLabel(focusedTitle: appDelegate.focusedTitle)
+      MenuBarLabel(app: appDelegate)
     }
 
     Window("Loops", id: WindowID.loops) {
@@ -109,14 +109,14 @@ struct MenuContent: View {
 
 /// The menu bar item: the ring, plus the Focused Loop's title when there is one.
 struct MenuBarLabel: View {
-  /// From the app delegate rather than the model: menu bar labels reliably redraw for published
-  /// properties of the app delegate, not always for changes inside an observed model.
-  let focusedTitle: String?
+  /// Observed here, in the label's own view: the App's body doesn't re-run for the delegate's
+  /// published changes, so a value passed in from there would never update.
+  @ObservedObject var app: AppDelegate
 
   var body: some View {
-    if let title = focusedTitle {
+    if let title = app.focusedTitle {
       Label {
-        Text(title.count > 24 ? title.prefix(23) + "…" : title)
+        Text(title.count > 18 ? title.prefix(17) + "…" : title)
       } icon: {
         Image(nsImage: MenuBarGlyph.image(focused: true))
       }
@@ -196,6 +196,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     case "panel": panel?.show()
     case "tie-off": tieOff?.show()
     case "banner": banner?.update(model?.openLoops.first)
+    // Shows the menu bar label and notice as if a Loop were Focused, without changing any data.
+    case "focus-preview":
+      let preview = Loop(id: UUID(), title: "Write the onboarding spec", state: .open, capturedAt: Date())
+      focusedTitle = preview.title
+      focusNotice?.show(focused: preview, left: nil)
     default: break
     }
   }

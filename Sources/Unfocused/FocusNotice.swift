@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import UnfocusedCore
 
-/// A short glass notice near the top of the screen when Focus changes: it fades in, stays a
+/// A short glass notice at the bottom of the screen when Focus changes: it fades in, stays a
 /// moment and fades out. It never takes keyboard focus or clicks.
 @MainActor
 final class FocusNotice {
@@ -28,7 +28,8 @@ final class FocusNotice {
       panel.setFrame(
         NSRect(
           x: screen.midX - size.width / 2,
-          y: screen.maxY - size.height - 24,
+          // Bottom center, above the Dock, where macOS shows its own notices; clear of window title bars.
+          y: screen.minY + 72,
           width: size.width,
           height: size.height
         ),
