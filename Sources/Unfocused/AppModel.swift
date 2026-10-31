@@ -30,10 +30,15 @@ final class AppModel {
     refresh()
   }
 
+  /// Called whenever the Focused Loop changes, however it happened: (now, before).
+  @ObservationIgnored var onFocusChange: ((Loop?, Loop?) -> Void)?
+
   func refresh() {
     do {
       openLoops = try core.openLoops()
+      let before = focusedLoop
       focusedLoop = try core.focusedLoop()
+      if before?.id != focusedLoop?.id { onFocusChange?(focusedLoop, before) }
       people = try core.people()
       let allAging = try core.agingOfOpenLoops()
       aging = Dictionary(allAging.map { ($0.loop.id, $0) }) { first, _ in first }

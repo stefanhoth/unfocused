@@ -15,7 +15,7 @@ struct UnfocusedApp: App {
         Button("Quit unfocused") { NSApplication.shared.terminate(nil) }
       }
     } label: {
-      MenuBarLabel(model: appDelegate.model)
+      MenuBarLabel(focusedTitle: appDelegate.focusedTitle)
     }
 
     Window("Loops", id: WindowID.loops) {
@@ -109,10 +109,12 @@ struct MenuContent: View {
 
 /// The menu bar item: the ring, plus the Focused Loop's title when there is one.
 struct MenuBarLabel: View {
-  let model: AppModel?
+  /// From the app delegate rather than the model: menu bar labels reliably redraw for published
+  /// properties of the app delegate, not always for changes inside an observed model.
+  let focusedTitle: String?
 
   var body: some View {
-    if let title = model?.focusedLoop?.title {
+    if let title = focusedTitle {
       Label {
         Text(title.count > 24 ? title.prefix(23) + "…" : title)
       } icon: {
@@ -131,6 +133,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   @Published private(set) var model: AppModel?
   @Published private(set) var panel: PanelController?
   @Published private(set) var tieOff: TieOffController?
+  /// The Focused Loop's title for the menu bar, `nil` when unfocused.
+  @Published private(set) var focusedTitle: String?
+  private var focusNotice: FocusNotice?
   @Published private(set) var reminder: TieOffReminder?
   private var recorder: ActivityRecorder?
   private var banner: SwitchBannerController?
@@ -157,6 +162,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
       let tieOff = TieOffController(model: model)
       self.tieOff = tieOff
       reminder = TieOffReminder(model: model, tieOff: tieOff)
+      let notice = FocusNotice()
+      focusNotice = notice
+      focusedTitle = model.focusedLoop?.title
+      model.onFocusChange = { [weak self] now, before in
+        self?.focusedTitle = now?.title
+        notice.show(focused: now, left: before)
+      }
+      recorder.onFocusInterrupted = { [weak model] in model?.refresh() }
       model.endStaleFocus()
       environment.log.info("Launched, database ready")
     } catch {
