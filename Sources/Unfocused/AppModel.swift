@@ -73,7 +73,8 @@ final class AppModel {
   /// they left off. Pass `openAnchors: false` when the user is already where the Loop lives.
   @discardableResult
   func focus(_ loop: Loop, openAnchors: Bool = true) -> Loop? {
-    let previous = focusedLoop
+    // Read the current Focus from Core: the cached one may be stale (e.g. after an interruption).
+    let previous = (try? core.focusedLoop()) ?? nil
     do {
       try core.focus(loop.id)
       log.info("Focused Loop \(loop.id)")
@@ -88,7 +89,7 @@ final class AppModel {
   /// Ends the current Focus. Returns the Loop the user just left.
   @discardableResult
   func unfocus() -> Loop? {
-    let previous = focusedLoop
+    let previous = (try? core.focusedLoop()) ?? nil
     do {
       try core.unfocus()
       log.info("Unfocused")
@@ -234,7 +235,7 @@ final class AppModel {
   }
 
   private func changeState(of loop: Loop, _ action: String, _ change: () throws -> Void) -> Loop? {
-    let wasFocused = focusedLoop?.id == loop.id
+    let wasFocused = ((try? core.focusedLoop()) ?? nil)?.id == loop.id
     do {
       try change()
       log.info("Finished \(action) Loop \(loop.id)")
