@@ -141,6 +141,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   @Published private(set) var reminder: TieOffReminder?
   private var recorder: ActivityRecorder?
   private var banner: SwitchBannerController?
+  private var editor: EditLoopController?
 
   func applicationWillFinishLaunching(_ notification: Notification) {
     // Menu bar only: no Dock icon, also when run unbundled via `swift run`.
@@ -161,6 +162,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
       recorder.onSwitchSuggestion = { banner.update($0) }
       self.banner = banner
       self.recorder = recorder
+      let editor = EditLoopController(model: model)
+      model.editLoop = { editor.show($0) }
+      self.editor = editor
       let tieOff = TieOffController(model: model)
       self.tieOff = tieOff
       reminder = TieOffReminder(model: model, tieOff: tieOff)

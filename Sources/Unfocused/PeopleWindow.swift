@@ -20,12 +20,23 @@ struct PeopleWindow: View {
         Text(person.name)
           .contextMenu { personMenu(person) }
       }
+      .safeAreaInset(edge: .top) {
+        Text("Who your Loops involve: people waiting on you, and people you're waiting on.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 12)
+          .padding(.vertical, 8)
+      }
       .overlay {
         if model.people.isEmpty {
           ContentUnavailableView {
             Label("No People yet", systemImage: "person.2")
           } description: {
-            Text("Import a list of names, or type @name when capturing a Loop.")
+            Text(
+              "People are who your Loops involve: someone waiting on you, or someone you're waiting on. "
+                + "Import a list of names, or type @name when capturing a Loop."
+            )
           } actions: {
             Button("Import Names…") { importing = true }
           }
@@ -78,26 +89,66 @@ private struct PersonDetail: View {
 
   var body: some View {
     let loops = model.loops(involving: person)
+    let direction: (Loop) -> Direction? = { loop in
+      model.involvements(of: loop).first { $0.person.id == person.id }?.direction
+    }
+    let open = loops.filter { $0.state == .open }
+    let owed = open.filter { direction($0) == .owed }
+    let waiting = open.filter { direction($0) == .waiting }
+    let finished = loops.filter { $0.state != .open }
     Form {
       Section {
         Text(person.name).font(.title2)
-      }
-      Section("Loops") {
-        if loops.isEmpty {
-          Text("Not on any Loop yet.").foregroundStyle(.secondary)
+        if open.isEmpty {
+          Text("Nothing open with \(person.name).").foregroundStyle(.secondary)
         }
-        ForEach(loops) { loop in
-          let direction = model.involvements(of: loop).first { $0.person.id == person.id }?.direction
-          LabeledContent {
-            Text(direction.map(\.label) ?? "")
-          } label: {
-            Text(loop.title)
-            Text(loop.state.label).font(.caption).foregroundStyle(.secondary)
+      }
+      loopSection(
+        "They're waiting on you",
+        systemImage: "arrow.left",
+        footer: "Owed: you have something to deliver.",
+        owed
+      )
+      loopSection(
+        "You're waiting on them",
+        systemImage: "arrow.right",
+        footer:
+          "Waiting: these come back as \"Follow up with \(person.name)?\" once they've been quiet for a few active days.",
+        waiting
+      )
+      if !finished.isEmpty {
+        Section("Closed or let go") {
+          ForEach(finished) { loop in
+            LabeledContent(loop.title) { Text(loop.state.label).foregroundStyle(.secondary) }
           }
         }
       }
     }
     .formStyle(.grouped)
+  }
+
+  @ViewBuilder private func loopSection(
+    _ title: String,
+    systemImage: String,
+    footer: String,
+    _ loops: [Loop]
+  ) -> some View {
+    if !loops.isEmpty {
+      Section {
+        ForEach(loops) { loop in
+          HStack {
+            AgingMark(aging: model.aging[loop.id])
+            Text(loop.title)
+            Spacer()
+            Button("Edit…") { model.editLoop?(loop) }.buttonStyle(.borderless)
+          }
+        }
+      } header: {
+        Label(title, systemImage: systemImage)
+      } footer: {
+        Text(footer).font(.caption).foregroundStyle(.secondary)
+      }
+    }
   }
 }
 
@@ -174,8 +225,14 @@ private struct ImportPeopleSheet: View {
 }
 
 extension Direction {
-  var label: String { self == .owed ? "Owed" : "Waiting" }
-  var help: String { self == .owed ? "They're waiting on you" : "You're waiting on them" }
+  /// Short, for chips: "Ada · waiting on me".
+  var label: String { self == .owed ? "waiting on me" : "I'm waiting" }
+  /// For pickers: the whole relationship in plain words.
+  var choice: String { self == .owed ? "They're waiting on me" : "I'm waiting on them" }
+  /// The glossary term behind it.
+  var help: String {
+    self == .owed ? "Owed: they're waiting on you" : "Waiting: you're waiting on them; it comes back as a follow-up"
+  }
 }
 
 extension LoopState {

@@ -226,6 +226,22 @@ final class AppModel {
     perform("adding an Anchor") { try core.addAnchor(anchor, to: loop.id) }
   }
 
+  /// Opens Edit Loop for `loop`; wired up by the app delegate.
+  @ObservationIgnored var editLoop: ((Loop) -> Void)?
+
+  func loop(_ id: UUID) -> Loop? {
+    _ = openLoops
+    return try? core.loop(id)
+  }
+
+  func retitle(_ loop: Loop, to title: String) {
+    perform("renaming the Loop") { try core.retitle(loop.id, to: title) }
+  }
+
+  func renameAnchor(_ anchor: Anchor, of loop: Loop, to title: String) {
+    perform("renaming the Anchor") { try core.renameAnchor(anchor, of: loop.id, to: title) }
+  }
+
   func removeAnchor(_ anchor: Anchor, from loop: Loop) {
     perform("removing an Anchor") { try core.removeAnchor(anchor, from: loop.id) }
   }
