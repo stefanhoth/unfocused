@@ -656,39 +656,53 @@ struct PanelView: View {
 
   // MARK: Where I left off
 
+  /// Where did you leave off? The Loop being left and the last note come first and largest; the
+  /// question and field follow. With a last note, ↩ on an empty field keeps it.
   @ViewBuilder private func leftOffContent(_ loop: Loop) -> some View {
-    Spacer(minLength: 0)
-    VStack(spacing: 8) {
-      Image(systemName: "bookmark").font(.system(size: 26, weight: .medium)).foregroundStyle(.secondary)
-      Text("Where did you leave off?").font(.title2.weight(.semibold))
-      Text(loop.title).foregroundStyle(.secondary).lineLimit(1)
-    }
-    .frame(maxWidth: .infinity)
-    .padding(.horizontal, 28)
-
-    inputField("e.g. Halfway through section 2, next: permissions")
-      .background(RoundedRectangle(cornerRadius: 14).fill(.quaternary.opacity(0.6)))
-      .padding(.horizontal, 28)
-      .padding(.top, 18)
-      .onKeyPress(.return) {
-        model.setWhereILeftOff(loop, to: text)
-        close()
-        return .handled
+    let typed = !text.trimmingCharacters(in: .whitespaces).isEmpty
+    VStack(alignment: .leading, spacing: 18) {
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Leaving").font(.callout.weight(.medium)).foregroundStyle(.secondary)
+        Text(loop.title).font(.system(size: 26, weight: .semibold)).lineLimit(2)
       }
 
-    Text(
-      loop.whereILeftOff.map { "Last time: \($0). ↩ on an empty line keeps it." }
-        ?? "One line, so you can get back in quickly next time. Optional."
-    )
-    .font(.caption)
-    .foregroundStyle(.tertiary)
-    .lineLimit(1)
-    .frame(maxWidth: .infinity)
-    .padding(.horizontal, 28)
-    .padding(.top, 8)
+      if let note = loop.whereILeftOff {
+        VStack(alignment: .leading, spacing: 6) {
+          Label("Last time you left off at", systemImage: "bookmark")
+            .font(.callout.weight(.medium))
+            .foregroundStyle(.secondary)
+          Text(note).font(.title3).fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(typed ? 0.04 : 0.08)))
+        .opacity(typed ? 0.6 : 1)
+      }
+
+      VStack(alignment: .leading, spacing: 8) {
+        Text(loop.whereILeftOff == nil ? "Where did you leave off?" : "Anything new?")
+          .font(.headline)
+        inputField(
+          loop.whereILeftOff == nil
+            ? "e.g. Halfway through section 2, next: permissions"
+            : "Type a new note, or ↩ to keep the last one"
+        )
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.06)))
+        .onKeyPress(.return) {
+          model.setWhereILeftOff(loop, to: text)
+          close()
+          return .handled
+        }
+      }
+    }
+    .padding(.horizontal, 32)
+    .padding(.top, 28)
 
     Spacer(minLength: 0)
-    hints(["↩ Save", "esc Skip"])
+    hints([
+      loop.whereILeftOff != nil && !typed ? "↩ Keep" : "↩ Save",
+      "esc Skip",
+    ])
   }
 
   // MARK: Welcome back
