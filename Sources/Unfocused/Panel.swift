@@ -360,6 +360,12 @@ struct PanelView: View {
       finish(loop, close: press.characters == "c")
       return .handled
     }
+    .onKeyPress(characters: ["e"], phases: .down) { press in
+      guard press.modifiers.contains(.command), let loop = actionLoop else { return .ignored }
+      dismiss()
+      model.editLoop?(loop)
+      return .handled
+    }
     .onKeyPress(characters: ["z"], phases: .down) { press in
       guard press.modifiers.contains(.command), let undo = confirmation?.undo else { return .ignored }
       withAnimation(reduceMotion ? .easeInOut(duration: 0.15) : .snappy) {
@@ -482,7 +488,7 @@ struct PanelView: View {
         model: model,
         loop: loop,
         prominent: true,
-        actions: ["⌘C Close Loop", "⌘O Open Anchors"]
+        actions: ["⌘C Close Loop", "⌘O Open Anchors", "⌘E Edit"]
       )
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -538,7 +544,7 @@ struct PanelView: View {
           PanelLoopDetail(
             model: model,
             loop: results[selection],
-            actions: ["↩ Focus", "⌘O Open Anchors", "⌘C Close Loop", "⌘L Let go"]
+            actions: ["↩ Focus", "⌘O Open Anchors", "⌘E Edit", "⌘C Close Loop", "⌘L Let go"]
           )
         } else {
           Text("↓ to pick a Loop and see where you left off").font(.callout).foregroundStyle(.tertiary)
@@ -651,7 +657,7 @@ struct PanelView: View {
           .background(.quaternary, in: Capsule())
           .help(direction.help)
       }
-      Text("⇥ switches Owed/Waiting").font(.caption2).foregroundStyle(.tertiary)
+      Text("⇥ switches who's waiting").font(.caption2).foregroundStyle(.tertiary)
       Spacer()
     }
     .padding(.horizontal, 16)

@@ -72,3 +72,32 @@ struct AnchorOwnershipTests {
     #expect(throws: CoreError.loopNotFound) { try core.addAnchor(page("a"), to: UUID()) }
   }
 }
+
+@Suite("Editing a Loop")
+struct EditLoopTests {
+  @Test("a Loop can be renamed; an empty title is rejected; renaming is Engagement")
+  func retitle() throws {
+    let (core, time) = try makeCore()
+    let loop = try core.capture(title: "Spec")
+    time.advance(by: .hours(1))
+    try core.retitle(loop.id, to: "  Onboarding spec  ")
+    #expect(try core.loop(loop.id)?.title == "Onboarding spec")
+    #expect(try core.lastEngagement(of: loop.id) == time.now)
+    #expect(throws: CoreError.emptyTitle) { try core.retitle(loop.id, to: "  ") }
+  }
+
+  @Test("an Anchor's title can be changed; it still opens and matches the same spot")
+  func renameAnchor() throws {
+    let (core, _) = try makeCore()
+    guard let anchor = Anchor.webPage(url: "https://example.com/a", title: "Old", source: .safari) else {
+      preconditionFailure("test URL must be valid")
+    }
+    let loop = try core.capture(title: "Spec", anchor: anchor)
+    try core.renameAnchor(anchor, of: loop.id, to: "Pricing page")
+    let renamed = try #require(try core.anchors(of: loop.id).first)
+    #expect(renamed.title == "Pricing page")
+    #expect(renamed.identifier == anchor.identifier)
+    #expect(renamed.link == anchor.link)
+    #expect(throws: CoreError.emptyTitle) { try core.renameAnchor(anchor, of: loop.id, to: "") }
+  }
+}

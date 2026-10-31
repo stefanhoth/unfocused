@@ -36,7 +36,12 @@ final class AppModel {
   /// Called whenever the Focused Loop changes, however it happened: (now, before).
   @ObservationIgnored var onFocusChange: ((Loop?, Loop?) -> Void)?
 
+  /// Goes up on every refresh. Queries that read Core directly read this too, so views showing
+  /// them redraw after any change (SwiftUI observes the model, not the database).
+  private var dataRevision = 0
+
   func refresh() {
+    dataRevision += 1
     do {
       openLoops = try core.openLoops()
       let before = focusedLoop
@@ -128,7 +133,8 @@ final class AppModel {
 
   /// The Focus that sleep, idle or a screen lock stopped, if the user hasn't answered yet.
   func interruptedFocus() -> FocusInterruption? {
-    try? core.interruptedFocus()
+    _ = dataRevision
+    return try? core.interruptedFocus()
   }
 
   func interruptFocus(at time: Date, because reason: FocusInterruptionReason) {
@@ -154,6 +160,7 @@ final class AppModel {
 
   /// Open Loops that look related to what's being typed, strongest first.
   func relatedLoops(toCapture text: String, anchor: Anchor?) -> [RelatedLoop] {
+    _ = dataRevision
     guard !text.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
     return (try? core.relatedLoops(toCapture: text, anchor: anchor)) ?? []
   }
@@ -173,7 +180,8 @@ final class AppModel {
 
   /// "N Loose Ends are older than this idea", when there are enough to mention.
   func looseEndsOlderThanNewIdea() -> Int? {
-    try? core.looseEndsOlderThanNewIdea()
+    _ = dataRevision
+    return try? core.looseEndsOlderThanNewIdea()
   }
 
   /// "Add to this Loop instead": adds the context as an Anchor and the mentioned People to an
@@ -219,11 +227,28 @@ final class AppModel {
   }
 
   func loop(anchoredAt anchor: Anchor) -> Loop? {
-    try? core.loop(anchoredAt: anchor)
+    _ = dataRevision
+    return try? core.loop(anchoredAt: anchor)
   }
 
   func addAnchor(_ anchor: Anchor, to loop: Loop) {
     perform("adding an Anchor") { try core.addAnchor(anchor, to: loop.id) }
+  }
+
+  /// Opens Edit Loop for `loop`; wired up by the app delegate.
+  @ObservationIgnored var editLoop: ((Loop) -> Void)?
+
+  func loop(_ id: UUID) -> Loop? {
+    _ = dataRevision
+    return try? core.loop(id)
+  }
+
+  func retitle(_ loop: Loop, to title: String) {
+    perform("renaming the Loop") { try core.retitle(loop.id, to: title) }
+  }
+
+  func renameAnchor(_ anchor: Anchor, of loop: Loop, to title: String) {
+    perform("renaming the Anchor") { try core.renameAnchor(anchor, of: loop.id, to: title) }
   }
 
   func removeAnchor(_ anchor: Anchor, from loop: Loop) {
@@ -231,19 +256,23 @@ final class AppModel {
   }
 
   func anchors(of loop: Loop) -> [Anchor] {
-    (try? core.anchors(of: loop.id)) ?? []
+    _ = dataRevision
+    return (try? core.anchors(of: loop.id)) ?? []
   }
 
   func loops(in state: LoopState) -> [Loop] {
-    (try? core.loops(in: state)) ?? []
+    _ = dataRevision
+    return (try? core.loops(in: state)) ?? []
   }
 
   func history(for loop: Loop) -> [LoopEvent] {
-    (try? core.history(for: loop.id)) ?? []
+    _ = dataRevision
+    return (try? core.history(for: loop.id)) ?? []
   }
 
   func focusSessions(for loop: Loop) -> [FocusSession] {
-    (try? core.focusSessions(for: loop.id)) ?? []
+    _ = dataRevision
+    return (try? core.focusSessions(for: loop.id)) ?? []
   }
 
   private func changeState(of loop: Loop, _ action: String, _ change: () throws -> Void) -> Loop? {
@@ -270,7 +299,8 @@ final class AppModel {
   // MARK: People
 
   func searchPeople(_ query: String) -> [Person] {
-    (try? core.searchPeople(query)) ?? []
+    _ = dataRevision
+    return (try? core.searchPeople(query)) ?? []
   }
 
   func mentionedNames(in text: String) -> [String] {
@@ -307,11 +337,13 @@ final class AppModel {
   }
 
   func involvements(of loop: Loop) -> [Involvement] {
-    (try? core.people(of: loop.id)) ?? []
+    _ = dataRevision
+    return (try? core.people(of: loop.id)) ?? []
   }
 
   func loops(involving person: Person) -> [Loop] {
-    (try? core.loops(involving: person.id)) ?? []
+    _ = dataRevision
+    return (try? core.loops(involving: person.id)) ?? []
   }
 
   func involve(named name: String, in loop: Loop, as direction: Direction = .owed) {
@@ -346,6 +378,7 @@ final class AppModel {
 
   /// Activity of one calendar day with the Loop each piece counts toward, oldest first.
   func attributedActivity(on day: Date) -> [AttributedStretch] {
+    _ = dataRevision
     let start = Calendar.current.startOfDay(for: day)
     let end = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? start
     return (try? core.attributedActivity(from: start, to: end)) ?? []
@@ -354,6 +387,7 @@ final class AppModel {
   /// Where and why time went to `loop` over the last 30 days, newest first, with consecutive
   /// pieces in the same place and for the same reason joined into one entry.
   func workLog(for loop: Loop) -> [AttributedStretch] {
+    _ = dataRevision
     let now = Date()
     let log = (try? core.workLog(for: loop.id, from: now.addingTimeInterval(-30 * 86_400), to: now)) ?? []
     var joined: [AttributedStretch] = []
@@ -378,11 +412,13 @@ final class AppModel {
   }
 
   func lastEngagement(of loop: Loop) -> Date? {
-    try? core.lastEngagement(of: loop.id)
+    _ = dataRevision
+    return try? core.lastEngagement(of: loop.id)
   }
 
   /// Titles of all Loops by id, for labelling attributed Activity.
   func loopTitles() -> [UUID: String] {
+    _ = dataRevision
     let all = LoopState.allCases.flatMap { (try? core.loops(in: $0)) ?? [] }
     return Dictionary(all.map { ($0.id, $0.title) }) { first, _ in first }
   }

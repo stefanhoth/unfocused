@@ -65,6 +65,7 @@ struct LoopsWindow: View {
   }
 
   @ViewBuilder private func actions(for loop: Loop) -> some View {
+    Button("Edit…") { model.editLoop?(loop) }
     if loop.state == .open {
       Button("Focus") { model.focus(loop) }
       Button("Close Loop") { model.close(loop) }
@@ -138,6 +139,8 @@ private struct LoopDetail: View {
       }
       Section {
         HStack {
+          Button("Edit…") { model.editLoop?(loop) }
+            .keyboardShortcut("e", modifiers: .command)
           if loop.state == .open {
             Button("Focus") { model.focus(loop) }
             Button("Close Loop") { model.close(loop) }
