@@ -9,6 +9,8 @@ public enum AttributionReason: String, Sendable, CaseIterable {
   case focus
   /// It matched no Loop.
   case unfocused
+  /// It happened during a Focus, but the Reasoner judged it unrelated to the Focused Loop.
+  case judgedUnrelated
 }
 
 /// A piece of Activity with the Loop it counts toward.
@@ -55,7 +57,7 @@ extension Core {
     let stretches = try activity(from: from, to: to)
     guard !stretches.isEmpty else { return [] }
     let now = time.now.timeIntervalSince1970
-    let (owners, sessions) = try database.writer.read { db in
+    let (owners, sessions, verdicts) = try database.writer.read { db in
       let anchors = try AnchorRecord.fetchAll(db)
       let loops = Dictionary(
         uniqueKeysWithValues: try LoopRecord.filter(keys: Set(anchors.map(\.loopId))).fetchAll(db).map { ($0.id, $0) }
@@ -72,7 +74,7 @@ extension Core {
         .filter(Column("end") == nil || Column("end") >= from.timeIntervalSince1970)
         .order(Column("start"))
         .fetchAll(db)
-      return (owners, sessions)
+      return (owners, sessions, try Self.judgements(db))
     }
 
     return stretches.flatMap { stretch -> [AttributedStretch] in
@@ -81,6 +83,9 @@ extension Core {
         let focused = UUID(uuidString: focusedID ?? "")
         if let owner = Self.preferredOwner(candidates, focused: focusedID) {
           return Self.piece(stretch, start, end, UUID(uuidString: owner.id), .anchor, focused)
+        }
+        if let focused, verdicts["\(stretch.anchor.identifier)|\(focused)"] == false {
+          return Self.piece(stretch, start, end, nil, .judgedUnrelated, focused)
         }
         return Self.piece(stretch, start, end, focused, focused == nil ? .unfocused : .focus, focused)
       }

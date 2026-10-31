@@ -1,6 +1,7 @@
 import AppKit
 import CoreGraphics
 import UnfocusedCore
+import UnfocusedReasoner
 
 /// Feeds what's in front of the user into Core's Activity record (never content or keystrokes).
 @MainActor
@@ -19,6 +20,8 @@ final class ActivityRecorder {
   private var askedAbout: FocusInterruption?
   private var timer: Timer?
   private var lastPrune = Date.distantPast
+  private var lastJudgement = Date.distantPast
+  private let reasoner = FoundationModelsReasoner()
   private var observers: [(NotificationCenter, any NSObjectProtocol)] = []
 
   init(core: Core, log: Log) {
@@ -46,6 +49,7 @@ final class ActivityRecorder {
   /// Records the frontmost thing, or stops the current stretch when the user is idle.
   func sample() {
     pruneDaily()
+    judgeRecent()
     let idle = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .null)
     let idleSince = Date().addingTimeInterval(-idle)
     if idle >= ((try? core.focusIdleThreshold()) ?? 1800) {
@@ -95,6 +99,23 @@ final class ActivityRecorder {
       try core.stopActivity(at: time)
     } catch {
       log.error("Stopping Activity failed: \(error)")
+    }
+  }
+
+  /// Every few minutes, lets the on-device model judge today's Focus time outside the Loop's Anchors.
+  private func judgeRecent() {
+    guard reasoner.isAvailable, Date().timeIntervalSince(lastJudgement) > 5 * 60 else { return }
+    lastJudgement = Date()
+    let core = core
+    let reasoner = reasoner
+    let log = log
+    Task.detached(priority: .utility) {
+      let now = Date()
+      do {
+        try await core.judgeFocusActivity(from: Calendar.current.startOfDay(for: now), to: now, with: reasoner)
+      } catch {
+        log.error("Judging Focus time failed: \(error)")
+      }
     }
   }
 

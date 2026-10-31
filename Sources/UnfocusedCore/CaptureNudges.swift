@@ -1,4 +1,4 @@
-import Foundation
+public import Foundation
 
 /// Why an Open Loop looks related to what the user is about to capture.
 public enum RelatedReason: Hashable, Sendable {
@@ -8,6 +8,8 @@ public enum RelatedReason: Hashable, Sendable {
   case similarTitle
   /// One of its Anchors lives in the same place (website or app) as the current context.
   case sameSource
+  /// The Reasoner judged it to be about the same thing.
+  case similarMeaning
 }
 
 public struct RelatedLoop: Hashable, Sendable {
@@ -29,7 +31,9 @@ extension Core {
 
   /// Open Loops that look related to a Loop about to be captured, strongest first, at most 3:
   /// shared People, similar titles, then Anchors in the same place.
-  public func relatedLoops(toCapture text: String, anchor: Anchor?) throws -> [RelatedLoop] {
+  public func relatedLoops(toCapture text: String, anchor: Anchor?, meaningMatches: Set<UUID> = []) throws
+    -> [RelatedLoop]
+  {
     let people = try self.people()
     let parsed = Mentions.parse(text, knownNames: people.map(\.name))
     let mentioned = Set(parsed.names.map(NameMatching.key))
@@ -50,6 +54,10 @@ extension Core {
       if similarity >= 0.3 {
         reasons.append(.similarTitle)
         score += 4 * similarity
+      }
+      if meaningMatches.contains(loop.id), !reasons.contains(.similarTitle) {
+        reasons.append(.similarMeaning)
+        score += 2.5
       }
       if let place, try anchors(of: loop.id).contains(where: { $0.place == place }) {
         reasons.append(.sameSource)

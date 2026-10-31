@@ -138,6 +138,15 @@ public final class UnfocusedDatabase: Sendable {
         table.add(column: "editedAt", .double)
       }
     }
+    migrator.registerMigration("v9-judgements") { db in
+      try db.create(table: "judgement") { table in
+        table.column("identifier", .text).notNull()
+        table.column("loopId", .text).notNull().references("loop", onDelete: .cascade)
+        table.column("belongs", .boolean).notNull()
+        table.column("judgedAt", .double).notNull()
+        table.primaryKey(["identifier", "loopId"])
+      }
+    }
     return migrator
   }()
 }

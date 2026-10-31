@@ -5,6 +5,7 @@ import UnfocusedCore
 /// Every migration, in order. Add new ones here.
 private let allMigrations = [
   "v1-settings", "v2-loops", "v3-focus", "v4-lifecycle", "v5-anchors", "v6-people", "v7-activity", "v8-engagement",
+  "v9-judgements",
 ]
 
 @Suite("UnfocusedDatabase")

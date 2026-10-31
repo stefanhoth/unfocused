@@ -230,6 +230,7 @@ extension AttributionReason {
     case .anchor: "in one of its Anchors"
     case .focus: "while it was Focused"
     case .unfocused: "Unfocused time"
+    case .judgedUnrelated: "judged unrelated to the Focused Loop"
     }
   }
 }
@@ -344,6 +345,16 @@ struct SettingsView: View {
           .frame(height: 80)
           Text("Private browser windows are never recorded.").font(.caption).foregroundStyle(.secondary)
         }
+      }
+      Section("Intelligence") {
+        Label(
+          model.reasonerAvailable
+            ? "On-device model available. It judges unclear Focus time, finds related Loops and suggests titles."
+            : "On-device model unavailable (Apple Intelligence is off or unsupported). unfocused uses its rules.",
+          systemImage: model.reasonerAvailable ? "sparkles" : "sparkles.slash"
+        )
+        .font(.callout)
+        Text("Everything runs on this Mac. Nothing is sent anywhere.").font(.caption).foregroundStyle(.secondary)
       }
       Section("Troubleshooting") {
         HStack {
