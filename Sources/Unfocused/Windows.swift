@@ -230,6 +230,7 @@ extension AttributionReason {
     case .anchor: "in one of its Anchors"
     case .focus: "while it was Focused"
     case .unfocused: "Unfocused time"
+    case .judgedUnrelated: "judged unrelated to the Focused Loop"
     }
   }
 }

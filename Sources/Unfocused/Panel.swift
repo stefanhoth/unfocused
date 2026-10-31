@@ -94,6 +94,7 @@ extension RelatedReason {
     case .samePerson(let name): "with \(name)"
     case .similarTitle: "similar title"
     case .sameSource: "same place"
+    case .similarMeaning: "similar meaning"
     }
   }
 }
