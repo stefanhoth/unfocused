@@ -87,3 +87,57 @@ struct CaptureNudgeTests {
     #expect(try core.looseEndsOlderThanNewIdea() == 3)
   }
 }
+
+private func file(_ path: String) -> Anchor {
+  guard let anchor = Anchor.file(url: URL(fileURLWithPath: path), bundleID: "com.apple.iWork.Pages") else {
+    preconditionFailure("test path must be a file")
+  }
+  return anchor
+}
+
+private func slack(_ link: String) -> Anchor {
+  guard let anchor = Anchor.slackLink(link) else { preconditionFailure("test link must be a Slack link") }
+  return anchor
+}
+
+@Suite("Capture nudges: same place")
+struct SamePlaceTests {
+  @Test("Loops captured in the same app aren't related just because of the app")
+  func sameAppIsNotAPlace() throws {
+    let (core, _) = try makeCore()
+    _ = try core.capture(
+      title: "Schrank aufbauen",
+      anchor: .appWindow(bundleID: "com.anthropic.claudefordesktop", appName: "Claude", windowTitle: "Claude")
+    )
+    let here = Anchor.appWindow(bundleID: "com.anthropic.claudefordesktop", appName: "Claude", windowTitle: "Claude")
+    #expect(try core.relatedLoops(toCapture: "Awesome input now", anchor: here).isEmpty)
+  }
+
+  @Test("files in the same folder are in the same place")
+  func sameFolder() throws {
+    let (core, _) = try makeCore()
+    let budget = try core.capture(
+      title: "Budget",
+      anchor: file("/Users/ada/Q3/budget.numbers")
+    )
+    _ = try core.capture(
+      title: "Elsewhere",
+      anchor: file("/Users/ada/Other/x.pages")
+    )
+    let here = file("/Users/ada/Q3/plan.pages")
+    let related = try core.relatedLoops(toCapture: "Plan", anchor: here)
+    #expect(related.map(\.loop.id) == [budget.id])
+    #expect(related.first?.reasons == [.sameSource])
+  }
+
+  @Test("Slack messages in the same conversation are in the same place")
+  func sameConversation() throws {
+    let (core, _) = try makeCore()
+    let thread = try core.capture(
+      title: "Answer Ada",
+      anchor: slack("https://acme.slack.com/archives/C024BE91L/p1699999999000100")
+    )
+    let here = slack("https://acme.slack.com/archives/C024BE91L/p1700000555000200")
+    #expect(try core.relatedLoops(toCapture: "Follow up", anchor: here).map(\.loop.id) == [thread.id])
+  }
+}

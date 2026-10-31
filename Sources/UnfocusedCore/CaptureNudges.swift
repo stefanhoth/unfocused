@@ -39,7 +39,7 @@ extension Core {
     let mentioned = Set(parsed.names.map(NameMatching.key))
     let nameWords = Set(people.flatMap { TitleWords.words(in: $0.name) })
     let typedWords = TitleWords.words(in: parsed.title).subtracting(nameWords)
-    let place = anchor?.place
+    let place = anchor?.relatedPlace
 
     let candidates = try openLoops()
     return try candidates.compactMap { loop -> RelatedLoop? in
@@ -59,7 +59,7 @@ extension Core {
         reasons.append(.similarMeaning)
         score += 2.5
       }
-      if let place, try anchors(of: loop.id).contains(where: { $0.place == place }) {
+      if let place, try anchors(of: loop.id).contains(where: { $0.relatedPlace == place }) {
         reasons.append(.sameSource)
         score += 1
       }
@@ -75,6 +75,22 @@ extension Core {
   public func looseEndsOlderThanNewIdea() throws -> Int? {
     let count = try looseEnds().count
     return count >= Self.looseEndNudgeMinimum ? count : nil
+  }
+}
+
+extension Anchor {
+  /// The place two Loops share to count as related: a website, a folder, a Slack conversation.
+  /// `nil` for app windows: the same app is too broad, and the same window is the same Anchor.
+  var relatedPlace: String? {
+    if identifier.hasPrefix("web:") { return place }
+    if identifier.hasPrefix("file:") {
+      return "folder:" + (String(identifier.dropFirst(5)) as NSString).deletingLastPathComponent
+    }
+    if identifier.hasPrefix("slack:") {
+      // slack:<workspace>/<channel>[/<thread>] → the conversation.
+      return identifier.split(separator: "/").prefix(2).joined(separator: "/")
+    }
+    return nil
   }
 }
 
