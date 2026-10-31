@@ -13,7 +13,9 @@ struct LoopsWindow: View {
   }
 
   var body: some View {
-    NavigationSplitView {
+    // A plain split (not NavigationSplitView): this view sits inside the main window's sidebar
+    // layout, and navigation split views don't nest.
+    HSplitView {
       List(loops, selection: $selectedID) { loop in
         LoopRow(loop: loop, isFocused: loop.id == model.focusedLoop?.id, aging: model.aging[loop.id])
           .contextMenu { actions(for: loop) }
@@ -31,13 +33,15 @@ struct LoopsWindow: View {
         .labelsHidden()
         .padding(8)
       }
-      .navigationSplitViewColumnWidth(min: 260, ideal: 320)
-    } detail: {
-      if let loop = loops.first(where: { $0.id == selectedID }) {
-        LoopDetail(model: model, loop: loop)
-      } else {
-        Text("Select a Loop").foregroundStyle(.secondary)
+      .frame(minWidth: 260, idealWidth: 320, maxWidth: 440)
+      Group {
+        if let loop = loops.first(where: { $0.id == selectedID }) {
+          LoopDetail(model: model, loop: loop)
+        } else {
+          Text("Select a Loop").foregroundStyle(.secondary)
+        }
       }
+      .frame(minWidth: 360, maxWidth: .infinity, maxHeight: .infinity)
     }
     .frame(minWidth: 680, minHeight: 400)
     .navigationTitle("Loops")

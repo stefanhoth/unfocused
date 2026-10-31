@@ -9,26 +9,14 @@ struct UnfocusedApp: App {
   var body: some Scene {
     MenuBarExtra {
       WithModel(app: appDelegate) { model in
-        MenuContent(model: model, panel: appDelegate.panel, tieOff: appDelegate.tieOff)
+        MenuContent(model: model, app: appDelegate, panel: appDelegate.panel, tieOff: appDelegate.tieOff)
       }
     } label: {
       MenuBarLabel(app: appDelegate)
     }
 
-    Window("Loops", id: WindowID.loops) {
-      WithModel(app: appDelegate) { LoopsWindow(model: $0) }
-    }
-
-    Window("Activity", id: WindowID.activity) {
-      WithModel(app: appDelegate) { ActivityWindow(model: $0) }
-    }
-
-    Window("Recap", id: WindowID.recap) {
-      WithModel(app: appDelegate) { RecapWindow(model: $0) }
-    }
-
-    Window("People", id: WindowID.people) {
-      WithModel(app: appDelegate) { PeopleWindow(model: $0) }
+    Window("unfocused", id: WindowID.main) {
+      WithModel(app: appDelegate) { MainWindow(model: $0, app: appDelegate) }
     }
 
     Settings {
@@ -58,14 +46,12 @@ struct WithModel<Content: View>: View {
 }
 
 enum WindowID {
-  static let loops = "loops"
-  static let people = "people"
-  static let activity = "activity"
-  static let recap = "recap"
+  static let main = "main"
 }
 
 struct MenuContent: View {
   let model: AppModel
+  let app: AppDelegate
   let panel: PanelController?
   let tieOff: TieOffController?
   @Environment(\.openWindow) private var openWindow
@@ -93,22 +79,10 @@ struct MenuContent: View {
     Button(model.looseEnds.isEmpty ? "Tie-off…" : "Tie-off (\(model.looseEnds.count) Loose Ends)…") {
       tieOff?.show()
     }
-    Button("Loops…") {
-      NSApp.activate()
-      openWindow(id: WindowID.loops)
-    }
-    Button("People…") {
-      NSApp.activate()
-      openWindow(id: WindowID.people)
-    }
-    Button("Recap…") {
-      NSApp.activate()
-      openWindow(id: WindowID.recap)
-    }
-    Button("Activity…") {
-      NSApp.activate()
-      openWindow(id: WindowID.activity)
-    }
+    Button("Loops…") { show(.loops) }
+    Button("People…") { show(.people) }
+    Button("Recap…") { show(.recap) }
+    Button("Activity…") { show(.activity) }
     Toggle(
       "Pause Activity Recording",
       isOn: Binding(get: { model.activityPaused }, set: { model.setActivityPaused($0) })
@@ -121,6 +95,13 @@ struct MenuContent: View {
     .keyboardShortcut(",")
     Button("Quit unfocused") { NSApplication.shared.terminate(nil) }
       .keyboardShortcut("q")
+  }
+
+  /// Opens the main window at `section`.
+  private func show(_ section: AppSection) {
+    app.section = section
+    NSApp.activate()
+    openWindow(id: WindowID.main)
   }
 }
 
@@ -151,6 +132,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   @Published private(set) var panel: PanelController?
   /// Why startup failed, if it did.
   @Published private(set) var startupProblem: String?
+  /// The main window's selected section.
+  @Published var section: AppSection? = .loops
   @Published private(set) var tieOff: TieOffController?
   /// The Focused Loop's title for the menu bar, `nil` when unfocused.
   @Published private(set) var focusedTitle: String?
