@@ -164,7 +164,8 @@ struct PanelView: View {
   @State private var text = ""
   /// The highlighted row; -1 means none, the text field itself (↑ past the first row), where ↩ does
   /// nothing.
-  @State private var selection = 0
+  /// Opens with nothing selected: the cursor is in the text field until ↓ (or typing) picks a row.
+  @State private var selection = -1
   /// Direction per mentioned name; unmentioned names default to Owed.
   @State private var directions: [String: Direction] = [:]
   /// Related Loops including matches by meaning, once the Reasoner has answered for `text`.
@@ -268,7 +269,7 @@ struct PanelView: View {
 
   @ViewBuilder private var searchContent: some View {
     inputField("Search your Loops, or type something new…", systemImage: "magnifyingglass")
-      .onChange(of: text) { selection = 0 }
+      .onChange(of: text) { selection = text.isEmpty ? -1 : 0 }
       .onKeyPress(.return, phases: .down) { press in
         if press.modifiers.contains(.option) {
           addContextToSelected()
@@ -434,7 +435,7 @@ struct PanelView: View {
         if results.indices.contains(selection) {
           PanelLoopDetail(model: model, loop: results[selection])
         } else {
-          Text("↓ to see a Loop's details").font(.callout).foregroundStyle(.tertiary)
+          Text("↓ to pick a Loop and see where you left off").font(.callout).foregroundStyle(.tertiary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
       }

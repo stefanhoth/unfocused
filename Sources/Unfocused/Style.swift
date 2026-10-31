@@ -10,6 +10,8 @@ enum Style {
   static let panelListWidth: CGFloat = 380
   /// Transparent room around floating surfaces for their own shadow and glow.
   static let glowMargin: CGFloat = 36
+  /// How much of the window background color sits under the glass: more is easier to read.
+  static let glassBacking = 0.6
   /// The app icon's gradient: sky blue to peach.
   static let logoGradient: [Color] = [
     Color(red: 0.42, green: 0.64, blue: 0.96),
@@ -51,8 +53,14 @@ enum Style {
 
 extension View {
   /// A floating surface of Liquid Glass.
+  /// A floating surface of Liquid Glass with a backing layer, so text behind it doesn't compete
+  /// with the text on it (the plain glass let busy pages show through too much).
   func calmGlass(cornerRadius: CGFloat) -> some View {
-    glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
+    background(
+      RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        .fill(Color(nsColor: .windowBackgroundColor).opacity(Style.glassBacking))
+    )
+    .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
   }
 }
 
