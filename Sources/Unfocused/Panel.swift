@@ -50,7 +50,8 @@ final class PanelController {
         model: model,
         context: mode == .search ? context : nil,
         initialMode: mode,
-        dismiss: { [weak self] in self?.hide() }
+        dismiss: { [weak self] in self?.hide() },
+        focusField: { [weak self] in self?.focusFieldSoon() }
       )
     )
     panel.center()
@@ -58,10 +59,18 @@ final class PanelController {
     panel.makeKeyAndOrderFront(nil)
     // On a panel's first showing, SwiftUI's focus request arrives before the window can take it.
     // Once SwiftUI has laid the view out, put the cursor in the text field directly.
-    DispatchQueue.main.async { [weak panel] in
-      guard let panel else { return }
-      panel.makeKey()
-      Self.focusTextField(in: panel)
+    focusFieldSoon()
+  }
+
+  /// Makes the panel key and puts the cursor in its text field after SwiftUI's next layout pass.
+  /// Uses the panel itself: `NSApp.keyWindow` is often nil for a non-activating panel.
+  func focusFieldSoon() {
+    for delay in [0.0, 0.05] {
+      DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+        guard let panel = self?.panel, panel.isVisible else { return }
+        panel.makeKey()
+        Self.focusTextField(in: panel)
+      }
     }
   }
 
@@ -136,6 +145,8 @@ struct PanelView: View {
   let model: AppModel
   let context: CaptureContext?
   let dismiss: () -> Void
+  /// Puts the cursor in the panel's text field once SwiftUI has laid out the current mode.
+  let focusField: () -> Void
 
   @State private var mode: PanelMode
   @State private var text = ""
@@ -149,10 +160,17 @@ struct PanelView: View {
   @State private var suggestedTitle: String?
   @FocusState private var fieldFocused: Bool
 
-  init(model: AppModel, context: CaptureContext?, initialMode: PanelMode, dismiss: @escaping () -> Void) {
+  init(
+    model: AppModel,
+    context: CaptureContext?,
+    initialMode: PanelMode,
+    dismiss: @escaping () -> Void,
+    focusField: @escaping () -> Void = {}
+  ) {
     self.model = model
     self.context = context
     self.dismiss = dismiss
+    self.focusField = focusField
     _mode = State(initialValue: initialMode)
   }
 
@@ -498,10 +516,8 @@ struct PanelView: View {
     text = ""
     mode = .leftOff(loop)
     // The mode's new text field only exists after this update; focus it once it's laid out.
-    DispatchQueue.main.async {
-      fieldFocused = true
-      PanelController.focusTextField(in: NSApp.keyWindow)
-    }
+    fieldFocused = true
+    focusField()
   }
 
   private func contextLine(_ context: CaptureContext) -> some View {
