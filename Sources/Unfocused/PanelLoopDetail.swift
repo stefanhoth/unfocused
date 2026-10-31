@@ -51,8 +51,15 @@ struct PanelLoopDetail: View {
 
         if !anchors.isEmpty {
           VStack(alignment: .leading, spacing: 4) {
+            Text("⌘O opens \(anchors.count == 1 ? "it" : "them")").font(.caption).foregroundStyle(.tertiary)
             ForEach(Array(anchors.prefix(3).enumerated()), id: \.offset) { _, anchor in
-              Label(anchor.title, systemImage: "link").font(.callout).lineLimit(1).foregroundStyle(.secondary)
+              Button {
+                AnchorOpener.open(anchor)
+              } label: {
+                Label(anchor.title, systemImage: "link").font(.callout).lineLimit(1)
+              }
+              .buttonStyle(.link)
+              .help("Open")
             }
           }
         }

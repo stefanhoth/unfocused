@@ -299,6 +299,14 @@ struct PanelView: View {
         selection = min(selection, max(results.count - 1, 0))
         return .handled
       }
+      .onKeyPress(characters: ["o"], phases: .down) { press in
+        guard press.modifiers.contains(.command), results.indices.contains(selection) else { return .ignored }
+        let anchors = model.anchors(of: results[selection])
+        guard !anchors.isEmpty else { return .ignored }
+        anchors.forEach(AnchorOpener.open)
+        dismiss()
+        return .handled
+      }
       .onKeyPress(characters: ["u"], phases: .down) { press in
         guard press.modifiers.contains(.command), model.focusedLoop != nil else { return .ignored }
         if let left = model.unfocus() { askWhereILeftOff(left) } else { dismiss() }
@@ -420,8 +428,8 @@ struct PanelView: View {
     Spacer(minLength: 0)
     hints(
       context == nil
-        ? ["↩ Focus", "⌘↩ Capture new", "⌘K Close", "⌘D Drop", "@ Person", "esc Hide"]
-        : ["↩ Focus", "⌘↩ Capture new", "⌥↩ Add here as Anchor", "⌘K Close", "⌘D Drop", "esc Hide"]
+        ? ["↩ Focus", "⌘↩ Capture new", "⌘O Open", "⌘K Close", "⌘D Drop", "@ Person", "esc Hide"]
+        : ["↩ Focus", "⌘↩ Capture new", "⌥↩ Add here as Anchor", "⌘O Open", "⌘K Close", "⌘D Drop", "esc Hide"]
     )
   }
 
