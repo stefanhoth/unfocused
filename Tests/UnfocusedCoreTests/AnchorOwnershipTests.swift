@@ -3,7 +3,10 @@ import Testing
 import UnfocusedCore
 
 private func page(_ path: String) -> Anchor {
-  Anchor.webPage(url: "https://example.com/\(path)", title: path, source: .chrome)!
+  guard let anchor = Anchor.webPage(url: "https://example.com/\(path)", title: path, source: .chrome) else {
+    preconditionFailure("test URL must be valid")
+  }
+  return anchor
 }
 
 @Suite("One Loop per Anchor")
