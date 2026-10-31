@@ -11,6 +11,8 @@ struct LoopRecord: Codable, FetchableRecord, PersistableRecord {
   var capturedAt: Double
   var whereILeftOff: String?
   var stateChangedAt: Double
+  /// When the user last changed the Loop's details (Where I left off, Anchors, People).
+  var editedAt: Double?
 
   init(_ loop: Loop) {
     id = loop.id.uuidString

@@ -7,16 +7,21 @@ struct ActivityWindow: View {
   @State private var day = Date()
 
   var body: some View {
-    let stretches = model.activity(on: day).filter { $0.duration >= 1 }
+    let stretches = model.attributedActivity(on: day).filter { $0.duration >= 1 }
     let total = stretches.reduce(0) { $0 + $1.duration }
+    let unfocused = stretches.filter { $0.reason == .unfocused }.reduce(0) { $0 + $1.duration }
+    let titles = model.loopTitles()
     VStack(alignment: .leading, spacing: 0) {
       HStack {
         DatePicker("Day", selection: $day, displayedComponents: .date)
           .labelsHidden()
           .fixedSize()
         Spacer()
-        Text("\(Duration.seconds(total).formatted(.units(width: .abbreviated))) recorded")
-          .foregroundStyle(.secondary)
+        Text(
+          "\(Duration.seconds(total).formatted(.units(width: .abbreviated))) recorded · "
+            + "\(Duration.seconds(unfocused).formatted(.units(width: .abbreviated))) unfocused"
+        )
+        .foregroundStyle(.secondary)
         if model.activityPaused {
           Label("Paused", systemImage: "pause.circle").foregroundStyle(.orange)
         }
@@ -38,7 +43,16 @@ struct ActivityWindow: View {
               .frame(width: 52, alignment: .leading)
             VStack(alignment: .leading, spacing: 2) {
               Text(stretch.anchor.title).lineLimit(1)
-              Text(stretch.anchor.source.displayName).font(.caption).foregroundStyle(.secondary)
+              Group {
+                if let loopID = stretch.loopID, let title = titles[loopID] {
+                  Text("\(stretch.anchor.source.displayName) · \(title), \(stretch.reason.explanation)")
+                } else {
+                  Text("\(stretch.anchor.source.displayName) · Unfocused")
+                }
+              }
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .lineLimit(1)
             }
             Spacer()
             Text(Duration.seconds(stretch.duration).formatted(.units(width: .abbreviated, maximumUnitCount: 2)))

@@ -227,11 +227,45 @@ final class AppModel {
     perform(paused ? "pausing Activity" : "resuming Activity") { try core.setActivityPaused(paused) }
   }
 
-  /// Activity of one calendar day, oldest first.
-  func activity(on day: Date) -> [ActivityStretch] {
+  /// Activity of one calendar day with the Loop each piece counts toward, oldest first.
+  func attributedActivity(on day: Date) -> [AttributedStretch] {
     let start = Calendar.current.startOfDay(for: day)
     let end = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? start
-    return (try? core.activity(from: start, to: end)) ?? []
+    return (try? core.attributedActivity(from: start, to: end)) ?? []
+  }
+
+  /// Where and why time went to `loop` over the last 30 days, newest first, with consecutive
+  /// pieces in the same place and for the same reason joined into one entry.
+  func workLog(for loop: Loop) -> [AttributedStretch] {
+    let now = Date()
+    let log = (try? core.workLog(for: loop.id, from: now.addingTimeInterval(-30 * 86_400), to: now)) ?? []
+    var joined: [AttributedStretch] = []
+    for piece in log where piece.duration >= 1 {
+      if let last = joined.last, last.anchor.identifier == piece.anchor.identifier, last.reason == piece.reason,
+        piece.start.timeIntervalSince(last.end) <= 120
+      {
+        joined[joined.count - 1] = AttributedStretch(
+          anchor: piece.anchor,
+          start: last.start,
+          end: piece.end,
+          loopID: piece.loopID,
+          reason: piece.reason
+        )
+      } else {
+        joined.append(piece)
+      }
+    }
+    return joined.reversed()
+  }
+
+  func lastEngagement(of loop: Loop) -> Date? {
+    try? core.lastEngagement(of: loop.id)
+  }
+
+  /// Titles of all Loops by id, for labelling attributed Activity.
+  func loopTitles() -> [UUID: String] {
+    let all = LoopState.allCases.flatMap { (try? core.loops(in: $0)) ?? [] }
+    return Dictionary(all.map { ($0.id, $0.title) }) { first, _ in first }
   }
 
   var excludedApps: [String] {
