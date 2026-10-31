@@ -139,6 +139,11 @@ final class AppModel {
     perform("checking Focus") { try core.endStaleFocus() }
   }
 
+  /// A Tie-off over the current Loose Ends.
+  func startTieOff() -> TieOff {
+    (try? core.startTieOff()) ?? TieOff(looseEnds: [])
+  }
+
   /// Active days without Engagement before a Loop is a Loose End.
   var looseEndThreshold: Int {
     get { (try? core.looseEndThreshold()) ?? 3 }
