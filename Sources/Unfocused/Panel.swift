@@ -389,7 +389,7 @@ struct PanelView: View {
     }
 
     if isHero {
-      hints(["⌘C Close Loop", "⌘O Open", "⌘U Unfocus", "↓ Switch", "⌘↩ Capture new", "esc Hide"])
+      hints(["↓ Switch", "⌘↩ Capture new", "esc Hide"])
     } else {
       searchBody
     }
@@ -457,7 +457,12 @@ struct PanelView: View {
       }
       .padding(.horizontal, 22)
       .padding(.top, 22)
-      PanelLoopDetail(model: model, loop: loop, prominent: true)
+      PanelLoopDetail(
+        model: model,
+        loop: loop,
+        prominent: true,
+        actions: ["⌘C Close Loop", "⌘D Drop", "⌘O Open", "⌘U Unfocus"]
+      )
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .overlay(alignment: .bottom) { Divider().opacity(0.5) }
@@ -509,7 +514,11 @@ struct PanelView: View {
         .frame(width: Style.panelListWidth)
         Divider()
         if results.indices.contains(selection) {
-          PanelLoopDetail(model: model, loop: results[selection])
+          PanelLoopDetail(
+            model: model,
+            loop: results[selection],
+            actions: ["↩ Focus", "⌘O Open", "⌘C Close Loop", "⌘D Drop"]
+          )
         } else {
           Text("↓ to pick a Loop and see where you left off").font(.callout).foregroundStyle(.tertiary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -525,8 +534,8 @@ struct PanelView: View {
     Spacer(minLength: 0)
     hints(
       context == nil
-        ? ["↩ Focus", "⌘↩ Capture new", "⌘O Open", "⌘C Close Loop", "⌘D Drop", "@ Person", "esc Hide"]
-        : ["↩ Focus", "⌘↩ Capture new", "⌥↩ Add here", "⌘O Open", "⌘C Close Loop", "⌘D Drop", "esc Hide"]
+        ? ["↑↓ Choose", "⌘↩ Capture new", "@ Person", "esc Hide"]
+        : ["↑↓ Choose", "⌘↩ Capture new", "⌥↩ Add here", "@ Person", "esc Hide"]
     )
   }
 

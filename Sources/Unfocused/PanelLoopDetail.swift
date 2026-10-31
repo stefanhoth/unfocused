@@ -7,6 +7,8 @@ struct PanelLoopDetail: View {
   let loop: Loop
   /// The Focused Loop filling the panel: a larger title.
   var prominent = false
+  /// Keys that act on this Loop, shown with it rather than in the panel's footer.
+  var actions: [String] = []
 
   var body: some View {
     let aging = model.aging[loop.id]
@@ -21,6 +23,10 @@ struct PanelLoopDetail: View {
             .lineLimit(3)
           Text(when(lastWorked: lastWorked)).font(.callout).foregroundStyle(.secondary)
           LooseEndNote(aging: aging)
+        }
+
+        if !actions.isEmpty {
+          KeyHints(items: actions, footer: false)
         }
 
         whereILeftOff

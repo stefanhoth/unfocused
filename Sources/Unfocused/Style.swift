@@ -87,8 +87,21 @@ struct CalmMotion {
 /// Items read "<key> <what it does>", e.g. "⌘↩ Capture new".
 struct KeyHints: View {
   let items: [String]
+  /// `false` for a row of actions inside content (no padding, no divider), e.g. under a Loop.
+  var footer = true
 
   var body: some View {
+    if footer {
+      row
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+        .overlay(alignment: .top) { Divider().opacity(0.5) }
+    } else {
+      row
+    }
+  }
+
+  private var row: some View {
     HStack(spacing: 14) {
       ForEach(items, id: \.self) { item in
         let parts = item.split(separator: " ", maxSplits: 1).map(String.init)
@@ -101,9 +114,6 @@ struct KeyHints: View {
     }
     .font(.system(size: 12))
     .foregroundStyle(.secondary)
-    .padding(.horizontal, 18)
-    .padding(.vertical, 12)
-    .overlay(alignment: .top) { Divider().opacity(0.5) }
   }
 }
 
