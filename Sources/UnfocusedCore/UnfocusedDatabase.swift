@@ -133,6 +133,11 @@ public final class UnfocusedDatabase: Sendable {
         table.column("closed", .boolean).notNull().defaults(to: false)
       }
     }
+    migrator.registerMigration("v8-engagement") { db in
+      try db.alter(table: "loop") { table in
+        table.add(column: "editedAt", .double)
+      }
+    }
     return migrator
   }()
 }

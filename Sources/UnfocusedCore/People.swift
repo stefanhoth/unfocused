@@ -202,20 +202,24 @@ extension Core {
 
   /// Adds a Person to a Loop, or changes their direction if they're already on it.
   public func involve(_ personID: UUID, in loopID: UUID, as direction: Direction) throws {
+    let now = time.now
     try database.writer.write { db in
       guard try LoopRecord.fetchOne(db, key: loopID.uuidString) != nil else { throw CoreError.loopNotFound }
       guard try PersonRecord.fetchOne(db, key: personID.uuidString) != nil else { throw CoreError.personNotFound }
       try InvolvementRecord(loopId: loopID.uuidString, personId: personID.uuidString, direction: direction.rawValue)
         .insert(db, onConflict: .replace)
+      try Self.markEdited(loopID, at: now, db)
     }
   }
 
   public func removePerson(_ personID: UUID, from loopID: UUID) throws {
+    let now = time.now
     try database.writer.write { db in
       _ =
         try InvolvementRecord
         .filter(Column("loopId") == loopID.uuidString && Column("personId") == personID.uuidString)
         .deleteAll(db)
+      try Self.markEdited(loopID, at: now, db)
     }
   }
 

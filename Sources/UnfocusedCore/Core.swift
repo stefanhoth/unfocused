@@ -89,6 +89,7 @@ public final class Core: Sendable {
       guard var record = try LoopRecord.fetchOne(db, key: loopID.uuidString) else { throw CoreError.loopNotFound }
       guard !trimmed.isEmpty else { return }
       record.whereILeftOff = trimmed
+      record.editedAt = time.now.timeIntervalSince1970
       try record.update(db)
     }
   }
@@ -150,15 +151,18 @@ public final class Core: Sendable {
       guard !exists else { return }
       var record = AnchorRecord(loopID: loopID, anchor: anchor, addedAt: now)
       try record.insert(db)
+      try Self.markEdited(loopID, at: now, db)
     }
   }
 
   public func removeAnchor(_ anchor: Anchor, from loopID: UUID) throws {
+    let now = time.now
     try database.writer.write { db in
       _ =
         try AnchorRecord
         .filter(Column("loopId") == loopID.uuidString && Column("identifier") == anchor.identifier)
         .deleteAll(db)
+      try Self.markEdited(loopID, at: now, db)
     }
   }
 
@@ -242,7 +246,15 @@ public final class Core: Sendable {
     }
   }
 
-  private static func openFocus(_ db: Database) throws -> FocusSessionRecord? {
+  /// Records that the user changed a Loop's details, which counts as Engagement.
+  static func markEdited(_ loopID: UUID, at time: Date, _ db: Database) throws {
+    try db.execute(
+      sql: "UPDATE loop SET editedAt = ? WHERE id = ?",
+      arguments: [time.timeIntervalSince1970, loopID.uuidString]
+    )
+  }
+
+  static func openFocus(_ db: Database) throws -> FocusSessionRecord? {
     try FocusSessionRecord.filter(Column("end") == nil).order(Column("start").desc).fetchOne(db)
   }
 
