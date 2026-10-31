@@ -7,6 +7,7 @@ enum AppSection: String, CaseIterable, Identifiable {
   case people
   case recap
   case activity
+  case settings
 
   var id: String { rawValue }
 
@@ -16,6 +17,7 @@ enum AppSection: String, CaseIterable, Identifiable {
     case .people: "People"
     case .recap: "Recap"
     case .activity: "Activity"
+    case .settings: "Settings"
     }
   }
 
@@ -25,17 +27,19 @@ enum AppSection: String, CaseIterable, Identifiable {
     case .people: "person.2"
     case .recap: "text.badge.checkmark"
     case .activity: "clock"
+    case .settings: "gearshape"
     }
   }
 
-  /// Sidebar groups: the work itself, then looking back at it.
+  /// Sidebar groups: the work itself, looking back at it, then how the app behaves.
   static let groups: [(title: String, sections: [AppSection])] = [
     ("Work", [.loops, .people]),
     ("Look back", [.recap, .activity]),
+    ("App", [.settings]),
   ]
 }
 
-/// One window for everything except Settings: a sidebar to move between the sections.
+/// One window for everything, Settings included: a sidebar to move between the sections.
 struct MainWindow: View {
   let model: AppModel
   @ObservedObject var app: AppDelegate
@@ -82,6 +86,7 @@ struct MainWindow: View {
       case .people: PeopleWindow(model: model)
       case .recap: RecapWindow(model: model)
       case .activity: ActivityWindow(model: model)
+      case .settings: SettingsView(model: model, reminder: app.reminder)
       }
     }
     .frame(minWidth: 900, minHeight: 520)

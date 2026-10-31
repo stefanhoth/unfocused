@@ -18,9 +18,9 @@ struct UnfocusedApp: App {
     Window("unfocused", id: WindowID.main) {
       WithModel(app: appDelegate) { MainWindow(model: $0, app: appDelegate) }
     }
-
-    Settings {
-      WithModel(app: appDelegate) { SettingsView(model: $0, reminder: appDelegate.reminder).tint(Style.brand) }
+    .commands {
+      // Settings is a section of the main window, not a window of its own; ⌘, opens it there.
+      CommandGroup(replacing: .appSettings) { SettingsCommand(app: appDelegate) }
     }
   }
 }
@@ -55,7 +55,6 @@ struct MenuContent: View {
   let panel: PanelController?
   let tieOff: TieOffController?
   @Environment(\.openWindow) private var openWindow
-  @Environment(\.openSettings) private var openSettings
 
   var body: some View {
     if let focused = model.focusedLoop {
@@ -88,20 +87,26 @@ struct MenuContent: View {
       isOn: Binding(get: { model.activityPaused }, set: { model.setActivityPaused($0) })
     )
     Divider()
-    Button("Settings…") {
-      NSApp.activate()
-      openSettings()
-    }
-    .keyboardShortcut(",")
+    Button("Settings…") { show(.settings) }
+      .keyboardShortcut(",")
     Button("Quit unfocused") { NSApplication.shared.terminate(nil) }
       .keyboardShortcut("q")
   }
 
   /// Opens the main window at `section`.
   private func show(_ section: AppSection) {
-    app.section = section
-    NSApp.activate()
-    openWindow(id: WindowID.main)
+    app.show(section, openWindow: openWindow)
+  }
+}
+
+/// The app menu's Settings… item (⌘,): the main window's Settings section.
+struct SettingsCommand: View {
+  let app: AppDelegate
+  @Environment(\.openWindow) private var openWindow
+
+  var body: some View {
+    Button("Settings…") { app.show(.settings, openWindow: openWindow) }
+      .keyboardShortcut(",")
   }
 }
 
@@ -110,8 +115,13 @@ struct MenuBarLabel: View {
   /// Observed here, in the label's own view: the App's body doesn't re-run for the delegate's
   /// published changes, so a value passed in from there would never update.
   @ObservedObject var app: AppDelegate
+  @Environment(\.openWindow) private var openWindow
 
   var body: some View {
+    label.onAppear { app.windowOpener = openWindow }
+  }
+
+  @ViewBuilder private var label: some View {
     if let title = app.focusedTitle {
       Label {
         Text(title.count > 18 ? title.prefix(17) + "…" : title)
@@ -134,6 +144,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   @Published private(set) var startupProblem: String?
   /// The main window's selected section.
   @Published var section: AppSection? = .loops
+  /// Opens the SwiftUI windows from outside a view. Set by the menu bar label, the one view that
+  /// is always on screen; until then, `show(_:)` waits for it.
+  var windowOpener: OpenWindowAction? {
+    didSet { if let pendingSection { show(pendingSection) } }
+  }
+  private var pendingSection: AppSection?
   @Published private(set) var tieOff: TieOffController?
   /// The Focused Loop's title for the menu bar, `nil` when unfocused.
   @Published private(set) var focusedTitle: String?
@@ -190,12 +206,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     showForReview()
     guard let model, !model.activateSavedHotKey() else { return }
     // First launch with a taken hotkey: ask for another one right away.
-    NSApp.activate()
-    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+    show(.settings)
   }
 
-  /// For design review and screenshots: `--show panel`, `--show tie-off` or `--show banner` opens
-  /// that surface right after launch.
+  /// Opens the main window at `section`.
+  func show(_ section: AppSection, openWindow: OpenWindowAction? = nil) {
+    self.section = section
+    guard let open = openWindow ?? windowOpener else {
+      pendingSection = section
+      return
+    }
+    pendingSection = nil
+    NSApp.activate()
+    open(id: WindowID.main)
+  }
+
+  /// For design review and screenshots: `--show panel`, `--show tie-off`, `--show settings` or
+  /// `--show banner` opens that surface right after launch.
   private func showForReview() {
     let arguments = CommandLine.arguments
     guard let index = arguments.firstIndex(of: "--show"), arguments.indices.contains(index + 1) else { return }
@@ -204,6 +231,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     // Where did you leave off? for the newest Open Loop. Nothing is saved unless ↩ is pressed.
     case "left-off": if let loop = model?.openLoops.first { panel?.askWhereILeftOff(loop) }
     case "tie-off": tieOff?.show()
+    case "settings": show(.settings)
     case "banner": banner?.update(model?.openLoops.first)
     // Shows the menu bar label and notice as if a Loop were Focused, without changing any data.
     case "focus-preview":
