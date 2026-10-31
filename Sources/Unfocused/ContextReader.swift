@@ -32,11 +32,18 @@ enum ContextReader {
       if let (anchor, isPrivate) = browserPage(bundleID, source: .chrome, script: chromeScript) {
         return CaptureContext(anchor: anchor, missingAccessibility: false, isPrivate: isPrivate)
       }
+    case "com.apple.mail" where mayAsk:
+      if let anchor = selectedMailMessage() {
+        return CaptureContext(anchor: anchor, missingAccessibility: false)
+      }
     default:
       break
     }
 
     let title = Permissions.hasAccessibility ? focusedWindowTitle(of: app) : nil
+    if bundleID == "com.tinyspeck.slackmacgap", let anchor = slackAnchor(windowTitle: title, prompting: prompting) {
+      return CaptureContext(anchor: anchor, missingAccessibility: false)
+    }
     let anchor = Anchor.appWindow(bundleID: bundleID, appName: app.localizedName ?? bundleID, windowTitle: title)
     return CaptureContext(anchor: anchor, missingAccessibility: !Permissions.hasAccessibility)
   }
@@ -72,6 +79,46 @@ enum ContextReader {
       return nil
     }
     return (anchor, result.atIndex(3)?.stringValue == "incognito")
+  }
+
+  // MARK: Mail (Apple Events)
+
+  private static let mailScript = """
+    tell application id "com.apple.mail"
+      set picked to selection
+      if (count of picked) is 0 then return {"", ""}
+      set m to item 1 of picked
+      return {message id of m, subject of m}
+    end tell
+    """
+
+  /// The message selected in Mail, exactly.
+  private static func selectedMailMessage() -> Anchor? {
+    var error: NSDictionary?
+    guard
+      let result = NSAppleScript(source: mailScript)?.executeAndReturnError(&error),
+      result.numberOfItems == 2,
+      let id = result.atIndex(1)?.stringValue,
+      let subject = result.atIndex(2)?.stringValue
+    else {
+      if let error { Log(category: "context", file: nil).info("Couldn't read Mail: \(error)") }
+      return nil
+    }
+    return Anchor.mailMessage(messageID: id, subject: subject)
+  }
+
+  // MARK: Slack (no scripting; a copied message link is exact, the window title is the conversation)
+
+  /// During a Capture, a Slack message link on the clipboard ("Copy link") pins the exact thread.
+  /// The clipboard is never read in the background.
+  private static func slackAnchor(windowTitle: String?, prompting: Bool) -> Anchor? {
+    let fromWindow = windowTitle.flatMap(Anchor.slackWindow(title:))
+    if prompting, let copied = NSPasteboard.general.string(forType: .string),
+      let link = Anchor.slackLink(copied, title: fromWindow?.title)
+    {
+      return link
+    }
+    return fromWindow
   }
 
   /// Whether the user already allowed sending Apple Events to this app. Never prompts.
@@ -123,6 +170,11 @@ enum AnchorOpener {
   static func open(_ anchor: Anchor) {
     switch anchor.source {
     case .app(let bundleID):
+      // Exact links (a Mail message, a Slack thread) open the item; otherwise just the app.
+      if let url = URL(string: anchor.link), url.scheme != nil {
+        NSWorkspace.shared.open(url)
+        return
+      }
       guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return }
       NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
     default:
