@@ -34,6 +34,7 @@
     { "type": "required_linear_history" }
   ],
   "bypass_actors": [
-    { "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "pull_request" }
+    { "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "pull_request" },
+    { "actor_id": null, "actor_type": "DeployKey", "bypass_mode": "always" }
   ]
 }

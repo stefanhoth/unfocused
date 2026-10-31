@@ -60,13 +60,15 @@ jobs:
     runs-on: macos-26
     permissions:
       contents: write
+    outputs:
+      sha256: ${{ steps.package.outputs.sha256 }}
     env:
       VERSION: ${{ needs.build.outputs.version }}
       DRY_RUN: ${{ inputs.dry_run }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: unsigned-app
@@ -79,9 +81,12 @@ jobs:
           P12_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
         run: scripts/sign-app.sh build/Unfocused.app
       - name: Package
+        id: package
         run: |
           ditto -c -k --keepParent build/Unfocused.app "Unfocused-$VERSION.zip"
-          shasum -a 256 "Unfocused-$VERSION.zip" | tee checksum.txt
+          sha256="$(shasum -a 256 "Unfocused-$VERSION.zip" | cut -d' ' -f1)"
+          echo "$sha256"
+          echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
       - name: Publish GitHub Release
         if: ${{ env.DRY_RUN != 'true' }}
         env:
@@ -89,14 +94,30 @@ jobs:
         run: |
           gh release create "v$VERSION" "Unfocused-$VERSION.zip" \
             --target "$GITHUB_SHA" --title "unfocused $VERSION" --generate-notes
-      - name: Point the Homebrew cask at the new release
-        if: ${{ env.DRY_RUN != 'true' }}
+
+  cask:
+    name: Update the Homebrew cask
+    needs: [build, publish]
+    if: ${{ !inputs.dry_run }}
+    # Pushes straight to main with a write deploy key; "Deploy keys" is on the ruleset's bypass list.
+    # This job runs no build tools, only the cask script, so the key never meets dependency code.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+      SHA256: ${{ needs.publish.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          ssh-key: ${{ secrets.CASK_DEPLOY_KEY }}
+      - name: Commit and push the cask
         run: |
-          sha256="$(cut -d' ' -f1 checksum.txt)"
-          scripts/write-cask.sh "$VERSION" "$sha256" > Casks/unfocused.rb
+          mkdir -p Casks
+          scripts/write-cask.sh "$VERSION" "$SHA256" > Casks/unfocused.rb
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Casks/unfocused.rb
           git commit -m "chore(release): unfocused $VERSION"
-          git pull --rebase origin main
           git push origin HEAD:main
