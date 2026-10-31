@@ -61,12 +61,14 @@ final class PanelController {
   private func makePanel() -> FloatingPanel {
     let panel = FloatingPanel(
       contentRect: NSRect(x: 0, y: 0, width: 640, height: 380),
-      styleMask: [.titled, .fullSizeContentView, .nonactivatingPanel],
+      styleMask: [.borderless, .nonactivatingPanel],
       backing: .buffered,
       defer: false
     )
-    panel.titleVisibility = .hidden
-    panel.titlebarAppearsTransparent = true
+    // The SwiftUI view draws the glass; the window itself is invisible.
+    panel.isOpaque = false
+    panel.backgroundColor = .clear
+    panel.hasShadow = true
     panel.isMovableByWindowBackground = true
     panel.level = .floating
     panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -184,7 +186,7 @@ struct PanelView: View {
       }
     }
     .frame(width: 640, height: 380)
-    .background(.regularMaterial)
+    .calmGlass(cornerRadius: Style.panelRadius)
     .onAppear { fieldFocused = true }
     .task {
       if let context { suggestedTitle = await model.captureTitle(for: context.anchor) }
@@ -203,7 +205,7 @@ struct PanelView: View {
   // MARK: Search
 
   @ViewBuilder private var searchContent: some View {
-    inputField("Search your Loops, or type something new…")
+    inputField("Search your Loops, or type something new…", systemImage: "magnifyingglass")
       .onChange(of: text) { selection = 0 }
       .onKeyPress(.return, phases: .down) { press in
         if press.modifiers.contains(.option) {
@@ -282,10 +284,7 @@ struct PanelView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-              index == selection ? Color.accentColor.opacity(0.2) : .clear,
-              in: RoundedRectangle(cornerRadius: 6)
-            )
+            .background(Style.rowBackground(selected: index == selection))
         }
       }
       .padding(8)
@@ -329,10 +328,7 @@ struct PanelView: View {
           }
           .padding(.horizontal, 12)
           .padding(.vertical, 6)
-          .background(
-            index == selection ? Color.accentColor.opacity(0.2) : .clear,
-            in: RoundedRectangle(cornerRadius: 6)
-          )
+          .background(Style.rowBackground(selected: index == selection))
         }
       }
       .padding(8)
@@ -557,26 +553,25 @@ struct PanelView: View {
 
   // MARK: Shared
 
-  private func inputField(_ prompt: String) -> some View {
-    TextField(prompt, text: $text)
-      .textFieldStyle(.plain)
-      .font(.title2)
-      .padding(16)
-      .focused($fieldFocused)
-      .onKeyPress(.escape) {
-        dismiss()
-        return .handled
+  private func inputField(_ prompt: String, systemImage: String? = nil) -> some View {
+    HStack(spacing: 10) {
+      if let systemImage {
+        Image(systemName: systemImage).font(.system(size: 18, weight: .medium)).foregroundStyle(.secondary)
       }
+      TextField(prompt, text: $text)
+        .textFieldStyle(.plain)
+        .font(.system(size: 22))
+        .focused($fieldFocused)
+    }
+    .padding(18)
+    .onKeyPress(.escape) {
+      dismiss()
+      return .handled
+    }
   }
 
   private func hints(_ items: [String]) -> some View {
-    HStack(spacing: 16) {
-      ForEach(items, id: \.self) { Text($0) }
-      Spacer()
-    }
-    .font(.caption)
-    .foregroundStyle(.secondary)
-    .padding(.horizontal, 16)
-    .padding(.vertical, 10)
+    KeyHints(items: items)
   }
+
 }

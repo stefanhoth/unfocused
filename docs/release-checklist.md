@@ -7,3 +7,4 @@ Releases run from **Actions → Release → Run workflow** (tick *dry run* to on
 3. The panel hotkey (default ⌃Space) opens the panel; typing searches; ⌘↩ Captures; ↩ Focuses; leaving a Loop asks Where I left off; Esc closes.
 4. **Accessibility still granted** after the update (System Settings → Privacy & Security → Accessibility shows unfocused enabled, and features needing it work without asking again). This proves the stable signing certificate keeps the grant (ADR 0003). The first time this is checked, record the result in `docs/DECISIONS.md`.
 5. Quit and relaunch: Loops, Focus and settings are still there.
+- [ ] Look check: `open build/Unfocused.app --args --show panel` (also `tie-off`, `banner`) over a light and a dark wallpaper; text stays readable on the glass, and with Reduce Motion on, Tie-off cards fade instead of sliding.
