@@ -13,7 +13,9 @@ struct PeopleWindow: View {
   @State private var newName = ""
 
   var body: some View {
-    NavigationSplitView {
+    // A plain split (not NavigationSplitView): this view sits inside the main window's sidebar
+    // layout, and navigation split views don't nest.
+    HSplitView {
       List(model.people, selection: $selectedID) { person in
         Text(person.name)
           .contextMenu { personMenu(person) }
@@ -29,16 +31,18 @@ struct PeopleWindow: View {
           }
         }
       }
-      .navigationSplitViewColumnWidth(min: 220, ideal: 260)
+      .frame(minWidth: 220, idealWidth: 260, maxWidth: 440)
       .toolbar {
         Button("Import Names…", systemImage: "square.and.arrow.down") { importing = true }
       }
-    } detail: {
-      if let person = model.people.first(where: { $0.id == selectedID }) {
-        PersonDetail(model: model, person: person)
-      } else {
-        Text("Select a Person").foregroundStyle(.secondary)
+      Group {
+        if let person = model.people.first(where: { $0.id == selectedID }) {
+          PersonDetail(model: model, person: person)
+        } else {
+          Text("Select a Person").foregroundStyle(.secondary)
+        }
       }
+      .frame(minWidth: 360, maxWidth: .infinity, maxHeight: .infinity)
     }
     .frame(minWidth: 640, minHeight: 380)
     .navigationTitle("People")
