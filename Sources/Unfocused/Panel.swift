@@ -124,10 +124,22 @@ struct PanelView: View {
 
   private var mentioned: [String] { model.mentionedNames(in: text) }
 
-  /// Search results, without the Focused Loop when nothing is typed (it has its own section).
+  /// The Loop that already has what's in front of the user as an Anchor.
+  private var existingLoop: Loop? {
+    context.flatMap { model.loop(anchoredAt: $0.anchor) }
+  }
+
+  /// Search results. With nothing typed: the existing Loop for this context first, and the
+  /// Focused Loop left out (it has its own section).
   private var results: [Loop] {
-    let matches = model.search(text)
-    let shown = text.isEmpty ? matches.filter { $0.id != model.focusedLoop?.id } : matches
+    var shown = model.search(text)
+    if text.isEmpty {
+      shown.removeAll { $0.id == model.focusedLoop?.id }
+      if let existing = existingLoop, existing.state == .open {
+        shown.removeAll { $0.id == existing.id }
+        shown.insert(existing, at: 0)
+      }
+    }
     return Array(shown.prefix(8))
   }
 
@@ -149,7 +161,9 @@ struct PanelView: View {
     inputField("Search your Loops, or type something new…")
       .onChange(of: text) { selection = 0 }
       .onKeyPress(.return, phases: .down) { press in
-        if press.modifiers.contains(.command) {
+        if press.modifiers.contains(.option) {
+          addContextToSelected()
+        } else if press.modifiers.contains(.command) {
           captureTyped()
         } else if !suggestions.isEmpty {
           completeMention()
@@ -168,6 +182,14 @@ struct PanelView: View {
         } else {
           return .ignored
         }
+        return .handled
+      }
+      .onKeyPress(characters: ["r"], phases: .down) { press in
+        guard press.modifiers.contains(.command), let existing = existingLoop, existing.state != .open else {
+          return .ignored
+        }
+        model.reopen(existing)
+        if let left = model.focus(existing, openAnchors: false) { askWhereILeftOff(left) } else { dismiss() }
         return .handled
       }
       .onKeyPress(characters: ["k", "d"], phases: .down) { press in
@@ -190,6 +212,10 @@ struct PanelView: View {
 
     if let context {
       contextLine(context)
+    }
+
+    if let existing = existingLoop, text.isEmpty {
+      existingLoopNote(existing)
     }
 
     if !mentioned.isEmpty {
@@ -258,7 +284,11 @@ struct PanelView: View {
     }
 
     Spacer(minLength: 0)
-    hints(["↩ Focus", "⌘↩ Capture new", "⌘K Close", "⌘D Drop", "@ Person", "esc Hide"])
+    hints(
+      context == nil
+        ? ["↩ Focus", "⌘↩ Capture new", "⌘K Close", "⌘D Drop", "@ Person", "esc Hide"]
+        : ["↩ Focus", "⌘↩ Capture new", "⌥↩ Add here as Anchor", "⌘K Close", "⌘D Drop", "esc Hide"]
+    )
   }
 
   private var mentionChips: some View {
@@ -277,6 +307,30 @@ struct PanelView: View {
     }
     .padding(.horizontal, 16)
     .padding(.bottom, 10)
+  }
+
+  private func existingLoopNote(_ loop: Loop) -> some View {
+    Label {
+      if loop.state == .open {
+        Text("This already has a Loop: “\(loop.title)”. ↩ Focuses it.")
+      } else {
+        Text("This was a Loop you \(loop.state.label.lowercased()): “\(loop.title)”. ⌘R reopens it.")
+      }
+    } icon: {
+      Image(systemName: "arrow.uturn.backward.circle")
+    }
+    .font(.callout)
+    .foregroundStyle(.secondary)
+    .padding(.horizontal, 16)
+    .padding(.bottom, 10)
+  }
+
+  /// Adds what's in front of the user as an Anchor to the selected Loop, then Focuses it.
+  private func addContextToSelected() {
+    guard let context, results.indices.contains(selection) else { return }
+    let loop = results[selection]
+    model.addAnchor(context.anchor, to: loop)
+    if let left = model.focus(loop, openAnchors: false) { askWhereILeftOff(left) } else { dismiss() }
   }
 
   private func completeMention() {

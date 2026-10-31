@@ -111,12 +111,18 @@ private struct LoopDetail: View {
       if !anchors.isEmpty {
         Section("Anchors") {
           ForEach(Array(anchors.enumerated()), id: \.offset) { _, anchor in
-            Button {
-              AnchorOpener.open(anchor)
-            } label: {
-              Label(anchor.title, systemImage: "link").lineLimit(1)
+            HStack {
+              Button {
+                AnchorOpener.open(anchor)
+              } label: {
+                Label(anchor.title, systemImage: "link").lineLimit(1)
+              }
+              .buttonStyle(.link)
+              Spacer()
+              Button("Remove Anchor", systemImage: "minus.circle") { model.removeAnchor(anchor, from: loop) }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
             }
-            .buttonStyle(.link)
           }
         }
       }
