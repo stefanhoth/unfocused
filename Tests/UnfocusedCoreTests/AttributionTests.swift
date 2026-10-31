@@ -3,7 +3,10 @@ import Testing
 import UnfocusedCore
 
 private func page(_ path: String) -> Anchor {
-  Anchor.webPage(url: "https://example.com/\(path)", title: path, source: .safari)!
+  guard let anchor = Anchor.webPage(url: "https://example.com/\(path)", title: path, source: .safari) else {
+    preconditionFailure("test URL must be valid")
+  }
+  return anchor
 }
 
 /// Records `minutes` of Activity on `anchor`, observed once a minute like the app does.
