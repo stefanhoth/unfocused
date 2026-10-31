@@ -113,7 +113,7 @@ private struct LoopDetail: View {
           LabeledContent("Focused for", value: Duration.seconds(focusedTime).formatted(.units(width: .abbreviated)))
         }
         if let engaged = model.lastEngagement(of: loop) {
-          LabeledContent("Last worked on") { Text(engaged, format: .relative(presentation: .named)) }
+          LabeledContent("Last worked on") { Text(Style.relative(engaged)) }
         }
       }
       PeopleSection(model: model, loop: loop)

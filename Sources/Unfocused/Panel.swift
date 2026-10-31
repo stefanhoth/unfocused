@@ -332,7 +332,9 @@ struct PanelView: View {
       contextLine(context)
     }
 
-    if let existing = existingLoop, text.isEmpty {
+    // An Open Loop for this spot is marked "You're here" in the list; only a Closed or Dropped one,
+    // which isn't listed, needs a line of its own.
+    if let existing = existingLoop, existing.state != .open, text.isEmpty {
       existingLoopNote(existing)
     }
 
@@ -390,11 +392,19 @@ struct PanelView: View {
           ForEach(Array(results.enumerated()), id: \.element.id) { index, loop in
             HStack {
               AgingMark(aging: model.aging[loop.id])
-              VStack(alignment: .leading, spacing: 1) {
+              VStack(alignment: .leading, spacing: 2) {
                 Text(loop.title).lineLimit(1)
                 LooseEndNote(aging: model.aging[loop.id])
               }
               Spacer()
+              if loop.id == existingLoop?.id {
+                Text("You're here")
+                  .font(.caption2.weight(.medium))
+                  .padding(.horizontal, 6)
+                  .padding(.vertical, 2)
+                  .background(Capsule().fill(Color.primary.opacity(0.1)))
+                  .foregroundStyle(.secondary)
+              }
               if loop.id == model.focusedLoop?.id {
                 Image(systemName: "scope").foregroundStyle(.secondary)
               }
@@ -404,11 +414,11 @@ struct PanelView: View {
                 .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
             .background(Style.rowBackground(selected: index == selection))
           }
         }
-        .padding(8)
+        .padding(10)
         .frame(width: Style.panelListWidth)
         Divider()
         if results.indices.contains(selection) {
@@ -429,7 +439,7 @@ struct PanelView: View {
     hints(
       context == nil
         ? ["↩ Focus", "⌘↩ Capture new", "⌘O Open", "⌘K Close", "⌘D Drop", "@ Person", "esc Hide"]
-        : ["↩ Focus", "⌘↩ Capture new", "⌥↩ Add here as Anchor", "⌘O Open", "⌘K Close", "⌘D Drop", "esc Hide"]
+        : ["↩ Focus", "⌘↩ Capture new", "⌥↩ Add here", "⌘O Open", "⌘K Close", "⌘D Drop", "esc Hide"]
     )
   }
 
@@ -511,11 +521,7 @@ struct PanelView: View {
 
   private func existingLoopNote(_ loop: Loop) -> some View {
     Label {
-      if loop.state == .open {
-        Text("This already has a Loop: “\(loop.title)”. ↩ Focuses it.")
-      } else {
-        Text("This was a Loop you \(loop.state.label.lowercased()): “\(loop.title)”. ⌘R reopens it.")
-      }
+      Text("You \(loop.state.label.lowercased()) a Loop here: “\(loop.title)”. ⌘R reopens it.")
     } icon: {
       Image(systemName: "arrow.uturn.backward.circle")
     }
@@ -580,15 +586,17 @@ struct PanelView: View {
   }
 
   private func contextLine(_ context: CaptureContext) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
-      Label {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(spacing: 6) {
+        AppIcon(bundleID: context.anchor.source.bundleID, size: 14)
         Text(context.anchor.title).lineLimit(1)
-      } icon: {
-        Image(systemName: "link")
       }
       .font(.callout)
       .foregroundStyle(.secondary)
-      .help("⌘↩ captures with this as its Anchor; ⇥ copies the title into the field")
+      .padding(.horizontal, 10)
+      .padding(.vertical, 5)
+      .background(Capsule().fill(Color.primary.opacity(0.06)))
+      .help("Where you are now. ⌘↩ captures with it as the Anchor; ⇥ copies its title into the field.")
       if context.missingAccessibility {
         HStack(spacing: 10) {
           Image(systemName: "hand.raised").font(.system(size: 15, weight: .medium)).foregroundStyle(Style.looseEnd)

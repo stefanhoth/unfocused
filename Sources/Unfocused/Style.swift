@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// The Calm Glass look (ticket #17): Liquid Glass on floating chrome only, system vibrancy for
@@ -16,8 +17,24 @@ enum Style {
   static let focus = Color.green
 
   /// A row's background: a clear accent tint when selected, nothing otherwise (no glass on glass).
+  /// A quiet, neutral highlight that works with any accent color and doesn't read as a warning.
   static func rowBackground(selected: Bool) -> some View {
-    RoundedRectangle(cornerRadius: rowRadius).fill(selected ? Color.accentColor.opacity(0.18) : .clear)
+    RoundedRectangle(cornerRadius: rowRadius)
+      .fill(Color.primary.opacity(selected ? 0.09 : 0))
+      .overlay(RoundedRectangle(cornerRadius: rowRadius).strokeBorder(Color.primary.opacity(selected ? 0.08 : 0)))
+  }
+
+  @MainActor private static let relativeFormatter: RelativeDateTimeFormatter = {
+    let formatter = RelativeDateTimeFormatter()
+    // The interface is English; mixing in the system language ("vor 10 Sekunden") reads oddly.
+    formatter.locale = Locale(identifier: "en_US")
+    formatter.unitsStyle = .full
+    return formatter
+  }()
+
+  /// "10 seconds ago", "2 days ago", in the interface language.
+  @MainActor static func relative(_ date: Date, to now: Date = Date()) -> String {
+    relativeFormatter.localizedString(for: date, relativeTo: now)
   }
 }
 
@@ -39,18 +56,46 @@ struct CalmMotion {
   }
 }
 
-/// The footer of key hints, shown on every floating surface.
+/// The footer of key hints, shown on every floating surface: each key as a small keycap.
+/// Items read "<key> <what it does>", e.g. "⌘↩ Capture new".
 struct KeyHints: View {
   let items: [String]
 
   var body: some View {
-    HStack(spacing: 16) {
-      ForEach(items, id: \.self) { Text($0) }
+    HStack(spacing: 14) {
+      ForEach(items, id: \.self) { item in
+        let parts = item.split(separator: " ", maxSplits: 1).map(String.init)
+        HStack(spacing: 5) {
+          Text(parts[0])
+            .font(.system(size: 11, weight: .medium))
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.1)))
+          if parts.count > 1 { Text(parts[1]) }
+        }
+      }
       Spacer()
     }
-    .font(.caption)
-    .foregroundStyle(.tertiary)
+    .font(.system(size: 12))
+    .foregroundStyle(.secondary)
     .padding(.horizontal, 18)
     .padding(.vertical, 12)
+    .overlay(alignment: .top) { Divider().opacity(0.5) }
+  }
+}
+
+/// A small app icon, e.g. next to an Anchor; a generic symbol if the app isn't installed.
+struct AppIcon: View {
+  let bundleID: String
+  var size: CGFloat = 16
+
+  var body: some View {
+    if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+      Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+        .resizable()
+        .frame(width: size, height: size)
+    } else {
+      Image(systemName: "app.dashed").frame(width: size, height: size)
+    }
   }
 }
