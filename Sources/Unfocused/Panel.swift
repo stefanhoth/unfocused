@@ -27,8 +27,10 @@ final class PanelController {
   private var context: CaptureContext?
 
   /// Opens the panel only to ask where the user left off on `loop`.
-  func askWhereILeftOff(_ loop: Loop) {
-    present(.leftOff(loop))
+  /// Opens the panel only to ask where the user left off on `loop`; afterwards, opens the Anchors
+  /// of `openAnchorsAfter` (the Loop just Focused), if any.
+  func askWhereILeftOff(_ loop: Loop, openAnchorsAfter: Loop? = nil) {
+    present(.leftOff(loop, openAnchorsAfter: openAnchorsAfter))
   }
 
   /// Opens the panel to ask what to do with a Focus that sleep, idle or a lock interrupted.
@@ -51,7 +53,8 @@ final class PanelController {
         context: mode == .search ? context : nil,
         initialMode: mode,
         dismiss: { [weak self] in self?.hide() },
-        focusField: { [weak self] in self?.focusFieldSoon() }
+        focusField: { [weak self] in self?.focusFieldSoon() },
+        askWhereILeftOff: { [weak self] loop, after in self?.askWhereILeftOff(loop, openAnchorsAfter: after) }
       )
     )
     panel.center()
@@ -65,12 +68,12 @@ final class PanelController {
   /// Makes the panel key and puts the cursor in its text field after SwiftUI's next layout pass.
   /// Uses the panel itself: `NSApp.keyWindow` is often nil for a non-activating panel.
   func focusFieldSoon() {
-    for delay in [0.0, 0.05] {
+    for delay in [0.0, 0.05, 0.3] {
       DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
         guard let self, let panel = self.panel, panel.isVisible else { return }
         panel.makeKey()
         Self.focusTextField(in: panel)
-        if delay > 0, Self.firstTextField(in: panel.contentView) != nil {
+        if delay == 0.3, Self.firstTextField(in: panel.contentView) != nil {
           // Checked on every showing; the release checklist relies on this line.
           let editing = panel.isKeyWindow && panel.firstResponder is NSTextView
           self.model.log.info("Panel text field has the cursor: \(editing)")
@@ -148,7 +151,7 @@ enum PanelMode: Equatable {
   /// Search Open Loops, Focus one, or Capture a new one.
   case search
   /// Ask for an optional Where I left off for a Loop the user just left.
-  case leftOff(Loop)
+  case leftOff(Loop, openAnchorsAfter: Loop?)
   /// Back after an interrupted Focus: Continue, Close, Drop or Unfocus.
   case welcomeBack(FocusInterruption)
 }
@@ -159,6 +162,8 @@ struct PanelView: View {
   let dismiss: () -> Void
   /// Puts the cursor in the panel's text field once SwiftUI has laid out the current mode.
   let focusField: () -> Void
+  /// Shows Where I left off for a Loop in a fresh panel; the second Loop's Anchors open afterwards.
+  let showLeftOff: (Loop, Loop?) -> Void
 
   @State private var mode: PanelMode
   @State private var text = ""
@@ -186,13 +191,16 @@ struct PanelView: View {
     context: CaptureContext?,
     initialMode: PanelMode,
     dismiss: @escaping () -> Void,
-    focusField: @escaping () -> Void = {}
+    focusField: @escaping () -> Void = {},
+    askWhereILeftOff: @escaping (Loop, Loop?) -> Void = { _, _ in }
   ) {
     self.model = model
     self.context = context
     self.dismiss = dismiss
     self.focusField = focusField
+    self.showLeftOff = askWhereILeftOff
     _mode = State(initialValue: initialMode)
+    if case .leftOff(_, let after) = initialMode { _anchorsToOpenAfterLeftOff = State(initialValue: after) }
   }
 
   /// The `@word` being typed at the end of the field, if any.
@@ -243,7 +251,7 @@ struct PanelView: View {
     VStack(alignment: .leading, spacing: 0) {
       switch mode {
       case .search: searchContent
-      case .leftOff(let loop): leftOffContent(loop)
+      case .leftOff(let loop, _): leftOffContent(loop)
       case .welcomeBack(let interruption): welcomeBackContent(interruption)
       }
     }
@@ -752,12 +760,10 @@ struct PanelView: View {
     }
   }
 
+  /// Asks Where I left off in a freshly built panel rather than by switching this view's mode: the
+  /// switch animates, and the cursor went to the old field on its way out, so ↩ and esc did nothing.
   private func askWhereILeftOff(_ loop: Loop) {
-    text = ""
-    mode = .leftOff(loop)
-    // The mode's new text field only exists after this update; focus it once it's laid out.
-    fieldFocused = true
-    focusField()
+    showLeftOff(loop, anchorsToOpenAfterLeftOff)
   }
 
   private func contextLine(_ context: CaptureContext) -> some View {
