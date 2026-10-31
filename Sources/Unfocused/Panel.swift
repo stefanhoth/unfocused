@@ -54,8 +54,24 @@ final class PanelController {
       )
     )
     panel.center()
-    panel.makeKeyAndOrderFront(nil)
     NSApp.activate()
+    panel.makeKeyAndOrderFront(nil)
+    // On a panel's first showing, SwiftUI's focus request arrives before the window can take it.
+    // Once SwiftUI has laid the view out, put the cursor in the text field directly.
+    DispatchQueue.main.async { [weak panel] in
+      guard let panel else { return }
+      panel.makeKey()
+      if let field = Self.firstTextField(in: panel.contentView) { panel.makeFirstResponder(field) }
+    }
+  }
+
+  private static func firstTextField(in view: NSView?) -> NSTextField? {
+    guard let view else { return nil }
+    if let field = view as? NSTextField, field.isEditable { return field }
+    for subview in view.subviews {
+      if let field = firstTextField(in: subview) { return field }
+    }
+    return nil
   }
 
   private func makePanel() -> FloatingPanel {
@@ -117,6 +133,7 @@ struct PanelView: View {
 
   @State private var mode: PanelMode
   @State private var text = ""
+  /// The highlighted row; -1 means none, the text field itself (↑ past the first row).
   @State private var selection = 0
   /// Direction per mentioned name; unmentioned names default to Owed.
   @State private var directions: [String: Direction] = [:]
@@ -187,7 +204,12 @@ struct PanelView: View {
     }
     .frame(width: 640, height: 380)
     .calmGlass(cornerRadius: Style.panelRadius)
+    // The view appears before its borderless panel is the key window, and SwiftUI drops a focus
+    // request made then. Ask again once the panel has become key.
     .onAppear { fieldFocused = true }
+    .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { note in
+      if note.object is FloatingPanel { fieldFocused = true }
+    }
     .task {
       if let context { suggestedTitle = await model.captureTitle(for: context.anchor) }
     }
@@ -259,7 +281,7 @@ struct PanelView: View {
         return .handled
       }
       .onKeyPress(.upArrow) {
-        selection = max(selection - 1, 0)
+        selection = max(selection - 1, -1)
         return .handled
       }
 
@@ -434,6 +456,11 @@ struct PanelView: View {
   }
 
   private func focusSelected() {
+    // Back in the text field (↑ past the first row): ↩ captures what was typed.
+    if selection == -1 {
+      if !text.trimmingCharacters(in: .whitespaces).isEmpty { captureTyped() }
+      return
+    }
     guard results.indices.contains(selection) else { return }
     if let left = model.focus(results[selection]) {
       askWhereILeftOff(left)
@@ -553,21 +580,24 @@ struct PanelView: View {
 
   // MARK: Shared
 
+  /// The text field stays the outermost view so key handlers attached by callers (arrows, ↩, ⇥)
+  /// run before the field editor uses the keys itself; the icon is an overlay.
   private func inputField(_ prompt: String, systemImage: String? = nil) -> some View {
-    HStack(spacing: 10) {
-      if let systemImage {
-        Image(systemName: systemImage).font(.system(size: 18, weight: .medium)).foregroundStyle(.secondary)
+    TextField(prompt, text: $text)
+      .textFieldStyle(.plain)
+      .font(.system(size: 22))
+      .focused($fieldFocused)
+      .padding(.leading, systemImage == nil ? 0 : 30)
+      .overlay(alignment: .leading) {
+        if let systemImage {
+          Image(systemName: systemImage).font(.system(size: 18, weight: .medium)).foregroundStyle(.secondary)
+        }
       }
-      TextField(prompt, text: $text)
-        .textFieldStyle(.plain)
-        .font(.system(size: 22))
-        .focused($fieldFocused)
-    }
-    .padding(18)
-    .onKeyPress(.escape) {
-      dismiss()
-      return .handled
-    }
+      .padding(18)
+      .onKeyPress(.escape) {
+        dismiss()
+        return .handled
+      }
   }
 
   private func hints(_ items: [String]) -> some View {
