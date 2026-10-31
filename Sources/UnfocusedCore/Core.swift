@@ -162,6 +162,33 @@ public final class Core: Sendable {
     }
   }
 
+  /// Renames a Loop. Counts as Engagement.
+  public func retitle(_ loopID: UUID, to title: String) throws {
+    let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { throw CoreError.emptyTitle }
+    let now = time.now
+    try database.writer.write { db in
+      guard var record = try LoopRecord.fetchOne(db, key: loopID.uuidString) else { throw CoreError.loopNotFound }
+      record.title = trimmed
+      try record.update(db)
+      try Self.markEdited(loopID, at: now, db)
+    }
+  }
+
+  /// Changes how an Anchor is shown. It still points at, and matches, the same spot.
+  public func renameAnchor(_ anchor: Anchor, of loopID: UUID, to title: String) throws {
+    let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { throw CoreError.emptyTitle }
+    let now = time.now
+    try database.writer.write { db in
+      try db.execute(
+        sql: "UPDATE anchor SET title = ? WHERE loopId = ? AND identifier = ?",
+        arguments: [trimmed, loopID.uuidString, anchor.identifier]
+      )
+      try Self.markEdited(loopID, at: now, db)
+    }
+  }
+
   public func removeAnchor(_ anchor: Anchor, from loopID: UUID) throws {
     let now = time.now
     try database.writer.write { db in
