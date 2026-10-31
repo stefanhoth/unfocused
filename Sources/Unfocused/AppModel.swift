@@ -9,6 +9,10 @@ final class AppModel {
   private(set) var openLoops: [Loop] = []
   private(set) var focusedLoop: Loop?
   private(set) var people: [Person] = []
+  /// How each Open Loop is aging toward a Loose End, by Loop.
+  private(set) var aging: [Loop.ID: LoopAging] = [:]
+  /// Loose Ends, most aged first.
+  private(set) var looseEnds: [LoopAging] = []
   private(set) var activityPaused = false
   private(set) var hotKey: HotKeyChoice = .default
   /// Why the chosen hotkey can't be used, shown in Settings.
@@ -29,6 +33,9 @@ final class AppModel {
       openLoops = try core.openLoops()
       focusedLoop = try core.focusedLoop()
       people = try core.people()
+      let allAging = try core.agingOfOpenLoops()
+      aging = Dictionary(allAging.map { ($0.loop.id, $0) }) { first, _ in first }
+      looseEnds = allAging.filter(\.isLooseEnd)
       activityPaused = try core.isActivityPaused()
     } catch {
       report(error, while: "loading Loops")
@@ -130,6 +137,15 @@ final class AppModel {
   /// Ends a Focus left running while the app was quit or the Mac was off.
   func endStaleFocus() {
     perform("checking Focus") { try core.endStaleFocus() }
+  }
+
+  /// Active days without Engagement before a Loop is a Loose End.
+  var looseEndThreshold: Int {
+    get { (try? core.looseEndThreshold()) ?? 3 }
+    set {
+      perform("saving the Loose End threshold") { try core.setLooseEndThreshold(newValue) }
+      refresh()
+    }
   }
 
   /// Minutes without input that pause Focus.
