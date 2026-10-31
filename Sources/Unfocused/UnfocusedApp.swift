@@ -15,7 +15,7 @@ struct UnfocusedApp: App {
         Button("Quit unfocused") { NSApplication.shared.terminate(nil) }
       }
     } label: {
-      MenuBarLabel(model: appDelegate.model)
+      MenuBarLabel(app: appDelegate)
     }
 
     Window("Loops", id: WindowID.loops) {
@@ -109,12 +109,14 @@ struct MenuContent: View {
 
 /// The menu bar item: the ring, plus the Focused Loop's title when there is one.
 struct MenuBarLabel: View {
-  let model: AppModel?
+  /// Observed here, in the label's own view: the App's body doesn't re-run for the delegate's
+  /// published changes, so a value passed in from there would never update.
+  @ObservedObject var app: AppDelegate
 
   var body: some View {
-    if let title = model?.focusedLoop?.title {
+    if let title = app.focusedTitle {
       Label {
-        Text(title.count > 24 ? title.prefix(23) + "…" : title)
+        Text(title.count > 18 ? title.prefix(17) + "…" : title)
       } icon: {
         Image(nsImage: MenuBarGlyph.image(focused: true))
       }
@@ -131,6 +133,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   @Published private(set) var model: AppModel?
   @Published private(set) var panel: PanelController?
   @Published private(set) var tieOff: TieOffController?
+  /// The Focused Loop's title for the menu bar, `nil` when unfocused.
+  @Published private(set) var focusedTitle: String?
+  private var focusNotice: FocusNotice?
   @Published private(set) var reminder: TieOffReminder?
   private var recorder: ActivityRecorder?
   private var banner: SwitchBannerController?
@@ -157,6 +162,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
       let tieOff = TieOffController(model: model)
       self.tieOff = tieOff
       reminder = TieOffReminder(model: model, tieOff: tieOff)
+      let notice = FocusNotice()
+      focusNotice = notice
+      focusedTitle = model.focusedLoop?.title
+      model.onFocusChange = { [weak self] now, before in
+        self?.focusedTitle = now?.title
+        notice.show(focused: now, left: before)
+      }
+      recorder.onFocusInterrupted = { [weak model] in model?.refresh() }
       model.endStaleFocus()
       environment.log.info("Launched, database ready")
     } catch {
@@ -183,6 +196,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     case "panel": panel?.show()
     case "tie-off": tieOff?.show()
     case "banner": banner?.update(model?.openLoops.first)
+    // Shows the menu bar label and notice as if a Loop were Focused, without changing any data.
+    case "focus-preview":
+      let preview = Loop(id: UUID(), title: "Write the onboarding spec", state: .open, capturedAt: Date())
+      focusedTitle = preview.title
+      focusNotice?.show(focused: preview, left: nil)
     default: break
     }
   }

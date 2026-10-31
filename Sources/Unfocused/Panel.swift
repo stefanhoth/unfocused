@@ -269,6 +269,11 @@ struct PanelView: View {
         selection = min(selection, max(results.count - 1, 0))
         return .handled
       }
+      .onKeyPress(characters: ["u"], phases: .down) { press in
+        guard press.modifiers.contains(.command), model.focusedLoop != nil else { return .ignored }
+        if let left = model.unfocus() { askWhereILeftOff(left) } else { dismiss() }
+        return .handled
+      }
       .onKeyPress(characters: ["1", "2", "3"], phases: .down) { press in
         guard press.modifiers.contains(.command), let digit = Int(press.characters), related.indices.contains(digit - 1)
         else { return .ignored }
@@ -320,7 +325,11 @@ struct PanelView: View {
   @ViewBuilder private var searchResults: some View {
     if text.isEmpty, let focused = model.focusedLoop {
       VStack(alignment: .leading, spacing: 4) {
-        Label("Focused", systemImage: "scope").font(.caption).foregroundStyle(.secondary)
+        HStack {
+          Label("Focused", systemImage: "scope").font(.caption).foregroundStyle(.secondary)
+          Spacer()
+          Text("⌘U Unfocus").font(.caption).foregroundStyle(.tertiary)
+        }
         Text(focused.title).font(.headline)
         if let note = focused.whereILeftOff {
           Text("Where I left off: \(note)").foregroundStyle(.secondary)

@@ -14,6 +14,8 @@ final class ActivityRecorder {
   private let log: Log
   /// Called when the user is back after a Focus was interrupted, to ask what to do with it.
   var onReturn: ((FocusInterruption) -> Void)?
+  /// Called after a Focus was interrupted (sleep, idle, lock), so the UI can catch up.
+  var onFocusInterrupted: (() -> Void)?
   /// Called after every sample with the Loop the user seems to be on without Focusing it, or `nil`.
   var onSwitchSuggestion: ((Loop?) -> Void)?
   /// The interruption the user was already asked about, so they're asked once.
@@ -81,7 +83,9 @@ final class ActivityRecorder {
 
   private func interrupt(at time: Date, _ reason: FocusInterruptionReason) {
     do {
+      let wasFocused = try core.focusedLoop() != nil
       try core.interruptFocus(at: time, because: reason)
+      if wasFocused { onFocusInterrupted?() }
     } catch {
       log.error("Interrupting Focus failed: \(error)")
     }
