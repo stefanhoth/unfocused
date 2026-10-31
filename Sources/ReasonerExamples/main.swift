@@ -80,4 +80,14 @@ for anchor in titleCases {
   print("· \(anchor.title)  →  \(await reasoner.captureTitle(for: anchor) ?? "(none)")")
 }
 
+print("\n== Recap summary (judge by eye) ==")
+let facts = """
+  Period: a day
+  Finished: Renew the Acme contract; Review Jonas' PR #214
+  Worked on, not finished yet: Write the onboarding API spec (2h 10m); Book the team offsite venue (25m)
+  New ideas noted for later: Q3 spending forecast
+  Unfocused time: 1h 5m
+  """
+print(await reasoner.summary(of: facts) ?? "(none)")
+
 print("\n\(correct) of \(total) judged cases as expected.")

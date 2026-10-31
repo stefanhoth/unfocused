@@ -28,6 +28,12 @@ public protocol Reasoner: Sendable {
   func related(to text: String, among candidates: [LoopBrief]) async -> [UUID]?
   /// A short Loop title for what's in front of the user.
   func captureTitle(for anchor: Anchor) async -> String?
+  /// A few plain sentences summing up a Recap, from its facts.
+  func summary(of facts: String) async -> String?
+}
+
+extension Reasoner {
+  public func summary(of facts: String) async -> String? { nil }
 }
 
 struct JudgementRecord: Codable, FetchableRecord, PersistableRecord {
@@ -84,6 +90,16 @@ extension Core {
   public func captureTitle(for anchor: Anchor, reasoner: some Reasoner) async -> String {
     let suggestion = await reasoner.captureTitle(for: anchor)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     return suggestion.isEmpty ? anchor.title : String(suggestion.prefix(120))
+  }
+
+  // MARK: Recap prose
+
+  /// A short prose summary of a Recap, or `nil` without a model (the Recap then shows figures only).
+  public func summary(of recap: Recap, reasoner: some Reasoner) async -> String? {
+    guard !recap.closed.isEmpty || !recap.movedForward.isEmpty || !recap.captured.isEmpty || recap.unfocusedTime > 0
+    else { return nil }
+    let text = await reasoner.summary(of: recap.facts)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return text.isEmpty ? nil : text
   }
 
   // MARK: Helpers

@@ -14,6 +14,8 @@ struct RecapWindow: View {
   @State private var span = Span.day
   @State private var date = Date()
   @State private var copied = false
+  /// The prose summary for the Recap shown, keyed by its period.
+  @State private var summary: (period: DateInterval, text: String)?
 
   var body: some View {
     let recap = span == .day ? model.recap(day: date) : model.recap(weekOf: date)
@@ -23,6 +25,13 @@ struct RecapWindow: View {
       if let recap {
         ScrollView {
           VStack(alignment: .leading, spacing: 20) {
+            if let summary, summary.period == recap.period {
+              Text(summary.text)
+                .font(.title3)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .transition(.opacity)
+            }
             figures(recap)
             if span == .day, !recap.timeline.isEmpty { TimelineBar(recap: recap) }
             loops("Closed", systemImage: "checkmark.circle", recap.closed.map { ($0.title, nil) })
@@ -41,6 +50,12 @@ struct RecapWindow: View {
     }
     .frame(minWidth: 520, minHeight: 480)
     .navigationTitle("Recap")
+    .task(id: recap?.period) {
+      guard let recap, summary?.period != recap.period else { return }
+      if let text = await model.summary(of: recap) {
+        withAnimation { summary = (recap.period, text) }
+      }
+    }
   }
 
   private func toolbar(_ recap: Recap?) -> some View {
@@ -58,7 +73,8 @@ struct RecapWindow: View {
       Button(copied ? "Copied" : "Copy as Markdown", systemImage: copied ? "checkmark" : "doc.on.doc") {
         guard let recap else { return }
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(recap.markdown(name: placeName), forType: .string)
+        let prose = summary.flatMap { $0.period == recap.period ? $0.text : nil }
+        NSPasteboard.general.setString(recap.markdown(name: placeName, summary: prose), forType: .string)
         copied = true
         Task {
           try? await Task.sleep(for: .seconds(2))

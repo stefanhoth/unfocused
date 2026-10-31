@@ -371,6 +371,11 @@ final class AppModel {
 
   func recap(day: Date) -> Recap? { try? core.recap(day: day) }
 
+  /// The on-device prose summary of a Recap, or `nil` without Apple Intelligence.
+  func summary(of recap: Recap) async -> String? {
+    await core.summary(of: recap, reasoner: reasoner)
+  }
+
   func recap(weekOf date: Date) -> Recap? { try? core.recap(weekOf: date) }
 
   var excludedApps: [String] {

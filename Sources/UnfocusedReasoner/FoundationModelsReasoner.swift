@@ -65,6 +65,18 @@ public struct FoundationModelsReasoner: Reasoner {
     return await ask(prompt)?.trimmingCharacters(in: CharacterSet(charactersIn: "\"'“”").union(.whitespacesAndNewlines))
   }
 
+  public func summary(of facts: String) async -> String? {
+    let prompt = """
+      Write two or three short, plain sentences summing up this work period for the person who did it.
+      Address them as "you". Only "Finished" items are done; for the others say "worked on" or \
+      "made progress on" and never imply they are done. Mention unfocused time only as a neutral fact, never as a judgement. \
+      No lists, no headings, no emoji, no advice.
+
+      \(facts)
+      """
+    return await ask(prompt)
+  }
+
   private func ask(_ prompt: String) async -> String? {
     guard isAvailable else { return nil }
     let session = LanguageModelSession(instructions: Self.instructions)

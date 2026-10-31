@@ -93,4 +93,37 @@ struct RecapTests {
     #expect(markdown.contains("Unfocused time: 20m"))
     #expect(markdown.contains("- news.example: 15m"))
   }
+
+  @Test("the Recap gets a prose summary from the Reasoner, also in Markdown")
+  func prose() async throws {
+    let (core, time, _, _) = try day()
+    let recap = try core.recap(day: time.now)
+    let summary = await core.summary(of: recap, reasoner: SummaryReasoner(text: "You closed the spec."))
+    #expect(summary == "You closed the spec.")
+    #expect(recap.markdown(summary: summary).contains("\n\nYou closed the spec.\n"))
+    #expect(recap.facts.contains("Finished: Write spec"))
+  }
+
+  @Test("without a model, the Recap shows figures only")
+  func proseFallback() async throws {
+    let (core, time, _, _) = try day()
+    let recap = try core.recap(day: time.now)
+    #expect(await core.summary(of: recap, reasoner: SummaryReasoner(text: nil)) == nil)
+    #expect(!recap.markdown().contains("You closed"))
+  }
+
+  @Test("an empty day gets no summary")
+  func proseEmpty() async throws {
+    let (core, time) = try makeCore()
+    let recap = try core.recap(day: time.now)
+    #expect(await core.summary(of: recap, reasoner: SummaryReasoner(text: "Something")) == nil)
+  }
+}
+
+private struct SummaryReasoner: Reasoner {
+  let text: String?
+  func belongs(_ activity: Anchor, to loop: LoopBrief) async -> Bool? { nil }
+  func related(to text: String, among candidates: [LoopBrief]) async -> [UUID]? { nil }
+  func captureTitle(for anchor: Anchor) async -> String? { nil }
+  func summary(of facts: String) async -> String? { text }
 }
