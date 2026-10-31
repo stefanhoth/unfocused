@@ -96,13 +96,7 @@ struct RecapWindow: View {
   }
 
   private func figure(_ value: String, _ label: String) -> some View {
-    VStack(alignment: .leading, spacing: 2) {
-      Text(value).font(.title.weight(.semibold)).monospacedDigit()
-      Text(label).font(.caption).foregroundStyle(.secondary)
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(12)
-    .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
+    FigureCard(value: value, label: label)
   }
 
   @ViewBuilder private func loops(_ title: String, systemImage: String, _ rows: [(String, String?)]) -> some View {

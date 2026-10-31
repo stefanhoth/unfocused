@@ -15,17 +15,9 @@ struct LoopsWindow: View {
   }
 
   var body: some View {
-    // A plain split (not NavigationSplitView): this view sits inside the main window's sidebar
-    // layout, and navigation split views don't nest.
-    HSplitView {
-      List(loops, selection: $selectedID) { loop in
-        LoopRow(loop: loop, isFocused: loop.id == model.focusedLoop?.id, aging: model.aging[loop.id])
-          .contextMenu { actions(for: loop) }
-      }
-      .overlay {
-        if loops.isEmpty { emptyState }
-      }
-      .safeAreaInset(edge: .top) {
+    // A fixed-width list next to the detail: split views drifted and clipped the detail.
+    HStack(spacing: 0) {
+      VStack(spacing: 0) {
         Picker("Show", selection: $state) {
           Text("Open").tag(LoopState.open)
           Text("Closed").tag(LoopState.closed)
@@ -33,9 +25,23 @@ struct LoopsWindow: View {
         }
         .pickerStyle(.segmented)
         .labelsHidden()
-        .padding(8)
+        .padding(12)
+        if loops.isEmpty {
+          emptyState.frame(maxHeight: .infinity)
+        } else {
+          SelectableList(items: loops, selection: $selectedID) { loop in
+            LoopRow(
+              loop: loop,
+              isFocused: loop.id == model.focusedLoop?.id,
+              aging: model.aging[loop.id],
+              age: model.lastEngagement(of: loop) ?? loop.capturedAt
+            )
+            .contextMenu { actions(for: loop) }
+          }
+        }
       }
-      .frame(minWidth: 260, idealWidth: 320, maxWidth: 440)
+      .frame(width: 340)
+      Divider()
       Group {
         if let loop = loops.first(where: { $0.id == selectedID }) {
           LoopDetail(model: model, loop: loop, finish: finish)
@@ -43,7 +49,7 @@ struct LoopsWindow: View {
           Text("Select a Loop to see where you left off").foregroundStyle(.secondary)
         }
       }
-      .frame(minWidth: 360, maxWidth: .infinity, maxHeight: .infinity)
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     .frame(minWidth: 680, minHeight: 400)
     .overlay(alignment: .bottom) {
@@ -113,29 +119,34 @@ struct LoopsWindow: View {
   }
 }
 
+/// A Loop in a list, like the panel's rows: aging, title, Where I left off, how long ago.
 private struct LoopRow: View {
   let loop: Loop
   let isFocused: Bool
   let aging: LoopAging?
+  let age: Date
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 2) {
-      HStack {
-        AgingMark(aging: aging)
-        Text(loop.title).lineLimit(2)
-        if isFocused {
-          Image(nsImage: MenuBarGlyph.image(focused: true))
-            .renderingMode(.template)
-            .foregroundStyle(Style.logoLinearGradient)
-            .help("Focused")
+    HStack(alignment: .firstTextBaseline, spacing: 10) {
+      AgingMark(aging: aging)
+      VStack(alignment: .leading, spacing: 3) {
+        HStack(spacing: 6) {
+          Text(loop.title).lineLimit(2)
+          if isFocused {
+            Image(nsImage: MenuBarGlyph.image(focused: true))
+              .renderingMode(.template)
+              .foregroundStyle(Style.logoLinearGradient)
+              .help("Focused")
+          }
+        }
+        LooseEndNote(aging: aging)
+        if let note = loop.whereILeftOff {
+          Text(note).font(.callout).foregroundStyle(.secondary).lineLimit(1)
         }
       }
-      LooseEndNote(aging: aging)
-      if let note = loop.whereILeftOff {
-        Text(note).font(.callout).foregroundStyle(.secondary).lineLimit(1)
-      }
+      Spacer(minLength: 8)
+      Text(PanelView.shortAge(age)).font(.caption).monospacedDigit().foregroundStyle(.tertiary)
     }
-    .padding(.vertical, 2)
   }
 }
 

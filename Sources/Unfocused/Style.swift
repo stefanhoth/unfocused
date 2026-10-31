@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UnfocusedCore
 
 /// The Calm Glass look (ticket #17): Liquid Glass on floating chrome only, system vibrancy for
 /// hierarchy, key hints always visible. Windows with lots of text stay solid.
@@ -173,6 +174,47 @@ struct GradientGlow: View {
     .onAppear {
       guard !reduceMotion else { return }
       withAnimation(.linear(duration: 12).repeatForever(autoreverses: false)) { angle = 360 }
+    }
+  }
+}
+
+/// A number with its label, as at the top of the Recap and Activity.
+struct FigureCard: View {
+  let value: String
+  let label: String
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 2) {
+      Text(value).font(.title.weight(.semibold)).monospacedDigit()
+      Text(label).font(.caption).foregroundStyle(.secondary)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(12)
+    .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
+  }
+}
+
+extension Style {
+  /// "45s", "8m", "1h 5m": short durations for lists.
+  static func shortDuration(_ seconds: TimeInterval) -> String {
+    let total = Int(seconds.rounded())
+    if total < 60 { return "\(total)s" }
+    let minutes = total / 60
+    if minutes < 60 { return "\(minutes)m" }
+    return "\(minutes / 60)h \(minutes % 60)m"
+  }
+}
+
+extension Source {
+  var displayName: String {
+    switch self {
+    case .safari: "Safari"
+    case .chrome: "Chrome"
+    case .firefox: "Firefox"
+    case .app(let bundleID):
+      NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)
+        .map { FileManager.default.displayName(atPath: $0.path).replacingOccurrences(of: ".app", with: "") }
+        ?? bundleID
     }
   }
 }

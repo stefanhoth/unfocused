@@ -20,6 +20,7 @@ setup: ## Install the git pre-commit hook
 lint: ## Format check + build with warnings as errors
 	swift format lint --strict --recursive $(SWIFT_SOURCES)
 	swift build -Xswiftc -warnings-as-errors
+	scripts/check-design.sh
 
 format: ## Fix formatting in place
 	swift format format --in-place --recursive $(SWIFT_SOURCES)
