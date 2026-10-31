@@ -101,6 +101,18 @@ final class AppModel {
     _ = changeState(of: loop, "reopening") { try core.reopen(loop.id) }
   }
 
+  func loop(anchoredAt anchor: Anchor) -> Loop? {
+    try? core.loop(anchoredAt: anchor)
+  }
+
+  func addAnchor(_ anchor: Anchor, to loop: Loop) {
+    perform("adding an Anchor") { try core.addAnchor(anchor, to: loop.id) }
+  }
+
+  func removeAnchor(_ anchor: Anchor, from loop: Loop) {
+    perform("removing an Anchor") { try core.removeAnchor(anchor, from: loop.id) }
+  }
+
   func anchors(of loop: Loop) -> [Anchor] {
     (try? core.anchors(of: loop.id)) ?? []
   }

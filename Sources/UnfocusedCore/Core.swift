@@ -119,6 +119,49 @@ public final class Core: Sendable {
     }
   }
 
+  /// The Loop that already has an Anchor at the same spot: an Open one if there is one, otherwise
+  /// the most recently changed Closed or Dropped one (so it can be reopened).
+  public func loop(anchoredAt anchor: Anchor) throws -> Loop? {
+    try database.writer.read { db in
+      let loopIDs = try String.fetchAll(
+        db,
+        sql: "SELECT DISTINCT loopId FROM anchor WHERE identifier = ?",
+        arguments: [anchor.identifier]
+      )
+      let loops = try LoopRecord.filter(keys: loopIDs).fetchAll(db)
+      let ranked = loops.sorted { lhs, rhs in
+        let lhsOpen = lhs.state == LoopState.open.rawValue
+        let rhsOpen = rhs.state == LoopState.open.rawValue
+        return lhsOpen != rhsOpen ? lhsOpen : lhs.stateChangedAt > rhs.stateChangedAt
+      }
+      return ranked.first?.loop
+    }
+  }
+
+  /// Adds an Anchor to a Loop. Adding the same spot twice changes nothing.
+  public func addAnchor(_ anchor: Anchor, to loopID: UUID) throws {
+    let now = time.now
+    try database.writer.write { db in
+      guard try LoopRecord.fetchOne(db, key: loopID.uuidString) != nil else { throw CoreError.loopNotFound }
+      let exists =
+        try AnchorRecord
+        .filter(Column("loopId") == loopID.uuidString && Column("identifier") == anchor.identifier)
+        .fetchCount(db) > 0
+      guard !exists else { return }
+      var record = AnchorRecord(loopID: loopID, anchor: anchor, addedAt: now)
+      try record.insert(db)
+    }
+  }
+
+  public func removeAnchor(_ anchor: Anchor, from loopID: UUID) throws {
+    try database.writer.write { db in
+      _ =
+        try AnchorRecord
+        .filter(Column("loopId") == loopID.uuidString && Column("identifier") == anchor.identifier)
+        .deleteAll(db)
+    }
+  }
+
   /// A Loop's Anchors, in the order they were added.
   public func anchors(of loopID: UUID) throws -> [Anchor] {
     try database.writer.read { db in
