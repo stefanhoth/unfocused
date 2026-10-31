@@ -121,6 +121,18 @@ public final class UnfocusedDatabase: Sendable {
         table.primaryKey(["loopId", "personId"])
       }
     }
+    migrator.registerMigration("v7-activity") { db in
+      try db.create(table: "activity") { table in
+        table.autoIncrementedPrimaryKey("id")
+        table.column("source", .text).notNull()
+        table.column("identifier", .text).notNull().indexed()
+        table.column("link", .text).notNull()
+        table.column("title", .text).notNull()
+        table.column("start", .double).notNull().indexed()
+        table.column("lastSeen", .double).notNull().indexed()
+        table.column("closed", .boolean).notNull().defaults(to: false)
+      }
+    }
     return migrator
   }()
 }

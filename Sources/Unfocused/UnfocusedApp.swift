@@ -22,6 +22,10 @@ struct UnfocusedApp: App {
       if let model = appDelegate.model { LoopsWindow(model: model) }
     }
 
+    Window("Activity", id: WindowID.activity) {
+      if let model = appDelegate.model { ActivityWindow(model: model) }
+    }
+
     Window("People", id: WindowID.people) {
       if let model = appDelegate.model { PeopleWindow(model: model) }
     }
@@ -35,6 +39,7 @@ struct UnfocusedApp: App {
 enum WindowID {
   static let loops = "loops"
   static let people = "people"
+  static let activity = "activity"
 }
 
 struct MenuContent: View {
@@ -70,6 +75,14 @@ struct MenuContent: View {
       NSApp.activate()
       openWindow(id: WindowID.people)
     }
+    Button("Activity…") {
+      NSApp.activate()
+      openWindow(id: WindowID.activity)
+    }
+    Toggle(
+      "Pause Activity Recording",
+      isOn: Binding(get: { model.activityPaused }, set: { model.setActivityPaused($0) })
+    )
     Divider()
     Button("Settings…") {
       NSApp.activate()
@@ -100,6 +113,7 @@ struct MenuBarLabel: View {
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   @Published private(set) var model: AppModel?
   @Published private(set) var panel: PanelController?
+  private var recorder: ActivityRecorder?
 
   func applicationWillFinishLaunching(_ notification: Notification) {
     // Menu bar only: no Dock icon, also when run unbundled via `swift run`.
@@ -111,6 +125,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
       HotKeyCenter.shared.onPress = { panel.toggle() }
       self.model = model
       self.panel = panel
+      recorder = ActivityRecorder(core: model.core, log: environment.log)
       environment.log.info("Launched, database ready")
     } catch {
       Log(category: "app", file: nil).error("Startup failed: \(error)")
@@ -118,6 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   }
 
   func applicationDidFinishLaunching(_ notification: Notification) {
+    recorder?.start()
     guard let model, !model.activateSavedHotKey() else { return }
     // First launch with a taken hotkey: ask for another one right away.
     NSApp.activate()
