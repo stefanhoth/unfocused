@@ -246,6 +246,7 @@ struct PanelView: View {
       }
     }
     .animation(reduceMotion ? .easeInOut(duration: 0.15) : .snappy, value: isHero)
+    .tint(Style.brand)
     .frame(width: Style.panelSize.width, height: Style.panelSize.height)
     .calmGlass(cornerRadius: Style.panelRadius)
     .overlay(GradientGlow(cornerRadius: Style.panelRadius))
@@ -321,16 +322,11 @@ struct PanelView: View {
       if let left = model.focus(existing, openAnchors: false) { askWhereILeftOff(left) } else { dismiss() }
       return .handled
     }
-    // ⌘D Close (as in done), ⌘⌫ Drop. ⌘⌫ only Drops when there's a Loop to act on; otherwise it
-    // edits the text as usual.
-    .onKeyPress(characters: ["d"], phases: .down) { press in
+    // ⌘C Close Loop, ⌘D Drop, matching C and D in the Tie-off. With no Loop to act on, ⌘C copies
+    // as usual. (⌘⌫ can't be used: the text field takes it for itself.)
+    .onKeyPress(characters: ["c", "d"], phases: .down) { press in
       guard press.modifiers.contains(.command), let loop = actionLoop else { return .ignored }
-      finish(loop, close: true)
-      return .handled
-    }
-    .onKeyPress(.delete, phases: .down) { press in
-      guard press.modifiers.contains(.command), let loop = actionLoop else { return .ignored }
-      finish(loop, close: false)
+      finish(loop, close: press.characters == "c")
       return .handled
     }
     .onKeyPress(characters: ["o"], phases: .down) { press in
@@ -370,7 +366,7 @@ struct PanelView: View {
     }
 
     if isHero {
-      hints(["⌘D Close", "⌘O Open", "⌘U Unfocus", "↓ Switch", "⌘↩ Capture new", "esc Hide"])
+      hints(["⌘C Close Loop", "⌘O Open", "⌘U Unfocus", "↓ Switch", "⌘↩ Capture new", "esc Hide"])
     } else {
       searchBody
     }
@@ -419,7 +415,7 @@ struct PanelView: View {
   /// typing) away, so the panel doesn't invite jumping to something else.
   private var isHero: Bool { model.focusedLoop != nil && text.isEmpty && !browsing }
 
-  /// The Loop ⌘D, ⌘⌫ and ⌘O act on: the Focused one in the hero view, otherwise the selected row.
+  /// The Loop ⌘C, ⌘D and ⌘O act on: the Focused one in the hero view, otherwise the selected row.
   private var actionLoop: Loop? {
     if isHero { return model.focusedLoop }
     return results.indices.contains(selection) ? results[selection] : nil
@@ -506,8 +502,8 @@ struct PanelView: View {
     Spacer(minLength: 0)
     hints(
       context == nil
-        ? ["↩ Focus", "⌘↩ Capture new", "⌘O Open", "⌘D Close", "⌘⌫ Drop", "@ Person", "esc Hide"]
-        : ["↩ Focus", "⌘↩ Capture new", "⌥↩ Add here", "⌘O Open", "⌘D Close", "⌘⌫ Drop", "esc Hide"]
+        ? ["↩ Focus", "⌘↩ Capture new", "⌘O Open", "⌘C Close Loop", "⌘D Drop", "@ Person", "esc Hide"]
+        : ["↩ Focus", "⌘↩ Capture new", "⌥↩ Add here", "⌘O Open", "⌘C Close Loop", "⌘D Drop", "esc Hide"]
     )
   }
 
@@ -543,7 +539,8 @@ struct PanelView: View {
   /// plain ↩: that bit of friction is deliberate, so new Loops aren't started by accident.
   private var captureRow: some View {
     HStack(spacing: 10) {
-      Image(systemName: "plus.circle.fill").font(.system(size: 18, weight: .medium)).foregroundStyle(.tint)
+      Image(systemName: "plus.circle.fill").font(.system(size: 20, weight: .medium))
+        .foregroundStyle(Style.logoLinearGradient)
       VStack(alignment: .leading, spacing: 2) {
         Text("Capture “\(text.trimmingCharacters(in: .whitespaces))”").lineLimit(1)
         Text("No Loop matches yet").font(.caption).foregroundStyle(.secondary)
@@ -809,16 +806,16 @@ struct PanelView: View {
         dismiss()
       }
       .keyboardShortcut(.defaultAction)
-      Button("Close") {
+      Button("Close Loop") {
         model.close(loop)
         dismiss()
       }
-      .keyboardShortcut("d", modifiers: .command)
+      .keyboardShortcut("c", modifiers: .command)
       Button("Drop") {
         model.drop(loop)
         dismiss()
       }
-      .keyboardShortcut(.delete, modifiers: .command)
+      .keyboardShortcut("d", modifiers: .command)
       Button("Unfocus") {
         model.dismissInterruptedFocus()
         askWhereILeftOff(loop)
@@ -830,7 +827,7 @@ struct PanelView: View {
     .padding(.horizontal, 16)
 
     Spacer(minLength: 0)
-    hints(["↩ Continue", "⌘D Close", "⌘⌫ Drop", "⌘U Unfocus", "esc Ask me later"])
+    hints(["↩ Continue", "⌘C Close Loop", "⌘D Drop", "⌘U Unfocus", "esc Ask me later"])
   }
 
   // MARK: Shared

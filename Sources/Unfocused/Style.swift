@@ -10,6 +10,9 @@ enum Style {
   static let panelListWidth: CGFloat = 380
   /// Transparent room around floating surfaces for their own shadow and glow.
   static let glowMargin: CGFloat = 36
+  /// The app's own tint (the icon's blue), so controls don't take on a red system accent and read
+  /// as warnings.
+  static let brand = Color(red: 0.42, green: 0.64, blue: 0.96)
   static let logoLinearGradient = LinearGradient(
     colors: logoGradient,
     startPoint: .leading,

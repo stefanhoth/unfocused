@@ -67,7 +67,7 @@ struct LoopsWindow: View {
   @ViewBuilder private func actions(for loop: Loop) -> some View {
     if loop.state == .open {
       Button("Focus") { model.focus(loop) }
-      Button("Close") { model.close(loop) }
+      Button("Close Loop") { model.close(loop) }
       Button("Drop") { model.drop(loop) }
     } else {
       Button("Reopen") { model.reopen(loop) }
@@ -140,7 +140,7 @@ private struct LoopDetail: View {
         HStack {
           if loop.state == .open {
             Button("Focus") { model.focus(loop) }
-            Button("Close") { model.close(loop) }
+            Button("Close Loop") { model.close(loop) }
             Button("Drop") { model.drop(loop) }
           } else {
             Button("Reopen") { model.reopen(loop) }
