@@ -27,7 +27,7 @@ struct LoopsWindow: View {
         Picker("Show", selection: $state) {
           Text("Open").tag(LoopState.open)
           Text("Closed").tag(LoopState.closed)
-          Text("Dropped").tag(LoopState.dropped)
+          Text("Let go").tag(LoopState.letGo)
         }
         .pickerStyle(.segmented)
         .labelsHidden()
@@ -59,8 +59,8 @@ struct LoopsWindow: View {
       )
     case .closed:
       ContentUnavailableView("Nothing Closed yet", systemImage: "checkmark.circle")
-    case .dropped:
-      ContentUnavailableView("Nothing Dropped", systemImage: "arrow.down.circle")
+    case .letGo:
+      ContentUnavailableView("Nothing let go", systemImage: "arrow.down.circle")
     }
   }
 
@@ -68,7 +68,7 @@ struct LoopsWindow: View {
     if loop.state == .open {
       Button("Focus") { model.focus(loop) }
       Button("Close Loop") { model.close(loop) }
-      Button("Drop") { model.drop(loop) }
+      Button("Let go") { model.letGo(loop) }
     } else {
       Button("Reopen") { model.reopen(loop) }
     }
@@ -141,7 +141,7 @@ private struct LoopDetail: View {
           if loop.state == .open {
             Button("Focus") { model.focus(loop) }
             Button("Close Loop") { model.close(loop) }
-            Button("Drop") { model.drop(loop) }
+            Button("Let go") { model.letGo(loop) }
           } else {
             Button("Reopen") { model.reopen(loop) }
           }
@@ -281,7 +281,7 @@ extension LoopChange {
     switch self {
     case .captured: "Captured"
     case .closed: "Closed"
-    case .dropped: "Dropped"
+    case .letGo: "Let go"
     case .reopened: "Reopened"
     }
   }

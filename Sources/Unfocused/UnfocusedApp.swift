@@ -67,8 +67,8 @@ struct MenuContent: View {
       Button("Close Loop") {
         if let left = model.close(focused) { panel?.askWhereILeftOff(left) }
       }
-      Button("Drop Loop") {
-        if let left = model.drop(focused) { panel?.askWhereILeftOff(left) }
+      Button("Let Go of Loop") {
+        if let left = model.letGo(focused) { panel?.askWhereILeftOff(left) }
       }
       Divider()
     } else {

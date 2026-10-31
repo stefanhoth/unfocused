@@ -157,12 +157,12 @@ struct TieOffView: View {
         .keyboardShortcut("c", modifiers: [])
         .buttonStyle(.glass)
         Button {
-          model.drop(loop)
+          model.letGo(loop)
           advance()
         } label: {
-          keyLabel("Drop", "D")
+          keyLabel("Let go", "L")
         }
-        .keyboardShortcut("d", modifiers: [])
+        .keyboardShortcut("l", modifiers: [])
         .buttonStyle(.glass)
       }
       HStack {

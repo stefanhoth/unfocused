@@ -152,7 +152,7 @@ enum PanelMode: Equatable {
   case search
   /// Ask for an optional Where I left off for a Loop the user just left.
   case leftOff(Loop, openAnchorsAfter: Loop?)
-  /// Back after an interrupted Focus: Continue, Close, Drop or Unfocus.
+  /// Back after an interrupted Focus: Continue, Close Loop, Let go or Unfocus.
   case welcomeBack(FocusInterruption)
 }
 
@@ -173,7 +173,7 @@ struct PanelView: View {
   @State private var selection = -1
   /// While Focused: true once the user stepped from the Focused Loop into the list (↓).
   @State private var browsing = false
-  /// A short confirmation after Close Loop or Drop, with ⌘Z to undo.
+  /// A short confirmation after Close Loop or Let go, with ⌘Z to undo.
   @State private var confirmation: Confirmation?
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   /// The Loop just Focused, whose Anchors open once Where I left off is answered or skipped.
@@ -339,21 +339,21 @@ struct PanelView: View {
       if let left = model.focus(existing, openAnchors: false) { askWhereILeftOff(left) } else { dismiss() }
       return .handled
     }
-    // ⌘C Close Loop, ⌘D Drop, matching C and D in the Tie-off. With no Loop to act on, ⌘C copies
+    // ⌘C Close Loop, ⌘L Let go, matching C and L in the Tie-off. With no Loop to act on, ⌘C copies
     // as usual. (⌘⌫ can't be used: the text field takes it for itself.)
-    .onKeyPress(characters: ["c", "d"], phases: .down) { press in
+    .onKeyPress(characters: ["c", "l"], phases: .down) { press in
       guard press.modifiers.contains(.command) else { return .ignored }
       guard let loop = actionLoop else {
-        // ⌘C copies text as usual; ⌘D with nothing selected explains instead of doing nothing.
-        guard press.characters == "d" else { return .ignored }
+        // ⌘C copies text as usual; ⌘L with nothing selected explains instead of doing nothing.
+        guard press.characters == "l" else { return .ignored }
         confirm(Confirmation(text: "Select a Loop first: ↓", systemImage: "arrow.down", celebrate: false, undo: nil))
         return .handled
       }
-      // Dropping what you chose to Focus on is a bigger step than switching: not from the Focused
+      // Letting go of what you chose to Focus on is a bigger step than switching: not from the Focused
       // view, only from the list once it's no longer Focused.
-      if press.characters == "d", isHero {
+      if press.characters == "l", isHero {
         confirm(
-          Confirmation(text: "Unfocus first (⌘U) to drop it", systemImage: "info.circle", celebrate: false, undo: nil)
+          Confirmation(text: "Unfocus first (⌘U) to let it go", systemImage: "info.circle", celebrate: false, undo: nil)
         )
         return .handled
       }
@@ -416,7 +416,7 @@ struct PanelView: View {
       contextLine(context)
     }
 
-    // An Open Loop for this spot is marked "You're here" in the list; only a Closed or Dropped one,
+    // An Open Loop for this spot is marked "You're here" in the list; only a Closed or Let-go one,
     // which isn't listed, needs a line of its own.
     if let existing = existingLoop, existing.state != .open, text.isEmpty {
       existingLoopNote(existing)
@@ -454,7 +454,7 @@ struct PanelView: View {
   /// typing) away, so the panel doesn't invite jumping to something else.
   private var isHero: Bool { model.focusedLoop != nil && text.isEmpty && !browsing }
 
-  /// The Loop ⌘C, ⌘D and ⌘O act on: the Focused one in the hero view, otherwise the selected row.
+  /// The Loop ⌘C, ⌘L and ⌘O act on: the Focused one in the hero view, otherwise the selected row.
   private var actionLoop: Loop? {
     if isHero { return model.focusedLoop }
     return results.indices.contains(selection) ? results[selection] : nil
@@ -538,7 +538,7 @@ struct PanelView: View {
           PanelLoopDetail(
             model: model,
             loop: results[selection],
-            actions: ["↩ Focus", "⌘O Open Anchors", "⌘C Close Loop", "⌘D Drop"]
+            actions: ["↩ Focus", "⌘O Open Anchors", "⌘C Close Loop", "⌘L Let go"]
           )
         } else {
           Text("↓ to pick a Loop and see where you left off").font(.callout).foregroundStyle(.tertiary)
@@ -660,7 +660,11 @@ struct PanelView: View {
 
   private func existingLoopNote(_ loop: Loop) -> some View {
     Label {
-      Text("You \(loop.state.label.lowercased()) a Loop here: “\(loop.title)”. ⌘R reopens it.")
+      Text(
+        loop.state == .closed
+          ? "You closed a Loop here: “\(loop.title)”. ⌘R reopens it."
+          : "You let go of a Loop here: “\(loop.title)”. ⌘R reopens it."
+      )
     } icon: {
       Image(systemName: "arrow.uturn.backward.circle")
     }
@@ -711,18 +715,18 @@ struct PanelView: View {
     }
   }
 
-  /// Closes or Drops `loop`. A Closed or Dropped Loop needs no Where I left off; it's finished or
+  /// Closes or lets go of `loop`. A Closed or Let-go Loop needs no Where I left off; it's finished or
   /// let go. From the Focused view the panel hides; in the list it stays for the next one.
   private func finish(_ loop: Loop, close: Bool) {
     withAnimation(reduceMotion ? .easeInOut(duration: 0.15) : .snappy) {
-      if close { model.close(loop) } else { model.drop(loop) }
+      if close { model.close(loop) } else { model.letGo(loop) }
       browsing = false
       selection = min(selection, results.count - 1)
     }
     if close { NSSound(named: "Glass")?.play() }
     confirm(
       Confirmation(
-        text: close ? "Closed “\(loop.title)”" : "Dropped “\(loop.title)”",
+        text: close ? "Closed “\(loop.title)”" : "Let go of “\(loop.title)”",
         systemImage: close ? "checkmark.circle.fill" : "arrow.down.circle",
         celebrate: close,
         undo: { [model] in model.reopen(loop) }
@@ -881,11 +885,11 @@ struct PanelView: View {
         dismiss()
       }
       .keyboardShortcut("c", modifiers: .command)
-      Button("Drop") {
-        model.drop(loop)
+      Button("Let go") {
+        model.letGo(loop)
         dismiss()
       }
-      .keyboardShortcut("d", modifiers: .command)
+      .keyboardShortcut("l", modifiers: .command)
       Button("Unfocus") {
         model.dismissInterruptedFocus()
         askWhereILeftOff(loop)
@@ -897,7 +901,7 @@ struct PanelView: View {
     .padding(.horizontal, 16)
 
     Spacer(minLength: 0)
-    hints(["↩ Continue", "⌘C Close Loop", "⌘D Drop", "⌘U Unfocus", "esc Ask me later"])
+    hints(["↩ Continue", "⌘C Close Loop", "⌘L Let go", "⌘U Unfocus", "esc Ask me later"])
   }
 
   // MARK: Shared
@@ -933,7 +937,7 @@ struct Confirmation: Identifiable {
   let id = UUID()
   let text: String
   let systemImage: String
-  /// Closing a Loop gets the logo gradient; Drop and hints stay neutral.
+  /// Closing a Loop gets the logo gradient; Let go and hints stay neutral.
   let celebrate: Bool
   let undo: (() -> Void)?
 }

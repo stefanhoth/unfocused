@@ -9,7 +9,7 @@ public enum FocusInterruptionReason: String, Sendable, CaseIterable {
   case idle
 }
 
-/// A Focus that stopped on its own, waiting for the user to choose Continue, Close, Drop or Unfocus.
+/// A Focus that stopped on its own, waiting for the user to choose Continue, Close, Let go or Unfocus.
 public struct FocusInterruption: Hashable, Sendable {
   public let loop: Loop
   public let reason: FocusInterruptionReason
