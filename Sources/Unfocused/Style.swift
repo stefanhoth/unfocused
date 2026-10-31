@@ -10,6 +10,11 @@ enum Style {
   static let panelListWidth: CGFloat = 380
   /// Transparent room around floating surfaces for their own shadow and glow.
   static let glowMargin: CGFloat = 36
+  static let logoLinearGradient = LinearGradient(
+    colors: logoGradient,
+    startPoint: .leading,
+    endPoint: .trailing
+  )
   /// How much of the window background color sits under the glass: more is easier to read.
   static let glassBacking = 0.6
   /// The app icon's gradient: sky blue to peach.

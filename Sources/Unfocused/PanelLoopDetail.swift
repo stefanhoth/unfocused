@@ -5,6 +5,8 @@ import UnfocusedCore
 struct PanelLoopDetail: View {
   let model: AppModel
   let loop: Loop
+  /// The Focused Loop filling the panel: a larger title.
+  var prominent = false
 
   var body: some View {
     let aging = model.aging[loop.id]
@@ -15,7 +17,8 @@ struct PanelLoopDetail: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 18) {
         VStack(alignment: .leading, spacing: 4) {
-          Text(loop.title).font(.title3.weight(.semibold)).lineLimit(3)
+          Text(loop.title).font(prominent ? .system(size: 28, weight: .semibold) : .title3.weight(.semibold))
+            .lineLimit(3)
           Text(when(lastWorked: lastWorked)).font(.callout).foregroundStyle(.secondary)
           LooseEndNote(aging: aging)
         }

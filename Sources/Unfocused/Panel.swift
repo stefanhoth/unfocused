@@ -166,6 +166,8 @@ struct PanelView: View {
   /// nothing.
   /// Opens with nothing selected: the cursor is in the text field until ↓ (or typing) picks a row.
   @State private var selection = -1
+  /// While Focused: true once the user stepped from the Focused Loop into the list (↓).
+  @State private var browsing = false
   /// The Loop just Focused, whose Anchors open once Where I left off is answered or skipped.
   @State private var anchorsToOpenAfterLeftOff: Loop?
   /// Direction per mentioned name; unmentioned names default to Owed.
@@ -270,79 +272,88 @@ struct PanelView: View {
   // MARK: Search
 
   @ViewBuilder private var searchContent: some View {
-    if let focused = model.focusedLoop {
+    if let focused = model.focusedLoop, !isHero {
       focusStrip(focused)
     }
-    inputField("Search your Loops, or type something new…", systemImage: "magnifyingglass")
-      .onChange(of: text) { selection = text.isEmpty ? -1 : 0 }
-      .onKeyPress(.return, phases: .down) { press in
-        if press.modifiers.contains(.option) {
-          addContextToSelected()
-        } else if press.modifiers.contains(.command) {
-          captureTyped()
-        } else if !suggestions.isEmpty {
-          completeMention()
-        } else {
-          focusSelected()
-        }
+    inputField(
+      isHero ? "Switch to another Loop, or note something new…" : "Search your Loops, or type something new…",
+      systemImage: "magnifyingglass"
+    )
+    .onChange(of: text) { selection = text.isEmpty ? -1 : 0 }
+    .onKeyPress(.return, phases: .down) { press in
+      if press.modifiers.contains(.option) {
+        addContextToSelected()
+      } else if press.modifiers.contains(.command) {
+        captureTyped()
+      } else if !suggestions.isEmpty {
+        completeMention()
+      } else {
+        focusSelected()
+      }
+      return .handled
+    }
+    .onKeyPress(.tab) {
+      if !suggestions.isEmpty {
+        completeMention()
+      } else if let context, text.isEmpty {
+        text = suggestedTitle ?? context.anchor.title
+      } else if let last = mentioned.last {
+        directions[last] = (directions[last] ?? .owed).toggled
+      } else {
+        return .ignored
+      }
+      return .handled
+    }
+    .onKeyPress(characters: ["r"], phases: .down) { press in
+      guard press.modifiers.contains(.command), let existing = existingLoop, existing.state != .open else {
+        return .ignored
+      }
+      model.reopen(existing)
+      if let left = model.focus(existing, openAnchors: false) { askWhereILeftOff(left) } else { dismiss() }
+      return .handled
+    }
+    .onKeyPress(characters: ["k", "d"], phases: .down) { press in
+      guard press.modifiers.contains(.command), let loop = actionLoop else { return .ignored }
+      let left = press.characters == "k" ? model.close(loop) : model.drop(loop)
+      if let left { askWhereILeftOff(left) }
+      selection = min(selection, max(results.count - 1, 0))
+      return .handled
+    }
+    .onKeyPress(characters: ["o"], phases: .down) { press in
+      guard press.modifiers.contains(.command), let loop = actionLoop else { return .ignored }
+      let anchors = model.anchors(of: loop)
+      guard !anchors.isEmpty else { return .ignored }
+      anchors.forEach(AnchorOpener.open)
+      dismiss()
+      return .handled
+    }
+    .onKeyPress(characters: ["u"], phases: .down) { press in
+      guard press.modifiers.contains(.command), model.focusedLoop != nil else { return .ignored }
+      if let left = model.unfocus() { askWhereILeftOff(left) } else { dismiss() }
+      return .handled
+    }
+    .onKeyPress(characters: ["1", "2", "3"], phases: .down) { press in
+      guard press.modifiers.contains(.command), let digit = Int(press.characters), related.indices.contains(digit - 1)
+      else { return .ignored }
+      addToRelated(related[digit - 1].loop)
+      return .handled
+    }
+    .onKeyPress(.downArrow) {
+      if isHero {
+        browsing = true
+        selection = 0
         return .handled
       }
-      .onKeyPress(.tab) {
-        if !suggestions.isEmpty {
-          completeMention()
-        } else if let context, text.isEmpty {
-          text = suggestedTitle ?? context.anchor.title
-        } else if let last = mentioned.last {
-          directions[last] = (directions[last] ?? .owed).toggled
-        } else {
-          return .ignored
-        }
-        return .handled
-      }
-      .onKeyPress(characters: ["r"], phases: .down) { press in
-        guard press.modifiers.contains(.command), let existing = existingLoop, existing.state != .open else {
-          return .ignored
-        }
-        model.reopen(existing)
-        if let left = model.focus(existing, openAnchors: false) { askWhereILeftOff(left) } else { dismiss() }
-        return .handled
-      }
-      .onKeyPress(characters: ["k", "d"], phases: .down) { press in
-        guard press.modifiers.contains(.command), results.indices.contains(selection) else { return .ignored }
-        let loop = results[selection]
-        let left = press.characters == "k" ? model.close(loop) : model.drop(loop)
-        if let left { askWhereILeftOff(left) }
-        selection = min(selection, max(results.count - 1, 0))
-        return .handled
-      }
-      .onKeyPress(characters: ["o"], phases: .down) { press in
-        guard press.modifiers.contains(.command), results.indices.contains(selection) else { return .ignored }
-        let anchors = model.anchors(of: results[selection])
-        guard !anchors.isEmpty else { return .ignored }
-        anchors.forEach(AnchorOpener.open)
-        dismiss()
-        return .handled
-      }
-      .onKeyPress(characters: ["u"], phases: .down) { press in
-        guard press.modifiers.contains(.command), model.focusedLoop != nil else { return .ignored }
-        if let left = model.unfocus() { askWhereILeftOff(left) } else { dismiss() }
-        return .handled
-      }
-      .onKeyPress(characters: ["1", "2", "3"], phases: .down) { press in
-        guard press.modifiers.contains(.command), let digit = Int(press.characters), related.indices.contains(digit - 1)
-        else { return .ignored }
-        addToRelated(related[digit - 1].loop)
-        return .handled
-      }
-      .onKeyPress(.downArrow) {
-        let count = suggestions.isEmpty ? results.count : suggestions.count
-        selection = min(selection + 1, max(count - 1, 0))
-        return .handled
-      }
-      .onKeyPress(.upArrow) {
-        selection = max(selection - 1, -1)
-        return .handled
-      }
+      let count = suggestions.isEmpty ? results.count : suggestions.count
+      selection = min(selection + 1, max(count - 1, 0))
+      return .handled
+    }
+    .onKeyPress(.upArrow) {
+      // Past the top of the list, back to the Focused Loop.
+      if selection == -1, browsing, text.isEmpty, model.focusedLoop != nil { browsing = false }
+      selection = max(selection - 1, -1)
+      return .handled
+    }
 
     if let context {
       contextLine(context)
@@ -379,6 +390,48 @@ struct PanelView: View {
   }
 
   @ViewBuilder private var searchResults: some View {
+    if isHero, let focused = model.focusedLoop {
+      focusHero(focused)
+      hints(["⌘O Open", "⌘K Done", "⌘U Unfocus", "↓ Switch", "⌘↩ Capture new", "esc Hide"])
+    } else {
+      browseResults
+    }
+  }
+
+  /// While Focused, the panel is about the Focused Loop; switching is one deliberate step (↓ or
+  /// typing) away, so the panel doesn't invite jumping to something else.
+  private var isHero: Bool { model.focusedLoop != nil && text.isEmpty && !browsing }
+
+  /// The Loop ⌘K, ⌘D and ⌘O act on: the Focused one in the hero view, otherwise the selected row.
+  private var actionLoop: Loop? {
+    if isHero { return model.focusedLoop }
+    return results.indices.contains(selection) ? results[selection] : nil
+  }
+
+  private func focusHero(_ loop: Loop) -> some View {
+    VStack(alignment: .leading, spacing: 0) {
+      HStack(spacing: 8) {
+        Image(nsImage: MenuBarGlyph.image(focused: true))
+          .renderingMode(.template)
+          .foregroundStyle(Style.logoLinearGradient)
+        Text("Focused").font(.callout.weight(.semibold)).foregroundStyle(Style.logoLinearGradient)
+        if let start = model.focusSessions(for: loop).last?.start {
+          Text("for \(Self.shortAge(start))").font(.callout).monospacedDigit().foregroundStyle(.secondary)
+        }
+      }
+      .padding(.horizontal, 22)
+      .padding(.top, 18)
+      PanelLoopDetail(model: model, loop: loop, prominent: true)
+      Text("Switching? Type to search, or press ↓.")
+        .font(.callout)
+        .foregroundStyle(.tertiary)
+        .padding(.horizontal, 22)
+        .padding(.bottom, 14)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+  }
+
+  @ViewBuilder private var browseResults: some View {
 
     if results.isEmpty, !text.trimmingCharacters(in: .whitespaces).isEmpty {
       captureRow
@@ -507,8 +560,8 @@ struct PanelView: View {
     HStack(spacing: 10) {
       Image(nsImage: MenuBarGlyph.image(focused: true))
         .renderingMode(.template)
-        .foregroundStyle(Style.focus)
-      Text("Focused").font(.callout.weight(.medium)).foregroundStyle(Style.focus)
+        .foregroundStyle(Style.logoLinearGradient)
+      Text("Focused").font(.callout.weight(.semibold)).foregroundStyle(Style.logoLinearGradient)
       Text(loop.title).font(.callout.weight(.semibold)).lineLimit(1)
       if let start = model.focusSessions(for: loop).last?.start {
         Text("for \(Self.shortAge(start))").font(.callout).monospacedDigit().foregroundStyle(.secondary)
@@ -519,7 +572,7 @@ struct PanelView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 10)
-    .background(Style.focus.opacity(0.1))
+    .background(Style.logoLinearGradient.opacity(0.16))
     .overlay(alignment: .bottom) { Divider().opacity(0.5) }
   }
 
