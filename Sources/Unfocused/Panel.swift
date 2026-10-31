@@ -155,7 +155,8 @@ struct PanelView: View {
 
   @State private var mode: PanelMode
   @State private var text = ""
-  /// The highlighted row; -1 means none, the text field itself (↑ past the first row).
+  /// The highlighted row; -1 means none, the text field itself (↑ past the first row), where ↩ does
+  /// nothing.
   @State private var selection = 0
   /// Direction per mentioned name; unmentioned names default to Owed.
   @State private var directions: [String: Direction] = [:]
@@ -368,7 +369,9 @@ struct PanelView: View {
       Divider()
     }
 
-    if results.isEmpty {
+    if results.isEmpty, !text.trimmingCharacters(in: .whitespaces).isEmpty {
+      captureRow
+    } else if results.isEmpty {
       Text(emptyHint)
         .foregroundStyle(.secondary)
         .padding(16)
@@ -434,6 +437,24 @@ struct PanelView: View {
     }
   }
 
+  /// Nothing matches what was typed: offer to capture it as a new Loop. Capturing stays on ⌘↩, never
+  /// plain ↩: that bit of friction is deliberate, so new Loops aren't started by accident.
+  private var captureRow: some View {
+    HStack(spacing: 10) {
+      Image(systemName: "plus.circle.fill").font(.system(size: 18, weight: .medium)).foregroundStyle(.tint)
+      VStack(alignment: .leading, spacing: 2) {
+        Text("Capture “\(text.trimmingCharacters(in: .whitespaces))”").lineLimit(1)
+        Text("No Loop matches yet").font(.caption).foregroundStyle(.secondary)
+      }
+      Spacer()
+      Text("⌘↩").font(.callout.weight(.medium)).foregroundStyle(.secondary)
+    }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 10)
+    .background(RoundedRectangle(cornerRadius: Style.rowRadius).strokeBorder(.quaternary))
+    .padding(8)
+  }
+
   private var mentionChips: some View {
     HStack(spacing: 8) {
       ForEach(mentioned, id: \.self) { name in
@@ -494,11 +515,8 @@ struct PanelView: View {
   }
 
   private func focusSelected() {
-    // Back in the text field (↑ past the first row): ↩ captures what was typed.
-    if selection == -1 {
-      if !text.trimmingCharacters(in: .whitespaces).isEmpty { captureTyped() }
-      return
-    }
+    // ↩ only ever Focuses an existing Loop. Capturing a new one takes ⌘↩, on purpose: that bit of
+    // friction keeps new Loops from being started by accident.
     guard results.indices.contains(selection) else { return }
     if let left = model.focus(results[selection]) {
       askWhereILeftOff(left)
