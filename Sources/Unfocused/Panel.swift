@@ -117,6 +117,7 @@ struct PanelView: View {
 
   @State private var mode: PanelMode
   @State private var text = ""
+  /// The highlighted row; -1 means none, the text field itself (↑ past the first row).
   @State private var selection = 0
   /// Direction per mentioned name; unmentioned names default to Owed.
   @State private var directions: [String: Direction] = [:]
@@ -264,7 +265,7 @@ struct PanelView: View {
         return .handled
       }
       .onKeyPress(.upArrow) {
-        selection = max(selection - 1, 0)
+        selection = max(selection - 1, -1)
         return .handled
       }
 
@@ -439,6 +440,11 @@ struct PanelView: View {
   }
 
   private func focusSelected() {
+    // Back in the text field (↑ past the first row): ↩ captures what was typed.
+    if selection == -1 {
+      if !text.trimmingCharacters(in: .whitespaces).isEmpty { captureTyped() }
+      return
+    }
     guard results.indices.contains(selection) else { return }
     if let left = model.focus(results[selection]) {
       askWhereILeftOff(left)
@@ -558,21 +564,24 @@ struct PanelView: View {
 
   // MARK: Shared
 
+  /// The text field stays the outermost view so key handlers attached by callers (arrows, ↩, ⇥)
+  /// run before the field editor uses the keys itself; the icon is an overlay.
   private func inputField(_ prompt: String, systemImage: String? = nil) -> some View {
-    HStack(spacing: 10) {
-      if let systemImage {
-        Image(systemName: systemImage).font(.system(size: 18, weight: .medium)).foregroundStyle(.secondary)
+    TextField(prompt, text: $text)
+      .textFieldStyle(.plain)
+      .font(.system(size: 22))
+      .focused($fieldFocused)
+      .padding(.leading, systemImage == nil ? 0 : 30)
+      .overlay(alignment: .leading) {
+        if let systemImage {
+          Image(systemName: systemImage).font(.system(size: 18, weight: .medium)).foregroundStyle(.secondary)
+        }
       }
-      TextField(prompt, text: $text)
-        .textFieldStyle(.plain)
-        .font(.system(size: 22))
-        .focused($fieldFocused)
-    }
-    .padding(18)
-    .onKeyPress(.escape) {
-      dismiss()
-      return .handled
-    }
+      .padding(18)
+      .onKeyPress(.escape) {
+        dismiss()
+        return .handled
+      }
   }
 
   private func hints(_ items: [String]) -> some View {
