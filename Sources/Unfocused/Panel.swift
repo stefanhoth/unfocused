@@ -56,6 +56,22 @@ final class PanelController {
     panel.center()
     NSApp.activate()
     panel.makeKeyAndOrderFront(nil)
+    // On a panel's first showing, SwiftUI's focus request arrives before the window can take it.
+    // Once SwiftUI has laid the view out, put the cursor in the text field directly.
+    DispatchQueue.main.async { [weak panel] in
+      guard let panel else { return }
+      panel.makeKey()
+      if let field = Self.firstTextField(in: panel.contentView) { panel.makeFirstResponder(field) }
+    }
+  }
+
+  private static func firstTextField(in view: NSView?) -> NSTextField? {
+    guard let view else { return nil }
+    if let field = view as? NSTextField, field.isEditable { return field }
+    for subview in view.subviews {
+      if let field = firstTextField(in: subview) { return field }
+    }
+    return nil
   }
 
   private func makePanel() -> FloatingPanel {
