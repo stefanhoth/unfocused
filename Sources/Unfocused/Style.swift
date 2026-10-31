@@ -9,6 +9,8 @@ enum Style {
   static let rowRadius: CGFloat = 10
   /// Loose Ends and aging: the one warm accent in an otherwise calm palette.
   static let looseEnd = Color.orange
+  /// Focus: always green, whatever the system accent color is.
+  static let focus = Color.green
 
   /// A row's background: a clear accent tint when selected, nothing otherwise (no glass on glass).
   static func rowBackground(selected: Bool) -> some View {

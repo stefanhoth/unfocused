@@ -98,7 +98,7 @@ private struct FocusNoticeView: View {
     HStack(spacing: 12) {
       Image(nsImage: MenuBarGlyph.image(focused: isFocus))
         .renderingMode(.template)
-        .foregroundStyle(isFocus ? Color.accentColor : .secondary)
+        .foregroundStyle(isFocus ? Style.focus : .secondary)
         .scaleEffect(1.3)
       VStack(alignment: .leading, spacing: 2) {
         Text(caption).font(.caption.weight(.medium)).foregroundStyle(.secondary)
