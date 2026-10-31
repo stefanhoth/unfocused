@@ -12,7 +12,7 @@ TESTING_PLUGINS := $(wildcard $(shell xcode-select -p)/usr/lib/swift/host/plugin
 TEST_FLAGS := $(if $(TESTING_PLUGINS),-Xswiftc -plugin-path -Xswiftc $(TESTING_PLUGINS))
 endif
 
-.PHONY: setup lint format build test app run clean
+.PHONY: setup lint format build test app run clean reasoner-examples
 
 setup: ## Install the git pre-commit hook
 	git config core.hooksPath .githooks
@@ -38,3 +38,7 @@ run: app ## Build and launch the app bundle
 
 clean:
 	rm -rf .build build
+
+# Runs the Reasoner's example set against the real on-device model (needs Apple Intelligence).
+reasoner-examples:
+	swift run reasoner-examples

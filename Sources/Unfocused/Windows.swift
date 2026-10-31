@@ -346,6 +346,16 @@ struct SettingsView: View {
           Text("Private browser windows are never recorded.").font(.caption).foregroundStyle(.secondary)
         }
       }
+      Section("Intelligence") {
+        Label(
+          model.reasonerAvailable
+            ? "On-device model available. It judges unclear Focus time, finds related Loops and suggests titles."
+            : "On-device model unavailable (Apple Intelligence is off or unsupported). unfocused uses its rules.",
+          systemImage: model.reasonerAvailable ? "sparkles" : "sparkles.slash"
+        )
+        .font(.callout)
+        Text("Everything runs on this Mac. Nothing is sent anywhere.").font(.caption).foregroundStyle(.secondary)
+      }
       Section("Troubleshooting") {
         HStack {
           VStack(alignment: .leading, spacing: 2) {

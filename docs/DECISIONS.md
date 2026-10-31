@@ -2,6 +2,8 @@
 
 Smaller calls that don't warrant an ADR. Newest first; add entries in the PR that makes the decision.
 
+- **2026-10-31**: The on-device Reasoner asks the language model narrow questions it answers reliably. For Focus time it asks "is this page leisure?" rather than "is this related?": the open question got the same answer for every case in the example set. Related-by-meaning uses Apple's sentence embeddings with a strict cut-off instead of the language model. Misses fall back to the rules, so a wrong answer never hides time or invents a match. `make reasoner-examples` scores prompts against the real model (8 of 11 at the time of writing, no false positives).
+- **2026-10-31**: The Foundation Models adapter lives in its own `UnfocusedReasoner` target, so the app and the example runner share the exact prompts while Core stays free of system frameworks (ADR 0005). Prompts use plain-text answers, not `@Generable`, because its macro isn't available with only the Command Line Tools.
 - **2026-10-31**: The release pushes the cask to `main` with a write deploy key in its own job, because personal repos can't add "GitHub Actions" to a ruleset bypass list. Only that job holds the key, and it runs nothing but `scripts/write-cask.sh`.
 - **2026-10-31**: No PR auto-update workflow. Branch updates pushed with the built-in `GITHUB_TOKEN` don't trigger CI, so an updated PR loses its required checks and blocks. Out-of-date PRs are rebased by whoever drives them.
 - **2026-10-30**: Releases are CalVer (`YYYY.MM.DD`, then `.2`, `.3` on the same day) and run by hand from the Release workflow, not on every merge. Every update of an unnotarized app needs a Gatekeeper approval, so frequent automatic releases would cost the user more than they'd gain.

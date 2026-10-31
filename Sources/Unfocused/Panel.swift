@@ -118,6 +118,10 @@ struct PanelView: View {
   @State private var selection = 0
   /// Direction per mentioned name; unmentioned names default to Owed.
   @State private var directions: [String: Direction] = [:]
+  /// Related Loops including matches by meaning, once the Reasoner has answered for `text`.
+  @State private var reasonedRelated: (text: String, loops: [RelatedLoop])?
+  /// The Reasoner's title for the context, filled in with ⇥.
+  @State private var suggestedTitle: String?
   @FocusState private var fieldFocused: Bool
 
   init(model: AppModel, context: CaptureContext?, initialMode: PanelMode, dismiss: @escaping () -> Void) {
@@ -145,6 +149,7 @@ struct PanelView: View {
   /// Open Loops related to the new title, offered as "add to this Loop instead".
   private var related: [RelatedLoop] {
     guard mentionQuery == nil else { return [] }
+    if let reasonedRelated, reasonedRelated.text == text { return reasonedRelated.loops }
     return model.relatedLoops(toCapture: text, anchor: context?.anchor)
   }
 
@@ -181,6 +186,18 @@ struct PanelView: View {
     .frame(width: 640, height: 380)
     .background(.regularMaterial)
     .onAppear { fieldFocused = true }
+    .task {
+      if let context { suggestedTitle = await model.captureTitle(for: context.anchor) }
+    }
+    .task(id: text) {
+      guard !text.isEmpty else { return }
+      // Wait for a pause in typing before asking the on-device model.
+      try? await Task.sleep(for: .milliseconds(400))
+      guard !Task.isCancelled else { return }
+      let typed = text
+      let loops = await model.relatedLoopsByMeaning(toCapture: typed, anchor: context?.anchor)
+      if !Task.isCancelled { reasonedRelated = (typed, loops) }
+    }
   }
 
   // MARK: Search
@@ -204,7 +221,7 @@ struct PanelView: View {
         if !suggestions.isEmpty {
           completeMention()
         } else if let context, text.isEmpty {
-          text = context.anchor.title
+          text = suggestedTitle ?? context.anchor.title
         } else if let last = mentioned.last {
           directions[last] = (directions[last] ?? .owed).toggled
         } else {

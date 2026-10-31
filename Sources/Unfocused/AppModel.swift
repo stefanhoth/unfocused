@@ -1,6 +1,7 @@
 import AppKit
 import Observation
 import UnfocusedCore
+import UnfocusedReasoner
 
 /// App-wide state for the UI. Every change goes through Core; the model only mirrors it.
 @MainActor
@@ -21,6 +22,7 @@ final class AppModel {
 
   @ObservationIgnored let core: Core
   @ObservationIgnored let log: Log
+  @ObservationIgnored let reasoner = FoundationModelsReasoner()
 
   init(core: Core, log: Log) {
     self.core = core
@@ -146,6 +148,19 @@ final class AppModel {
     guard !text.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
     return (try? core.relatedLoops(toCapture: text, anchor: anchor)) ?? []
   }
+
+  /// Related Loops including matches by meaning from the on-device model, if it's available.
+  func relatedLoopsByMeaning(toCapture text: String, anchor: Anchor?) async -> [RelatedLoop] {
+    (try? await core.relatedLoops(toCapture: text, anchor: anchor, reasoner: reasoner)) ?? []
+  }
+
+  /// A Capture title for `anchor`: the on-device model's suggestion, or the Anchor's title.
+  func captureTitle(for anchor: Anchor) async -> String {
+    await core.captureTitle(for: anchor, reasoner: reasoner)
+  }
+
+  /// Whether the on-device model can be used (Apple Intelligence on and supported).
+  var reasonerAvailable: Bool { reasoner.isAvailable }
 
   /// "N Loose Ends are older than this idea", when there are enough to mention.
   func looseEndsOlderThanNewIdea() -> Int? {
