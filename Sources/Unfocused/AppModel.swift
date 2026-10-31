@@ -139,6 +139,32 @@ final class AppModel {
     perform("checking Focus") { try core.endStaleFocus() }
   }
 
+  // MARK: Capture nudges
+
+  /// Open Loops that look related to what's being typed, strongest first.
+  func relatedLoops(toCapture text: String, anchor: Anchor?) -> [RelatedLoop] {
+    guard !text.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
+    return (try? core.relatedLoops(toCapture: text, anchor: anchor)) ?? []
+  }
+
+  /// "N Loose Ends are older than this idea", when there are enough to mention.
+  func looseEndsOlderThanNewIdea() -> Int? {
+    try? core.looseEndsOlderThanNewIdea()
+  }
+
+  /// "Add to this Loop instead": adds the context as an Anchor and the mentioned People to an
+  /// existing Loop rather than capturing a new one.
+  func add(to loop: Loop, anchor: Anchor?, mentionsIn text: String, directions: [String: Direction]) {
+    perform("adding to a Loop") {
+      if let anchor { try core.addAnchor(anchor, to: loop.id) }
+      for name in try core.mentionedNames(in: text) {
+        let person = try core.addPerson(named: name, evenIfSimilar: true)
+        let direction = directions.first { $0.key.lowercased() == name.lowercased() }?.value ?? .owed
+        try core.involve(person.id, in: loop.id, as: direction)
+      }
+    }
+  }
+
   /// A Tie-off over the current Loose Ends.
   func startTieOff() -> TieOff {
     (try? core.startTieOff()) ?? TieOff(looseEnds: [])
