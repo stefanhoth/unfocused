@@ -339,19 +339,19 @@ struct PanelView: View {
       if let left = model.focus(existing, openAnchors: false) { askWhereILeftOff(left) } else { dismiss() }
       return .handled
     }
-    // ⌘C Close Loop, ⌘D Let go, matching C and D in the Tie-off. With no Loop to act on, ⌘C copies
+    // ⌘C Close Loop, ⌘L Let go, matching C and L in the Tie-off. With no Loop to act on, ⌘C copies
     // as usual. (⌘⌫ can't be used: the text field takes it for itself.)
-    .onKeyPress(characters: ["c", "d"], phases: .down) { press in
+    .onKeyPress(characters: ["c", "l"], phases: .down) { press in
       guard press.modifiers.contains(.command) else { return .ignored }
       guard let loop = actionLoop else {
-        // ⌘C copies text as usual; ⌘D with nothing selected explains instead of doing nothing.
-        guard press.characters == "d" else { return .ignored }
+        // ⌘C copies text as usual; ⌘L with nothing selected explains instead of doing nothing.
+        guard press.characters == "l" else { return .ignored }
         confirm(Confirmation(text: "Select a Loop first: ↓", systemImage: "arrow.down", celebrate: false, undo: nil))
         return .handled
       }
       // Letting go of what you chose to Focus on is a bigger step than switching: not from the Focused
       // view, only from the list once it's no longer Focused.
-      if press.characters == "d", isHero {
+      if press.characters == "l", isHero {
         confirm(
           Confirmation(text: "Unfocus first (⌘U) to let it go", systemImage: "info.circle", celebrate: false, undo: nil)
         )
@@ -454,7 +454,7 @@ struct PanelView: View {
   /// typing) away, so the panel doesn't invite jumping to something else.
   private var isHero: Bool { model.focusedLoop != nil && text.isEmpty && !browsing }
 
-  /// The Loop ⌘C, ⌘D and ⌘O act on: the Focused one in the hero view, otherwise the selected row.
+  /// The Loop ⌘C, ⌘L and ⌘O act on: the Focused one in the hero view, otherwise the selected row.
   private var actionLoop: Loop? {
     if isHero { return model.focusedLoop }
     return results.indices.contains(selection) ? results[selection] : nil
@@ -538,7 +538,7 @@ struct PanelView: View {
           PanelLoopDetail(
             model: model,
             loop: results[selection],
-            actions: ["↩ Focus", "⌘O Open Anchors", "⌘C Close Loop", "⌘D Let go"]
+            actions: ["↩ Focus", "⌘O Open Anchors", "⌘C Close Loop", "⌘L Let go"]
           )
         } else {
           Text("↓ to pick a Loop and see where you left off").font(.callout).foregroundStyle(.tertiary)
@@ -889,7 +889,7 @@ struct PanelView: View {
         model.letGo(loop)
         dismiss()
       }
-      .keyboardShortcut("d", modifiers: .command)
+      .keyboardShortcut("l", modifiers: .command)
       Button("Unfocus") {
         model.dismissInterruptedFocus()
         askWhereILeftOff(loop)
@@ -901,7 +901,7 @@ struct PanelView: View {
     .padding(.horizontal, 16)
 
     Spacer(minLength: 0)
-    hints(["↩ Continue", "⌘C Close Loop", "⌘D Let go", "⌘U Unfocus", "esc Ask me later"])
+    hints(["↩ Continue", "⌘C Close Loop", "⌘L Let go", "⌘U Unfocus", "esc Ask me later"])
   }
 
   // MARK: Shared
