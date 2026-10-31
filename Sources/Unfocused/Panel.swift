@@ -96,7 +96,7 @@ final class PanelController {
 
   private func makePanel() -> FloatingPanel {
     let panel = FloatingPanel(
-      contentRect: NSRect(x: 0, y: 0, width: 640, height: 380),
+      contentRect: NSRect(x: 0, y: 0, width: Style.panelSize.width, height: Style.panelSize.height),
       styleMask: [.borderless, .nonactivatingPanel],
       backing: .buffered,
       defer: false
@@ -232,7 +232,7 @@ struct PanelView: View {
       case .welcomeBack(let interruption): welcomeBackContent(interruption)
       }
     }
-    .frame(width: 640, height: 380)
+    .frame(width: Style.panelSize.width, height: Style.panelSize.height)
     .calmGlass(cornerRadius: Style.panelRadius)
     // The view appears before its borderless panel is the key window, and SwiftUI drops a focus
     // request made then. Ask again once the panel has become key.
@@ -376,25 +376,41 @@ struct PanelView: View {
         .foregroundStyle(.secondary)
         .padding(16)
     } else {
-      VStack(alignment: .leading, spacing: 2) {
-        ForEach(Array(results.enumerated()), id: \.element.id) { index, loop in
-          HStack {
-            AgingMark(aging: model.aging[loop.id])
-            VStack(alignment: .leading, spacing: 1) {
-              Text(loop.title).lineLimit(1)
-              LooseEndNote(aging: model.aging[loop.id])
+      // List on the left, the selected Loop's details on the right: enough to get back into it.
+      HStack(alignment: .top, spacing: 0) {
+        VStack(alignment: .leading, spacing: 2) {
+          ForEach(Array(results.enumerated()), id: \.element.id) { index, loop in
+            HStack {
+              AgingMark(aging: model.aging[loop.id])
+              VStack(alignment: .leading, spacing: 1) {
+                Text(loop.title).lineLimit(1)
+                LooseEndNote(aging: model.aging[loop.id])
+              }
+              Spacer()
+              if loop.id == model.focusedLoop?.id {
+                Image(systemName: "scope").foregroundStyle(.secondary)
+              }
+              Text(Self.shortAge(model.lastEngagement(of: loop) ?? loop.capturedAt))
+                .font(.caption)
+                .monospacedDigit()
+                .foregroundStyle(.tertiary)
             }
-            Spacer()
-            if loop.id == model.focusedLoop?.id {
-              Image(systemName: "scope").foregroundStyle(.secondary)
-            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Style.rowBackground(selected: index == selection))
           }
-          .padding(.horizontal, 12)
-          .padding(.vertical, 6)
-          .background(Style.rowBackground(selected: index == selection))
+        }
+        .padding(8)
+        .frame(width: Style.panelListWidth)
+        Divider()
+        if results.indices.contains(selection) {
+          PanelLoopDetail(model: model, loop: results[selection])
+        } else {
+          Text("↓ to see a Loop's details").font(.callout).foregroundStyle(.tertiary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
       }
-      .padding(8)
+      .frame(maxHeight: .infinity, alignment: .top)
     }
 
     if !text.isEmpty {
@@ -453,6 +469,18 @@ struct PanelView: View {
     .padding(.vertical, 10)
     .background(RoundedRectangle(cornerRadius: Style.rowRadius).strokeBorder(.quaternary))
     .padding(8)
+  }
+
+  /// "now", "5m", "3h", "2d", "3w": how long ago, short enough for a list row.
+  static func shortAge(_ date: Date, now: Date = Date()) -> String {
+    let seconds = max(0, now.timeIntervalSince(date))
+    switch seconds {
+    case ..<60: return "now"
+    case ..<3600: return "\(Int(seconds / 60))m"
+    case ..<86_400: return "\(Int(seconds / 3600))h"
+    case ..<(14 * 86_400): return "\(Int(seconds / 86_400))d"
+    default: return "\(Int(seconds / (7 * 86_400)))w"
+    }
   }
 
   private var mentionChips: some View {
