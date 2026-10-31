@@ -12,9 +12,21 @@ final class FocusNotice {
   func show(focused: Loop?, left: Loop?) {
     let content: FocusNoticeView
     if let focused {
-      content = FocusNoticeView(caption: "Focused", title: focused.title, note: focused.whereILeftOff, isFocus: true)
-    } else if let left {
-      content = FocusNoticeView(caption: "Unfocused", title: left.title, note: nil, isFocus: false)
+      content = FocusNoticeView(
+        caption: "Focused",
+        title: focused.title,
+        note: focused.whereILeftOff.map { "Where I left off: \($0)" },
+        isFocus: true
+      )
+    } else if left != nil {
+      // Unfocused is a state of its own, often chosen on purpose (time between meetings), so the
+      // notice is about that, not about the Loop just left.
+      content = FocusNoticeView(
+        caption: "Unfocused",
+        title: "No Loop in Focus",
+        note: "Fine for in-between time. Pick a Loop when you're ready.",
+        isFocus: false
+      )
     } else {
       return
     }
@@ -104,7 +116,7 @@ private struct FocusNoticeView: View {
         Text(caption).font(.caption.weight(.medium)).foregroundStyle(.secondary)
         Text(title).font(.headline).lineLimit(1)
         if let note {
-          Text("Where I left off: \(note)").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+          Text(note).font(.caption).foregroundStyle(.secondary).lineLimit(1)
         }
       }
     }
