@@ -102,6 +102,8 @@ jobs:
     # Pushes straight to main with a write deploy key; "Deploy keys" is on the ruleset's bypass list.
     # This job runs no build tools, only the cask script, so the key never meets dependency code.
     runs-on: ubuntu-latest
+    # The key is an environment secret; the "release" environment only accepts runs from main.
+    environment: release
     permissions:
       contents: read
     env:
