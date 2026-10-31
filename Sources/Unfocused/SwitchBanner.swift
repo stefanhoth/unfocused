@@ -97,11 +97,11 @@ private struct SwitchBanner: View {
         Text(loop.title).font(.headline).lineLimit(1)
       }
       Spacer(minLength: 8)
-      Button("Not now", action: onNotNow)
-      Button("Switch Focus", action: onSwitch).buttonStyle(.borderedProminent)
+      Button("Not now", action: onNotNow).buttonStyle(.glass)
+      Button("Switch Focus", action: onSwitch).buttonStyle(.glassProminent)
     }
     .padding(14)
     .frame(width: 380)
-    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+    .calmGlass(cornerRadius: Style.bannerRadius)
   }
 }

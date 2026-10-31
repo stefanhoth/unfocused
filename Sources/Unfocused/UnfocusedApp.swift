@@ -113,10 +113,14 @@ struct MenuBarLabel: View {
 
   var body: some View {
     if let title = model?.focusedLoop?.title {
-      Label(title.count > 24 ? title.prefix(23) + "…" : title, systemImage: "scope")
-        .labelStyle(.titleAndIcon)
+      Label {
+        Text(title.count > 24 ? title.prefix(23) + "…" : title)
+      } icon: {
+        Image(nsImage: MenuBarGlyph.image(focused: true))
+      }
+      .labelStyle(.titleAndIcon)
     } else {
-      Image(systemName: "circle.dashed")
+      Image(nsImage: MenuBarGlyph.image(focused: false))
     }
   }
 }
@@ -129,6 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   @Published private(set) var tieOff: TieOffController?
   @Published private(set) var reminder: TieOffReminder?
   private var recorder: ActivityRecorder?
+  private var banner: SwitchBannerController?
 
   func applicationWillFinishLaunching(_ notification: Notification) {
     // Menu bar only: no Dock icon, also when run unbundled via `swift run`.
@@ -147,6 +152,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
       }
       let banner = SwitchBannerController(model: model, panelController: panel)
       recorder.onSwitchSuggestion = { banner.update($0) }
+      self.banner = banner
       self.recorder = recorder
       let tieOff = TieOffController(model: model)
       self.tieOff = tieOff
@@ -161,9 +167,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   func applicationDidFinishLaunching(_ notification: Notification) {
     recorder?.start()
     reminder?.start()
+    showForReview()
     guard let model, !model.activateSavedHotKey() else { return }
     // First launch with a taken hotkey: ask for another one right away.
     NSApp.activate()
     NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+  }
+
+  /// For design review and screenshots: `--show panel`, `--show tie-off` or `--show banner` opens
+  /// that surface right after launch.
+  private func showForReview() {
+    let arguments = CommandLine.arguments
+    guard let index = arguments.firstIndex(of: "--show"), arguments.indices.contains(index + 1) else { return }
+    switch arguments[index + 1] {
+    case "panel": panel?.show()
+    case "tie-off": tieOff?.show()
+    case "banner": banner?.update(model?.openLoops.first)
+    default: break
+    }
   }
 }

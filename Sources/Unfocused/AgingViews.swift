@@ -22,7 +22,7 @@ struct AgingMark: View {
   }
 
   private func color(_ aging: LoopAging) -> Color {
-    aging.isLooseEnd ? .orange : .orange.opacity(0.4 + 0.6 * aging.progress)
+    aging.isLooseEnd ? Style.looseEnd : Style.looseEnd.opacity(0.4 + 0.6 * aging.progress)
   }
 
   private func help(_ aging: LoopAging) -> String {
@@ -46,7 +46,7 @@ struct LooseEndNote: View {
         }
       }
       .font(.caption)
-      .foregroundStyle(.orange)
+      .foregroundStyle(Style.looseEnd)
     }
   }
 }

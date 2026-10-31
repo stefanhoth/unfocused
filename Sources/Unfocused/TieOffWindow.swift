@@ -6,7 +6,7 @@ import UnfocusedCore
 @MainActor
 final class TieOffController {
   private let model: AppModel
-  private var window: NSWindow?
+  private var window: FloatingPanel?
 
   init(model: AppModel) {
     self.model = model
@@ -25,15 +25,20 @@ final class TieOffController {
     window.makeKeyAndOrderFront(nil)
   }
 
-  private func makeWindow() -> NSWindow {
-    let window = NSWindow(
+  /// A floating sheet of glass, like the panel: the SwiftUI view draws everything.
+  private func makeWindow() -> FloatingPanel {
+    let window = FloatingPanel(
       contentRect: NSRect(x: 0, y: 0, width: 560, height: 420),
-      styleMask: [.titled, .closable, .fullSizeContentView],
+      styleMask: [.borderless],
       backing: .buffered,
       defer: false
     )
     window.title = "Tie-off"
-    window.titlebarAppearsTransparent = true
+    window.isOpaque = false
+    window.backgroundColor = .clear
+    window.hasShadow = true
+    window.isMovableByWindowBackground = true
+    window.level = .floating
     window.isReleasedWhenClosed = false
     return window
   }
@@ -45,6 +50,9 @@ struct TieOffView: View {
   @State var tieOff: TieOff
   let close: () -> Void
   @State private var celebrated = false
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  private var motion: CalmMotion { CalmMotion(reduceMotion: reduceMotion) }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -58,19 +66,29 @@ struct TieOffView: View {
       }
     }
     .frame(width: 560, height: 420)
-    .background(.regularMaterial)
+    .calmGlass(cornerRadius: Style.tieOffRadius)
   }
 
   // MARK: One Loose End
 
   private var progress: some View {
-    HStack {
-      Text("Tie-off").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-      Spacer()
-      Text("\(tieOff.done + 1) of \(tieOff.total)").font(.caption).monospacedDigit().foregroundStyle(.secondary)
+    VStack(spacing: 10) {
+      HStack {
+        Text("Tie-off").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+        Spacer()
+        Text("\(tieOff.done + 1) of \(tieOff.total)").font(.caption).monospacedDigit().foregroundStyle(.secondary)
+      }
+      GeometryReader { geometry in
+        ZStack(alignment: .leading) {
+          Capsule().fill(.quaternary)
+          Capsule()
+            .fill(Style.looseEnd)
+            .frame(width: geometry.size.width * Double(tieOff.done + 1) / Double(max(tieOff.total, 1)))
+        }
+      }
+      .frame(height: 4)
     }
-    .padding([.horizontal, .top], 20)
-    .padding(.top, 12)
+    .padding([.horizontal, .top], 28)
   }
 
   private func card(_ aging: LoopAging) -> some View {
@@ -80,7 +98,7 @@ struct TieOffView: View {
     return VStack(alignment: .leading, spacing: 12) {
       HStack(alignment: .firstTextBaseline) {
         AgingMark(aging: aging)
-        Text(loop.title).font(.title2.weight(.semibold)).lineLimit(3)
+        Text(loop.title).font(.system(size: 26, weight: .semibold)).lineLimit(3)
       }
       LooseEndNote(aging: aging)
       if let note = loop.whereILeftOff {
@@ -109,9 +127,10 @@ struct TieOffView: View {
         }
       }
     }
-    .padding(20)
+    .padding(.horizontal, 28)
+    .padding(.vertical, 20)
     .id(loop.id)
-    .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)).combined(with: .opacity))
+    .transition(.asymmetric(insertion: motion.slide(from: .trailing), removal: motion.slide(from: .leading)))
   }
 
   private func actions(_ aging: LoopAging) -> some View {
@@ -128,7 +147,7 @@ struct TieOffView: View {
           keyLabel(focusLabel, "F")
         }
         .keyboardShortcut("f", modifiers: [])
-        .buttonStyle(.borderedProminent)
+        .buttonStyle(.glassProminent)
         Button {
           model.close(loop)
           advance()
@@ -136,6 +155,7 @@ struct TieOffView: View {
           keyLabel("Close", "C")
         }
         .keyboardShortcut("c", modifiers: [])
+        .buttonStyle(.glass)
         Button {
           model.drop(loop)
           advance()
@@ -143,6 +163,7 @@ struct TieOffView: View {
           keyLabel("Drop", "D")
         }
         .keyboardShortcut("d", modifiers: [])
+        .buttonStyle(.glass)
       }
       HStack {
         Button {
@@ -151,19 +172,22 @@ struct TieOffView: View {
           keyLabel("Open Anchor", "O")
         }
         .keyboardShortcut("o", modifiers: [])
+        .buttonStyle(.glass)
         .disabled(anchors.isEmpty)
         Button {
-          withAnimation(.snappy) { tieOff.notNow() }
+          withAnimation(motion.snappy) { tieOff.notNow() }
           celebrateIfDone()
         } label: {
           keyLabel("Not now", "N")
         }
         .keyboardShortcut("n", modifiers: [])
+        .buttonStyle(.glass)
         Spacer()
-        Button("Stop", action: close).keyboardShortcut(.cancelAction)
+        Button("Stop", action: close).keyboardShortcut(.cancelAction).buttonStyle(.borderless)
       }
     }
-    .padding(20)
+    .controlSize(.large)
+    .padding(28)
   }
 
   private func keyLabel(_ title: String, _ key: String) -> some View {
@@ -174,7 +198,7 @@ struct TieOffView: View {
   }
 
   private func advance() {
-    withAnimation(.snappy) { tieOff.next() }
+    withAnimation(motion.snappy) { tieOff.next() }
     celebrateIfDone()
   }
 
@@ -186,13 +210,13 @@ struct TieOffView: View {
       Image(systemName: tieOff.total == 0 ? "checkmark.circle" : "checkmark.seal.fill")
         .font(.system(size: 64))
         .foregroundStyle(.green)
-        .symbolEffect(.bounce, value: celebrated)
-        .scaleEffect(celebrated ? 1 : 0.6)
+        .symbolEffect(.bounce, value: reduceMotion ? false : celebrated)
+        .scaleEffect(celebrated || reduceMotion ? 1 : 0.6)
         .animation(.spring(response: 0.4, dampingFraction: 0.5), value: celebrated)
       Text(tieOff.total == 0 ? "No Loose Ends" : "All tied off").font(.title2.weight(.semibold))
       Text(summary).foregroundStyle(.secondary).multilineTextAlignment(.center)
       Spacer()
-      Button("Done", action: close).keyboardShortcut(.defaultAction)
+      Button("Done", action: close).keyboardShortcut(.defaultAction).buttonStyle(.glassProminent)
     }
     .frame(maxWidth: .infinity)
     .padding(24)
