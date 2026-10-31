@@ -15,7 +15,7 @@ struct LoopsWindow: View {
   var body: some View {
     NavigationSplitView {
       List(loops, selection: $selectedID) { loop in
-        LoopRow(loop: loop, isFocused: loop.id == model.focusedLoop?.id)
+        LoopRow(loop: loop, isFocused: loop.id == model.focusedLoop?.id, aging: model.aging[loop.id])
           .contextMenu { actions(for: loop) }
       }
       .overlay {
@@ -74,13 +74,16 @@ struct LoopsWindow: View {
 private struct LoopRow: View {
   let loop: Loop
   let isFocused: Bool
+  let aging: LoopAging?
 
   var body: some View {
     VStack(alignment: .leading, spacing: 2) {
       HStack {
+        AgingMark(aging: aging)
         Text(loop.title).lineLimit(2)
         if isFocused { Image(systemName: "scope").help("Focused") }
       }
+      LooseEndNote(aging: aging)
       if let note = loop.whereILeftOff {
         Text(note).font(.callout).foregroundStyle(.secondary).lineLimit(1)
       }
@@ -267,6 +270,16 @@ struct SettingsView: View {
       if let problem = model.hotKeyProblem {
         Label(problem, systemImage: "exclamationmark.triangle")
           .foregroundStyle(.orange)
+      }
+      Section("Loose Ends") {
+        Stepper(
+          "A Loop is a Loose End after \(model.looseEndThreshold) active days untouched",
+          value: Binding(get: { model.looseEndThreshold }, set: { model.looseEndThreshold = $0 }),
+          in: 1...30
+        )
+        Text("Only days you used your Mac count, so weekends and holidays don't age your Loops.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
       }
       Section("Focus") {
         Picker(

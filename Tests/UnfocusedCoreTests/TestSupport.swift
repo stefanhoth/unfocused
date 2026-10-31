@@ -23,7 +23,15 @@ extension TimeInterval {
   static func days(_ value: Double) -> TimeInterval { value * 86_400 }
 }
 
-/// A fresh Core on an in-memory database with a controllable clock.
+/// A Gregorian calendar in UTC, so day boundaries don't depend on where tests run.
+let utcCalendar: Calendar = {
+  var calendar = Calendar(identifier: .gregorian)
+  calendar.timeZone = TimeZone(identifier: "UTC") ?? .gmt
+  return calendar
+}()
+
+/// A fresh Core on an in-memory database with a controllable clock and a UTC calendar.
+/// The clock starts at 08:00 UTC.
 func makeCore(time: TestTime = TestTime()) throws -> (Core, TestTime) {
-  (try Core(database: .inMemory(), time: time), time)
+  (try Core(database: .inMemory(), time: time, calendar: utcCalendar), time)
 }

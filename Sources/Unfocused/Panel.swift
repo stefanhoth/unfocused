@@ -136,12 +136,15 @@ struct PanelView: View {
     context.flatMap { model.loop(anchoredAt: $0.anchor) }
   }
 
-  /// Search results. With nothing typed: the existing Loop for this context first, and the
-  /// Focused Loop left out (it has its own section).
+  /// Search results. With nothing typed: the existing Loop for this context first, then the top 3
+  /// Loose Ends, and the Focused Loop left out (it has its own section).
   private var results: [Loop] {
     var shown = model.search(text)
     if text.isEmpty {
       shown.removeAll { $0.id == model.focusedLoop?.id }
+      let looseEnds = model.looseEnds.map(\.loop).filter { $0.id != model.focusedLoop?.id }.prefix(3)
+      shown.removeAll { loop in looseEnds.contains { $0.id == loop.id } }
+      shown.insert(contentsOf: looseEnds, at: 0)
       if let existing = existingLoop, existing.state == .open {
         shown.removeAll { $0.id == existing.id }
         shown.insert(existing, at: 0)
@@ -274,7 +277,11 @@ struct PanelView: View {
       VStack(alignment: .leading, spacing: 2) {
         ForEach(Array(results.enumerated()), id: \.element.id) { index, loop in
           HStack {
-            Text(loop.title).lineLimit(1)
+            AgingMark(aging: model.aging[loop.id])
+            VStack(alignment: .leading, spacing: 1) {
+              Text(loop.title).lineLimit(1)
+              LooseEndNote(aging: model.aging[loop.id])
+            }
             Spacer()
             if loop.id == model.focusedLoop?.id {
               Image(systemName: "scope").foregroundStyle(.secondary)

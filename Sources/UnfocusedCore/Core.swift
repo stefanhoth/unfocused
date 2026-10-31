@@ -5,10 +5,13 @@ import GRDB
 public final class Core: Sendable {
   public let database: UnfocusedDatabase
   let time: any TimeSource
+  /// Decides where one day ends and the next begins, e.g. for active days.
+  let calendar: Calendar
 
-  public init(database: UnfocusedDatabase, time: any TimeSource = SystemTime()) {
+  public init(database: UnfocusedDatabase, time: any TimeSource = SystemTime(), calendar: Calendar = .current) {
     self.database = database
     self.time = time
+    self.calendar = calendar
   }
 
   // MARK: Commands
