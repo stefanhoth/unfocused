@@ -101,6 +101,38 @@ final class AppModel {
     _ = changeState(of: loop, "reopening") { try core.reopen(loop.id) }
   }
 
+  // MARK: Interrupted Focus
+
+  /// The Focus that sleep, idle or a screen lock stopped, if the user hasn't answered yet.
+  func interruptedFocus() -> FocusInterruption? {
+    try? core.interruptedFocus()
+  }
+
+  func interruptFocus(at time: Date, because reason: FocusInterruptionReason) {
+    perform("pausing Focus") { try core.interruptFocus(at: time, because: reason) }
+  }
+
+  /// Continue: Focus the interrupted Loop again.
+  func continueInterruptedFocus() {
+    perform("continuing Focus") { try core.continueInterruptedFocus() }
+  }
+
+  /// Unfocus after an interruption: forget it and stay unfocused.
+  func dismissInterruptedFocus() {
+    perform("unfocusing") { try core.dismissInterruptedFocus() }
+  }
+
+  /// Ends a Focus left running while the app was quit or the Mac was off.
+  func endStaleFocus() {
+    perform("checking Focus") { try core.endStaleFocus() }
+  }
+
+  /// Minutes without input that pause Focus.
+  var focusIdleMinutes: Int {
+    get { Int(((try? core.focusIdleThreshold()) ?? 1800) / 60) }
+    set { perform("saving the idle time") { try core.setFocusIdleThreshold(TimeInterval(newValue) * 60) } }
+  }
+
   func loop(anchoredAt anchor: Anchor) -> Loop? {
     try? core.loop(anchoredAt: anchor)
   }

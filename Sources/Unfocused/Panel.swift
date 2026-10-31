@@ -31,6 +31,11 @@ final class PanelController {
     present(.leftOff(loop))
   }
 
+  /// Opens the panel to ask what to do with a Focus that sleep, idle or a lock interrupted.
+  func askAboutInterruption(_ interruption: FocusInterruption) {
+    present(.welcomeBack(interruption))
+  }
+
   func hide() {
     panel?.orderOut(nil)
   }
@@ -88,6 +93,8 @@ enum PanelMode: Equatable {
   case search
   /// Ask for an optional Where I left off for a Loop the user just left.
   case leftOff(Loop)
+  /// Back after an interrupted Focus: Continue, Close, Drop or Unfocus.
+  case welcomeBack(FocusInterruption)
 }
 
 struct PanelView: View {
@@ -148,6 +155,7 @@ struct PanelView: View {
       switch mode {
       case .search: searchContent
       case .leftOff(let loop): leftOffContent(loop)
+      case .welcomeBack(let interruption): welcomeBackContent(interruption)
       }
     }
     .frame(width: 640, height: 380)
@@ -412,6 +420,55 @@ struct PanelView: View {
 
     Spacer(minLength: 0)
     hints(["↩ Save", "esc Skip"])
+  }
+
+  // MARK: Welcome back
+
+  @ViewBuilder private func welcomeBackContent(_ interruption: FocusInterruption) -> some View {
+    let loop = interruption.loop
+    VStack(alignment: .leading, spacing: 6) {
+      Text("Welcome back").font(.caption).foregroundStyle(.secondary)
+      Text(loop.title).font(.title2)
+      Text(
+        interruption.reason == .sleep
+          ? "Focus ended when your Mac went to sleep."
+          : "Focus paused while you were away. That time doesn't count."
+      )
+      .foregroundStyle(.secondary)
+      if let note = loop.whereILeftOff {
+        Label(note, systemImage: "bookmark").foregroundStyle(.secondary).lineLimit(2)
+      }
+    }
+    .padding(16)
+
+    HStack {
+      Button("Continue") {
+        model.continueInterruptedFocus()
+        dismiss()
+      }
+      .keyboardShortcut(.defaultAction)
+      Button("Close") {
+        model.close(loop)
+        dismiss()
+      }
+      .keyboardShortcut("k", modifiers: .command)
+      Button("Drop") {
+        model.drop(loop)
+        dismiss()
+      }
+      .keyboardShortcut("d", modifiers: .command)
+      Button("Unfocus") {
+        model.dismissInterruptedFocus()
+        askWhereILeftOff(loop)
+      }
+      .keyboardShortcut("u", modifiers: .command)
+      Spacer()
+      Button("Later", action: dismiss).keyboardShortcut(.cancelAction)
+    }
+    .padding(.horizontal, 16)
+
+    Spacer(minLength: 0)
+    hints(["↩ Continue", "⌘K Close", "⌘D Drop", "⌘U Unfocus", "esc Ask me later"])
   }
 
   // MARK: Shared
