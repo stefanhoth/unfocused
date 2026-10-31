@@ -105,6 +105,9 @@ private struct LoopDetail: View {
         if focusedTime > 0 {
           LabeledContent("Focused for", value: Duration.seconds(focusedTime).formatted(.units(width: .abbreviated)))
         }
+        if let engaged = model.lastEngagement(of: loop) {
+          LabeledContent("Last worked on") { Text(engaged, format: .relative(presentation: .named)) }
+        }
       }
       PeopleSection(model: model, loop: loop)
       let anchors = model.anchors(of: loop)
@@ -137,6 +140,15 @@ private struct LoopDetail: View {
           }
         }
       }
+      let log = model.workLog(for: loop)
+      if !log.isEmpty {
+        let total = log.reduce(0) { $0 + $1.duration }
+        Section("Worked on · \(Duration.seconds(total).formatted(.units(width: .abbreviated))) in 30 days") {
+          ForEach(Array(log.prefix(20).enumerated()), id: \.offset) { _, piece in
+            WorkLogRow(piece: piece)
+          }
+        }
+      }
       Section("History") {
         ForEach(Array(model.history(for: loop).enumerated()), id: \.offset) { _, event in
           LabeledContent(event.change.label) {
@@ -156,6 +168,37 @@ private struct LoopDetail: View {
       }
     }
     .formStyle(.grouped)
+  }
+}
+
+/// One entry of a Loop's work log: when, where, how long, and why it counts toward the Loop.
+private struct WorkLogRow: View {
+  let piece: AttributedStretch
+
+  var body: some View {
+    HStack(alignment: .firstTextBaseline) {
+      VStack(alignment: .leading, spacing: 2) {
+        Text(piece.anchor.title).lineLimit(1)
+        Text("\(piece.start.formatted(.dateTime.day().month().hour().minute())) · \(piece.reason.explanation)")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+      Spacer()
+      Text(Duration.seconds(piece.duration).formatted(.units(width: .abbreviated, maximumUnitCount: 2)))
+        .monospacedDigit()
+        .foregroundStyle(.secondary)
+    }
+  }
+}
+
+extension AttributionReason {
+  /// Why time counts toward a Loop, in the user's words.
+  var explanation: String {
+    switch self {
+    case .anchor: "in one of its Anchors"
+    case .focus: "while it was Focused"
+    case .unfocused: "Unfocused time"
+    }
   }
 }
 
