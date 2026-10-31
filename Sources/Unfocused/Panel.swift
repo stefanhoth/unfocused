@@ -341,6 +341,14 @@ struct PanelView: View {
         confirm(Confirmation(text: "Select a Loop first: ↓", systemImage: "arrow.down", celebrate: false, undo: nil))
         return .handled
       }
+      // Dropping what you chose to Focus on is a bigger step than switching: not from the Focused
+      // view, only from the list once it's no longer Focused.
+      if press.characters == "d", isHero {
+        confirm(
+          Confirmation(text: "Unfocus first (⌘U) to drop it", systemImage: "info.circle", celebrate: false, undo: nil)
+        )
+        return .handled
+      }
       finish(loop, close: press.characters == "c")
       return .handled
     }
@@ -454,6 +462,11 @@ struct PanelView: View {
         if let start = model.focusSessions(for: loop).last?.start {
           Text("for \(Self.shortAge(start))").font(.callout).monospacedDigit().foregroundStyle(.secondary)
         }
+        Spacer()
+        // Unfocus changes your state, not the Loop, so it sits with the state, apart from the
+        // Loop's own actions.
+        KeyHints.Keycap(key: "⌘U")
+        Text("Unfocus").font(.callout).foregroundStyle(.secondary)
       }
       .padding(.horizontal, 22)
       .padding(.top, 22)
@@ -461,7 +474,7 @@ struct PanelView: View {
         model: model,
         loop: loop,
         prominent: true,
-        actions: ["⌘C Close Loop", "⌘D Drop", "⌘O Open", "⌘U Unfocus"]
+        actions: ["⌘C Close Loop", "⌘O Open Anchors"]
       )
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -517,7 +530,7 @@ struct PanelView: View {
           PanelLoopDetail(
             model: model,
             loop: results[selection],
-            actions: ["↩ Focus", "⌘O Open", "⌘C Close Loop", "⌘D Drop"]
+            actions: ["↩ Focus", "⌘O Open Anchors", "⌘C Close Loop", "⌘D Drop"]
           )
         } else {
           Text("↓ to pick a Loop and see where you left off").font(.callout).foregroundStyle(.tertiary)

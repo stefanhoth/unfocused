@@ -60,7 +60,7 @@ struct PanelLoopDetail: View {
 
         if !anchors.isEmpty {
           VStack(alignment: .leading, spacing: 4) {
-            Text("⌘O opens \(anchors.count == 1 ? "it" : "them")").font(.caption).foregroundStyle(.tertiary)
+            Text(anchors.count == 1 ? "Anchor" : "Anchors").font(.caption.weight(.medium)).foregroundStyle(.secondary)
             ForEach(Array(anchors.prefix(3).enumerated()), id: \.offset) { _, anchor in
               Button {
                 AnchorOpener.open(anchor)
