@@ -77,11 +77,21 @@ public struct FoundationModelsReasoner: Reasoner {
     return await ask(prompt)
   }
 
+  /// Greedy sampling, so the same question gets the same answer. The macOS 27 SDK (Swift 6.4)
+  /// renamed the argument; CI still builds with the macOS 26 SDK.
+  private static var greedy: GenerationOptions {
+    #if compiler(>=6.4)
+      GenerationOptions(samplingMode: .greedy)
+    #else
+      GenerationOptions(sampling: .greedy)
+    #endif
+  }
+
   private func ask(_ prompt: String) async -> String? {
     guard isAvailable else { return nil }
     let session = LanguageModelSession(instructions: Self.instructions)
     do {
-      let answer = try await session.respond(to: prompt, options: GenerationOptions(sampling: .greedy)).content
+      let answer = try await session.respond(to: prompt, options: Self.greedy).content
         .trimmingCharacters(in: .whitespacesAndNewlines)
       // `REASONER_DEBUG=1 make reasoner-examples` shows the raw answers while tuning prompts.
       if ProcessInfo.processInfo.environment["REASONER_DEBUG"] != nil { print("    model: \(answer)") }

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Assembles build/Unfocused.app from the SwiftPM release build (ADR 0006).
+# Assembles the app bundle from the SwiftPM release build (ADR 0006): build/Unfocused.app for a
+# release (UNFOCUSED_VERSION set), build/Unfocused Dev.app for a local build. macOS lists apps by
+# their file name in places like Privacy & Security, so a dev build can't be mistaken for a release.
 # Signing here is ad-hoc; the release pipeline re-signs with the stable certificate.
 set -euo pipefail
 
@@ -9,12 +11,15 @@ if [[ -z "${SDKROOT:-}" && -d "$SDK_26" ]]; then
   export SDKROOT="$SDK_26"
 fi
 VERSION="${UNFOCUSED_VERSION:-0.0.0-dev}"
-APP="build/Unfocused.app"
+case "$VERSION" in
+  *-dev) APP="build/Unfocused Dev.app" ;;
+  *) APP="build/Unfocused.app" ;;
+esac
 
 swift build -c release -Xswiftc -warnings-as-errors
 BIN="$(swift build -c release --show-bin-path)/Unfocused"
 
-rm -rf "$APP"
+rm -rf build/*.app
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Unfocused"
 

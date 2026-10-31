@@ -27,7 +27,7 @@ make setup   # install the pre-commit hook
 make test    # run the tests
 make lint    # format check + build with warnings as errors
 make format  # fix formatting
-make run     # build build/Unfocused.app and launch it
+make run     # build build/Unfocused Dev.app and launch it
 ```
 
 The app stores its database in `~/Library/Application Support/unfocused/` and logs in `~/Library/Logs/unfocused/`.
