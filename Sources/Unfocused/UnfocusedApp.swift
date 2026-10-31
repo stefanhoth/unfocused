@@ -8,34 +8,51 @@ struct UnfocusedApp: App {
 
   var body: some Scene {
     MenuBarExtra {
-      if let model = appDelegate.model {
+      WithModel(app: appDelegate) { model in
         MenuContent(model: model, panel: appDelegate.panel, tieOff: appDelegate.tieOff)
-      } else {
-        Text("unfocused couldn't start. See ~/Library/Logs/unfocused.")
-        Button("Quit unfocused") { NSApplication.shared.terminate(nil) }
       }
     } label: {
       MenuBarLabel(app: appDelegate)
     }
 
     Window("Loops", id: WindowID.loops) {
-      if let model = appDelegate.model { LoopsWindow(model: model) }
+      WithModel(app: appDelegate) { LoopsWindow(model: $0) }
     }
 
     Window("Activity", id: WindowID.activity) {
-      if let model = appDelegate.model { ActivityWindow(model: model) }
+      WithModel(app: appDelegate) { ActivityWindow(model: $0) }
     }
 
     Window("Recap", id: WindowID.recap) {
-      if let model = appDelegate.model { RecapWindow(model: model) }
+      WithModel(app: appDelegate) { RecapWindow(model: $0) }
     }
 
     Window("People", id: WindowID.people) {
-      if let model = appDelegate.model { PeopleWindow(model: model) }
+      WithModel(app: appDelegate) { PeopleWindow(model: $0) }
     }
 
     Settings {
-      if let model = appDelegate.model { SettingsView(model: model, reminder: appDelegate.reminder) }
+      WithModel(app: appDelegate) { SettingsView(model: $0, reminder: appDelegate.reminder) }
+    }
+  }
+}
+
+/// Shows `content` once the app delegate has a model. Observed here, in a view of its own: the
+/// App's body doesn't re-run for the delegate's published changes, so checking `model` there
+/// froze whatever it saw first, e.g. "couldn't start" if the menu was built before launch finished.
+struct WithModel<Content: View>: View {
+  @ObservedObject var app: AppDelegate
+  @ViewBuilder let content: (AppModel) -> Content
+
+  var body: some View {
+    if let model = app.model {
+      content(model)
+    } else if let problem = app.startupProblem {
+      Text("unfocused couldn't start: \(problem)")
+      Text("Details in ~/Library/Logs/unfocused.")
+      Button("Quit unfocused") { NSApplication.shared.terminate(nil) }
+    } else {
+      Text("unfocused is starting…")
     }
   }
 }
@@ -132,6 +149,8 @@ struct MenuBarLabel: View {
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   @Published private(set) var model: AppModel?
   @Published private(set) var panel: PanelController?
+  /// Why startup failed, if it did.
+  @Published private(set) var startupProblem: String?
   @Published private(set) var tieOff: TieOffController?
   /// The Focused Loop's title for the menu bar, `nil` when unfocused.
   @Published private(set) var focusedTitle: String?
@@ -174,6 +193,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
       environment.log.info("Launched, database ready")
     } catch {
       Log(category: "app", file: nil).error("Startup failed: \(error)")
+      startupProblem = error.localizedDescription
     }
   }
 
