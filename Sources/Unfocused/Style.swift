@@ -85,11 +85,7 @@ struct KeyHints: View {
       ForEach(items, id: \.self) { item in
         let parts = item.split(separator: " ", maxSplits: 1).map(String.init)
         HStack(spacing: 5) {
-          Text(parts[0])
-            .font(.system(size: 11, weight: .medium))
-            .padding(.horizontal, 5)
-            .padding(.vertical, 2)
-            .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.1)))
+          Keycap(key: parts[0])
           if parts.count > 1 { Text(parts[1]) }
         }
       }
@@ -100,6 +96,22 @@ struct KeyHints: View {
     .padding(.horizontal, 18)
     .padding(.vertical, 12)
     .overlay(alignment: .top) { Divider().opacity(0.5) }
+  }
+}
+
+extension KeyHints {
+  /// One key, drawn as a small keycap.
+  struct Keycap: View {
+    let key: String
+
+    var body: some View {
+      Text(key)
+        .font(.system(size: 11, weight: .medium))
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 2)
+        .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.1)))
+    }
   }
 }
 

@@ -166,6 +166,8 @@ struct PanelView: View {
   /// nothing.
   /// Opens with nothing selected: the cursor is in the text field until ↓ (or typing) picks a row.
   @State private var selection = -1
+  /// The Loop just Focused, whose Anchors open once Where I left off is answered or skipped.
+  @State private var anchorsToOpenAfterLeftOff: Loop?
   /// Direction per mentioned name; unmentioned names default to Owed.
   @State private var directions: [String: Direction] = [:]
   /// Related Loops including matches by meaning, once the Reasoner has answered for `text`.
@@ -268,6 +270,9 @@ struct PanelView: View {
   // MARK: Search
 
   @ViewBuilder private var searchContent: some View {
+    if let focused = model.focusedLoop {
+      focusStrip(focused)
+    }
     inputField("Search your Loops, or type something new…", systemImage: "magnifyingglass")
       .onChange(of: text) { selection = text.isEmpty ? -1 : 0 }
       .onKeyPress(.return, phases: .down) { press in
@@ -374,21 +379,6 @@ struct PanelView: View {
   }
 
   @ViewBuilder private var searchResults: some View {
-    if text.isEmpty, let focused = model.focusedLoop {
-      VStack(alignment: .leading, spacing: 4) {
-        HStack {
-          Label("Focused", systemImage: "scope").font(.caption).foregroundStyle(.secondary)
-          Spacer()
-          Text("⌘U Unfocus").font(.caption).foregroundStyle(.tertiary)
-        }
-        Text(focused.title).font(.headline)
-        if let note = focused.whereILeftOff {
-          Text("Where I left off: \(note)").foregroundStyle(.secondary)
-        }
-      }
-      .padding(16)
-      Divider()
-    }
 
     if results.isEmpty, !text.trimmingCharacters(in: .whitespaces).isEmpty {
       captureRow
@@ -512,6 +502,27 @@ struct PanelView: View {
     }
   }
 
+  /// The Focused Loop as a status strip above the search: what you're on, and for how long.
+  private func focusStrip(_ loop: Loop) -> some View {
+    HStack(spacing: 10) {
+      Image(nsImage: MenuBarGlyph.image(focused: true))
+        .renderingMode(.template)
+        .foregroundStyle(Style.focus)
+      Text("Focused").font(.callout.weight(.medium)).foregroundStyle(Style.focus)
+      Text(loop.title).font(.callout.weight(.semibold)).lineLimit(1)
+      if let start = model.focusSessions(for: loop).last?.start {
+        Text("for \(Self.shortAge(start))").font(.callout).monospacedDigit().foregroundStyle(.secondary)
+      }
+      Spacer()
+      KeyHints.Keycap(key: "⌘U")
+      Text("Unfocus").font(.callout).foregroundStyle(.secondary)
+    }
+    .padding(.horizontal, 20)
+    .padding(.vertical, 10)
+    .background(Style.focus.opacity(0.1))
+    .overlay(alignment: .bottom) { Divider().opacity(0.5) }
+  }
+
   private var mentionChips: some View {
     HStack(spacing: 8) {
       ForEach(mentioned, id: \.self) { name in
@@ -571,11 +582,24 @@ struct PanelView: View {
     // ↩ only ever Focuses an existing Loop. Capturing a new one takes ⌘↩, on purpose: that bit of
     // friction keeps new Loops from being started by accident.
     guard results.indices.contains(selection) else { return }
-    if let left = model.focus(results[selection]) {
+    let target = results[selection]
+    // Opening the new Loop's Anchors brings other apps forward, which hides the panel. So when
+    // there's a Loop to leave, ask Where I left off first and open the Anchors afterwards.
+    if let left = model.focus(target, openAnchors: false) {
+      anchorsToOpenAfterLeftOff = target
       askWhereILeftOff(left)
     } else {
+      model.anchors(of: target).forEach(AnchorOpener.open)
       dismiss()
     }
+  }
+
+  /// Leaves the panel; after Where I left off, opens the Anchors of the Loop just Focused.
+  private func close() {
+    let pending = anchorsToOpenAfterLeftOff
+    anchorsToOpenAfterLeftOff = nil
+    dismiss()
+    if let pending { model.anchors(of: pending).forEach(AnchorOpener.open) }
   }
 
   private func captureTyped() {
@@ -648,7 +672,7 @@ struct PanelView: View {
       .padding(.top, 18)
       .onKeyPress(.return) {
         model.setWhereILeftOff(loop, to: text)
-        dismiss()
+        close()
         return .handled
       }
 
@@ -733,7 +757,7 @@ struct PanelView: View {
       }
       .padding(18)
       .onKeyPress(.escape) {
-        dismiss()
+        close()
         return .handled
       }
   }
