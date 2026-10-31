@@ -56,14 +56,14 @@ struct TieOffTests {
   func resolved() throws {
     let (core, time) = try makeCore()
     let closeMe = try core.capture(title: "Close me")
-    let dropMe = try core.capture(title: "Drop me")
+    let letGoOfMe = try core.capture(title: "Let go of me")
     let focusMe = try core.capture(title: "Focus me")
     try activeDays(3, core, time)
 
     var tieOff = try core.startTieOff()
     try core.close(closeMe.id)
     tieOff.next()
-    try core.drop(dropMe.id)
+    try core.letGo(letGoOfMe.id)
     tieOff.next()
     try core.focus(focusMe.id)
     tieOff.next()

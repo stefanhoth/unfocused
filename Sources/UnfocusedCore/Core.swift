@@ -79,14 +79,14 @@ public final class Core: Sendable {
     try change(loopID, from: [.open], to: .closed, recording: .closed)
   }
 
-  /// Consciously lets go of an Open Loop. Ends its Focus if it was Focused.
-  public func drop(_ loopID: UUID) throws {
-    try change(loopID, from: [.open], to: .dropped, recording: .dropped)
+  /// Lets go of an Open Loop: consciously not finishing it. Ends its Focus if it was Focused.
+  public func letGo(_ loopID: UUID) throws {
+    try change(loopID, from: [.open], to: .letGo, recording: .letGo)
   }
 
-  /// Brings a Closed or Dropped Loop back to Open.
+  /// Brings a Closed or Let go Loop back to Open.
   public func reopen(_ loopID: UUID) throws {
-    try change(loopID, from: [.closed, .dropped], to: .open, recording: .reopened)
+    try change(loopID, from: [.closed, .letGo], to: .open, recording: .reopened)
   }
 
   /// Records how to get back into a Loop. An empty note keeps the previous one.
@@ -128,7 +128,7 @@ public final class Core: Sendable {
   }
 
   /// The Loop that already has an Anchor at the same spot: an Open one if there is one, otherwise
-  /// the most recently changed Closed or Dropped one (so it can be reopened).
+  /// the most recently changed Closed or Let go one (so it can be reopened).
   public func loop(anchoredAt anchor: Anchor) throws -> Loop? {
     try database.writer.read { db in
       let loopIDs = try String.fetchAll(

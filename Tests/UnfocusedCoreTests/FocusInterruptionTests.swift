@@ -67,7 +67,7 @@ struct FocusInterruptionTests {
     #expect(try core.interruptedFocus() == nil)
   }
 
-  @Test("closing, dropping, unfocusing or Focusing something else clears the prompt")
+  @Test("closing, letting go, unfocusing or Focusing something else clears the prompt")
   func otherAnswersClear() throws {
     let (core, time) = try makeCore()
     let loop = try core.capture(title: "Spec")
@@ -81,7 +81,7 @@ struct FocusInterruptionTests {
     try core.reopen(loop.id)
     try core.focus(loop.id)
     try core.interruptFocus(at: time.now, because: .sleep)
-    try core.drop(loop.id)
+    try core.letGo(loop.id)
     #expect(try core.interruptedFocus() == nil)
 
     try core.reopen(loop.id)

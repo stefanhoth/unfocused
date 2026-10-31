@@ -15,29 +15,29 @@ struct LifecycleTests {
     #expect(try core.loops(in: .closed).map(\.id) == [loop.id])
   }
 
-  @Test("Dropping a Loop removes it from the Open Loops")
-  func drop() throws {
+  @Test("Letting go of a Loop removes it from the Open Loops")
+  func letGo() throws {
     let (core, _) = try makeCore()
     let loop = try core.capture(title: "Learn Rust")
 
-    try core.drop(loop.id)
+    try core.letGo(loop.id)
 
     #expect(try core.openLoops().isEmpty)
-    #expect(try core.loops(in: .dropped).map(\.id) == [loop.id])
+    #expect(try core.loops(in: .letGo).map(\.id) == [loop.id])
   }
 
-  @Test("a Closed or Dropped Loop can be reopened")
+  @Test("a Closed or Let-go Loop can be reopened")
   func reopen() throws {
     let (core, _) = try makeCore()
     let closed = try core.capture(title: "Contract")
-    let dropped = try core.capture(title: "Side project")
+    let letGo = try core.capture(title: "Side project")
     try core.close(closed.id)
-    try core.drop(dropped.id)
+    try core.letGo(letGo.id)
 
     try core.reopen(closed.id)
-    try core.reopen(dropped.id)
+    try core.reopen(letGo.id)
 
-    #expect(Set(try core.openLoops().map(\.id)) == [closed.id, dropped.id])
+    #expect(Set(try core.openLoops().map(\.id)) == [closed.id, letGo.id])
   }
 
   @Test("only valid state changes are allowed")
@@ -48,11 +48,11 @@ struct LifecycleTests {
     #expect(throws: CoreError.invalidStateChange) { try core.reopen(loop.id) }
     try core.close(loop.id)
     #expect(throws: CoreError.invalidStateChange) { try core.close(loop.id) }
-    #expect(throws: CoreError.invalidStateChange) { try core.drop(loop.id) }
+    #expect(throws: CoreError.invalidStateChange) { try core.letGo(loop.id) }
     #expect(throws: CoreError.loopNotFound) { try core.close(UUID()) }
   }
 
-  @Test("Closing or Dropping the Focused Loop ends the Focus")
+  @Test("Closing or letting go of the Focused Loop ends the Focus")
   func endsFocus() throws {
     let (core, time) = try makeCore()
     let loop = try core.capture(title: "Focused one")
@@ -99,11 +99,11 @@ struct HistoryTests {
     time.advance(by: .hours(1))
     try core.reopen(loop.id)
     time.advance(by: .hours(1))
-    try core.drop(loop.id)
+    try core.letGo(loop.id)
 
     let history = try core.history(for: loop.id)
 
-    #expect(history.map(\.change) == [.captured, .closed, .reopened, .dropped])
+    #expect(history.map(\.change) == [.captured, .closed, .reopened, .letGo])
     #expect(history.map(\.at) == [0, 1, 2, 3].map { start.addingTimeInterval(.hours($0)) })
   }
 
@@ -111,5 +111,12 @@ struct HistoryTests {
   func unknown() throws {
     let (core, _) = try makeCore()
     #expect(try core.history(for: UUID()).isEmpty)
+  }
+
+  @Test("Let go is stored as \"dropped\", so data from before the rename still loads")
+  func letGoStoredValue() {
+    #expect(LoopState.letGo.rawValue == "dropped")
+    #expect(LoopChange.letGo.rawValue == "dropped")
+    #expect(LoopState(rawValue: "dropped") == .letGo)
   }
 }

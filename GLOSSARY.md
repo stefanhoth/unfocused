@@ -47,9 +47,9 @@ A Loop that still needs the user's attention at some point.
 A Loop that was finished.
 _Avoid_: Done, completed, resolved
 
-**Dropped**:
-A Loop the user consciously decided not to finish. It's a legitimate outcome, not a failure.
-_Avoid_: Deleted, cancelled, abandoned
+**Let go**:
+A Loop the user consciously decided not to finish: they let go of it. It's a legitimate outcome, not a failure, and the counterpart to Closing a Loop.
+_Avoid_: Dropped, deleted, cancelled, abandoned
 
 **Loose End**:
 An Open Loop without Engagement for a number of active days (days the user actually used the Mac). unfocused derives it; the user never sets it.

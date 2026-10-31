@@ -109,10 +109,10 @@ final class AppModel {
     changeState(of: loop, "closing") { try core.close(loop.id) }
   }
 
-  /// Drops `loop`. Returns it when it was the Focused Loop.
+  /// Lets go of `loop`. Returns it when it was the Focused Loop.
   @discardableResult
-  func drop(_ loop: Loop) -> Loop? {
-    changeState(of: loop, "dropping") { try core.drop(loop.id) }
+  func letGo(_ loop: Loop) -> Loop? {
+    changeState(of: loop, "letting go") { try core.letGo(loop.id) }
   }
 
   func reopen(_ loop: Loop) {

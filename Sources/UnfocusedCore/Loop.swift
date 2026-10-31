@@ -38,7 +38,8 @@ public struct FocusSession: Hashable, Sendable {
 public enum LoopState: String, Sendable, CaseIterable {
   case open
   case closed
-  case dropped
+  /// Stored as "dropped", the term's earlier name, so existing data stays valid.
+  case letGo = "dropped"
 }
 
 public enum CoreError: Error, Equatable {
@@ -57,7 +58,8 @@ public enum CoreError: Error, Equatable {
 public enum LoopChange: String, Sendable, CaseIterable {
   case captured
   case closed
-  case dropped
+  /// Stored as "dropped", the term's earlier name, so existing history stays valid.
+  case letGo = "dropped"
   case reopened
 }
 

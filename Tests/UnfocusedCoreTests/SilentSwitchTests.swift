@@ -61,7 +61,7 @@ struct SilentSwitchTests {
     #expect(try core.silentSwitchSuggestion() == nil)
   }
 
-  @Test("Anchors of Closed or Dropped Loops don't trigger it")
+  @Test("Anchors of Closed or Let-go Loops don't trigger it")
   func notOpen() throws {
     let (core, time) = try makeCore()
     let old = try core.capture(title: "Old", anchor: page("old"))

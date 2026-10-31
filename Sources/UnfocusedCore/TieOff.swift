@@ -1,7 +1,7 @@
 import Foundation
 
 /// One pass through the Loose Ends, one at a time (see GLOSSARY.md). Resolving a Loop (Focus,
-/// Close, Drop) goes through Core as usual; the Tie-off only tracks where the user is.
+/// Close, Let go) goes through Core as usual; the Tie-off only tracks where the user is.
 public struct TieOff: Hashable, Sendable {
   /// The Loose Ends this Tie-off started with, most aged first.
   public let looseEnds: [LoopAging]

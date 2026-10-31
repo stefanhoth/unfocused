@@ -183,7 +183,7 @@ extension LoopState {
     switch self {
     case .open: "Open"
     case .closed: "Closed"
-    case .dropped: "Dropped"
+    case .letGo: "Let go"
     }
   }
 }
