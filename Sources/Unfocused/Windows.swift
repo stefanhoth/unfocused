@@ -7,23 +7,17 @@ struct LoopsWindow: View {
 
   @State private var state: LoopState = .open
   @State private var selectedID: Loop.ID?
+  /// What was just Closed or let go, with Undo (DESIGN.md: every action answers).
+  @State private var confirmation: Confirmation?
 
   private var loops: [Loop] {
     state == .open ? model.openLoops : model.loops(in: state)
   }
 
   var body: some View {
-    // A plain split (not NavigationSplitView): this view sits inside the main window's sidebar
-    // layout, and navigation split views don't nest.
-    HSplitView {
-      List(loops, selection: $selectedID) { loop in
-        LoopRow(loop: loop, isFocused: loop.id == model.focusedLoop?.id, aging: model.aging[loop.id])
-          .contextMenu { actions(for: loop) }
-      }
-      .overlay {
-        if loops.isEmpty { emptyState }
-      }
-      .safeAreaInset(edge: .top) {
+    // A fixed-width list next to the detail: split views drifted and clipped the detail.
+    HStack(spacing: 0) {
+      VStack(spacing: 0) {
         Picker("Show", selection: $state) {
           Text("Open").tag(LoopState.open)
           Text("Closed").tag(LoopState.closed)
@@ -31,19 +25,49 @@ struct LoopsWindow: View {
         }
         .pickerStyle(.segmented)
         .labelsHidden()
-        .padding(8)
-      }
-      .frame(minWidth: 260, idealWidth: 320, maxWidth: 440)
-      Group {
-        if let loop = loops.first(where: { $0.id == selectedID }) {
-          LoopDetail(model: model, loop: loop)
+        .padding(12)
+        if loops.isEmpty {
+          emptyState.frame(maxHeight: .infinity)
         } else {
-          Text("Select a Loop").foregroundStyle(.secondary)
+          SelectableList(items: loops, selection: $selectedID) { loop in
+            LoopRow(
+              loop: loop,
+              isFocused: loop.id == model.focusedLoop?.id,
+              aging: model.aging[loop.id],
+              age: model.lastEngagement(of: loop) ?? loop.capturedAt
+            )
+            .contextMenu { actions(for: loop) }
+          }
         }
       }
-      .frame(minWidth: 360, maxWidth: .infinity, maxHeight: .infinity)
+      .frame(width: 340)
+      Divider()
+      Group {
+        if let loop = loops.first(where: { $0.id == selectedID }) {
+          LoopDetail(model: model, loop: loop, finish: finish)
+        } else {
+          Text("Select a Loop to see where you left off").foregroundStyle(.secondary)
+        }
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     .frame(minWidth: 680, minHeight: 400)
+    .overlay(alignment: .bottom) {
+      if let confirmation {
+        HStack(spacing: 10) {
+          ConfirmationBar(confirmation: confirmation)
+          if let undo = confirmation.undo {
+            Button("Undo") {
+              undo()
+              withAnimation { self.confirmation = nil }
+            }
+            .keyboardShortcut("z", modifiers: .command)
+          }
+        }
+        .padding(.bottom, 18)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
     .navigationTitle("Loops")
     .onAppear { model.refresh() }
     .onChange(of: state) { selectedID = nil }
@@ -68,116 +92,130 @@ struct LoopsWindow: View {
     Button("Edit…") { model.editLoop?(loop) }
     if loop.state == .open {
       Button("Focus") { model.focus(loop) }
-      Button("Close Loop") { model.close(loop) }
-      Button("Let go") { model.letGo(loop) }
+      Button("Close Loop") { finish(loop, true) }
+      Button("Let go") { finish(loop, false) }
     } else {
       Button("Reopen") { model.reopen(loop) }
     }
   }
+
+  /// Closes or lets go of `loop`, then confirms with Undo, as in the panel.
+  private func finish(_ loop: Loop, _ close: Bool) {
+    withAnimation(.snappy) {
+      _ = close ? model.close(loop) : model.letGo(loop)
+    }
+    if close { NSSound(named: "Glass")?.play() }
+    let confirmation = Confirmation(
+      text: close ? "Closed “\(loop.title)”" : "Let go of “\(loop.title)”",
+      systemImage: close ? "checkmark.circle.fill" : "arrow.down.circle",
+      celebrate: close,
+      undo: { [model] in model.reopen(loop) }
+    )
+    withAnimation(.snappy) { self.confirmation = confirmation }
+    Task {
+      try? await Task.sleep(for: .seconds(4))
+      if self.confirmation?.id == confirmation.id { withAnimation { self.confirmation = nil } }
+    }
+  }
 }
 
+/// A Loop in a list, like the panel's rows: aging, title, Where I left off, how long ago.
 private struct LoopRow: View {
   let loop: Loop
   let isFocused: Bool
   let aging: LoopAging?
+  let age: Date
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 2) {
-      HStack {
-        AgingMark(aging: aging)
-        Text(loop.title).lineLimit(2)
-        if isFocused { Image(systemName: "scope").help("Focused") }
+    HStack(alignment: .firstTextBaseline, spacing: 10) {
+      AgingMark(aging: aging)
+      VStack(alignment: .leading, spacing: 3) {
+        HStack(spacing: 6) {
+          Text(loop.title).lineLimit(2)
+          if isFocused {
+            Image(nsImage: MenuBarGlyph.image(focused: true))
+              .renderingMode(.template)
+              .foregroundStyle(Style.logoLinearGradient)
+              .help("Focused")
+          }
+        }
+        LooseEndNote(aging: aging)
+        if let note = loop.whereILeftOff {
+          Text(note).font(.callout).foregroundStyle(.secondary).lineLimit(1)
+        }
       }
-      LooseEndNote(aging: aging)
-      if let note = loop.whereILeftOff {
-        Text(note).font(.callout).foregroundStyle(.secondary).lineLimit(1)
-      }
+      Spacer(minLength: 8)
+      Text(PanelView.shortAge(age)).font(.caption).monospacedDigit().foregroundStyle(.tertiary)
     }
-    .padding(.vertical, 2)
   }
 }
 
+/// A Loop in the Loops section: the same summary as the panel, its actions as buttons, then what
+/// happened (time spent and history). Editing happens in Edit Loop.
 private struct LoopDetail: View {
   let model: AppModel
   let loop: Loop
+  let finish: (Loop, Bool) -> Void
 
   var body: some View {
     let sessions = model.focusSessions(for: loop)
-    let focusedTime = sessions.reduce(0) { $0 + $1.duration }
-    Form {
-      Section {
-        Text(loop.title).font(.title2)
-        if let note = loop.whereILeftOff {
-          LabeledContent("Where I left off", value: note)
+    let log = model.workLog(for: loop)
+    ScrollView {
+      VStack(alignment: .leading, spacing: 26) {
+        LoopSummary(model: model, loop: loop) { actionButtons }
+
+        if !log.isEmpty {
+          let total = log.reduce(0) { $0 + $1.duration }
+          section("Worked on · \(Duration.seconds(total).formatted(.units(width: .abbreviated))) in 30 days") {
+            ForEach(Array(log.prefix(20).enumerated()), id: \.offset) { _, piece in
+              WorkLogRow(piece: piece)
+            }
+          }
         }
-        if focusedTime > 0 {
-          LabeledContent("Focused for", value: Duration.seconds(focusedTime).formatted(.units(width: .abbreviated)))
-        }
-        if let engaged = model.lastEngagement(of: loop) {
-          LabeledContent("Last worked on") { Text(Style.relative(engaged)) }
-        }
-      }
-      PeopleSection(model: model, loop: loop)
-      let anchors = model.anchors(of: loop)
-      if !anchors.isEmpty {
-        Section("Anchors") {
-          ForEach(Array(anchors.enumerated()), id: \.offset) { _, anchor in
-            HStack {
-              Button {
-                AnchorOpener.open(anchor)
-              } label: {
-                Label(anchor.title, systemImage: "link").lineLimit(1)
-              }
-              .buttonStyle(.link)
-              Spacer()
-              Button("Remove Anchor", systemImage: "minus.circle") { model.removeAnchor(anchor, from: loop) }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
+
+        section("History") {
+          ForEach(Array(model.history(for: loop).enumerated()), id: \.offset) { _, event in
+            LabeledContent(event.change.label) {
+              Text(event.at, format: .dateTime.day().month().hour().minute())
+            }
+          }
+          ForEach(Array(sessions.enumerated()), id: \.offset) { _, session in
+            LabeledContent("Focused") {
+              Text(session.start, format: .dateTime.day().month().hour().minute())
+              Text(
+                session.end == nil
+                  ? "· now" : "· \(Duration.seconds(session.duration).formatted(.units(width: .abbreviated)))"
+              )
             }
           }
         }
       }
-      Section {
-        HStack {
-          Button("Edit…") { model.editLoop?(loop) }
-            .keyboardShortcut("e", modifiers: .command)
-          if loop.state == .open {
-            Button("Focus") { model.focus(loop) }
-            Button("Close Loop") { model.close(loop) }
-            Button("Let go") { model.letGo(loop) }
-          } else {
-            Button("Reopen") { model.reopen(loop) }
-          }
-        }
-      }
-      let log = model.workLog(for: loop)
-      if !log.isEmpty {
-        let total = log.reduce(0) { $0 + $1.duration }
-        Section("Worked on · \(Duration.seconds(total).formatted(.units(width: .abbreviated))) in 30 days") {
-          ForEach(Array(log.prefix(20).enumerated()), id: \.offset) { _, piece in
-            WorkLogRow(piece: piece)
-          }
-        }
-      }
-      Section("History") {
-        ForEach(Array(model.history(for: loop).enumerated()), id: \.offset) { _, event in
-          LabeledContent(event.change.label) {
-            Text(event.at, format: .dateTime.day().month().hour().minute())
-          }
-        }
-        ForEach(Array(sessions.enumerated()), id: \.offset) { _, session in
-          LabeledContent("Focused") {
-            Text(session.start, format: .dateTime.day().month().hour().minute())
-            if session.end != nil {
-              Text("· \(Duration.seconds(session.duration).formatted(.units(width: .abbreviated)))")
-            } else {
-              Text("· now")
-            }
-          }
-        }
-      }
+      .padding(24)
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
-    .formStyle(.grouped)
+  }
+
+  @ViewBuilder private var actionButtons: some View {
+    HStack(spacing: 8) {
+      if loop.state == .open {
+        Button("Focus") { model.focus(loop) }
+          .buttonStyle(.borderedProminent)
+        Button("Close Loop") { finish(loop, true) }
+        Button("Let go") { finish(loop, false) }
+      } else {
+        Button("Reopen") { model.reopen(loop) }
+          .buttonStyle(.borderedProminent)
+      }
+      Button("Edit…") { model.editLoop?(loop) }
+        .keyboardShortcut("e", modifiers: .command)
+    }
+  }
+
+  private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text(title).font(.headline)
+      content()
+    }
   }
 }
 
@@ -238,43 +276,6 @@ extension AttributionReason {
     case .focus: "while it was Focused"
     case .unfocused: "Unfocused time"
     case .judgedUnrelated: "judged unrelated to the Focused Loop"
-    }
-  }
-}
-
-private struct PeopleSection: View {
-  let model: AppModel
-  let loop: Loop
-  @State private var newName = ""
-
-  var body: some View {
-    Section("People") {
-      ForEach(model.involvements(of: loop), id: \.person.id) { involvement in
-        HStack {
-          Text(involvement.person.name)
-          Spacer()
-          Picker(
-            "Direction",
-            selection: Binding(
-              get: { involvement.direction },
-              set: { model.setDirection($0, of: involvement.person, in: loop) }
-            )
-          ) {
-            ForEach(Direction.allCases, id: \.self) { Text($0.label).help($0.help).tag($0) }
-          }
-          .pickerStyle(.segmented)
-          .labelsHidden()
-          .fixedSize()
-          Button("Remove", systemImage: "minus.circle") { model.remove(involvement.person, from: loop) }
-            .labelStyle(.iconOnly)
-            .buttonStyle(.borderless)
-        }
-      }
-      TextField("Add a Person…", text: $newName)
-        .onSubmit {
-          model.involve(named: newName, in: loop)
-          newName = ""
-        }
     }
   }
 }

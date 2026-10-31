@@ -103,7 +103,43 @@ Glass is for floating chrome only. Anything with a lot of text to read (windows,
 
 ### Tie-off
 
-- One Loose End at a time, single keys: F Focus (or Follow up with …), C Close Loop, L Let go, O Open Anchors, N Not now, esc Stop. The end gets a bounce and a sound.
+- One Loose End at a time, shown with the same summary as the panel's detail.
+- Single keys, as keycaps on the buttons: F Focus (or Follow up with …), C Close Loop, L Let go, O Open Anchors, N Not now, esc Stop. ⌘Z takes back the last step and reopens a Loop that was Closed or let go.
+- Focus here doesn't open the Loop's Anchors (those apps would take the keyboard from the Tie-off); O does.
+- The end gets a bounce in the logo gradient, a sound, and a **Finish** button.
+
+### Main window: Loops, People, Recap, Activity
+
+- **Loops:** the detail is the same summary as the panel's (title and status, Where I left off, last seen, People, Anchors), with its actions as buttons (Focus, Close Loop, Let go, Edit…), then time worked on and history. Editing happens in Edit Loop, not inline. Close Loop and Let go confirm with Undo, as in the panel.
+- **People:** a filter field and a one-line explanation above the list. Each name shows how many open Loops involve them. Deleting a person asks first, since it can't be undone.
+- **Activity:** one day at a time with previous/next and Today. Figures (recorded, toward Loops, Unfocused time), a timeline, then entries grouped by hour, merged, with the app icon, the Loop chip and a short duration.
+- **Recap:** day or week; Focus periods in the timeline use the logo gradient, Unfocused time is gray.
+
+## Window rules
+
+These are rules, not suggestions. A screen that breaks one doesn't ship. The ones code can check are enforced by `scripts/check-design.sh`, which `make lint` and CI run: no `List(selection:)`, no `HSplitView`, `NavigationSplitView` only for the main window's sidebar, no system accent color.
+
+**Layout:**
+- A section with a list and a detail is an `HStack`: the list at a **fixed width** (Loops 340, People 320), a `Divider`, then the detail filling the rest. No `HSplitView` and no `NavigationSplitView` inside a section: they drift, nest badly and clip the detail.
+- What sits above a list (segmented control, filter field, explanation) is **outside** the scrolling area and never scrolls under the window's title.
+- Every detail area has an empty state that says what to do ("Select a Loop to see where you left off").
+
+**Lists and selection:**
+- Lists use `SelectableList`, never `List(selection:)`. macOS draws `List` selection in the system accent color, which the app can't tint, so it can turn red. The same goes for the sidebar: plain rows with `Style.rowBackground`.
+- **One row anatomy everywhere:**
+  - leading: a mark (aging ring, app icon or the open-loop glyph);
+  - middle: the title (primary), then one secondary line (Where I left off, Loose End, the Loop it counts toward);
+  - trailing: one short fact in tertiary, monospaced ("2d", "8m", "2 open").
+- Rows have 8 pt vertical padding inside a 10 pt list inset. ↑/↓ move the selection.
+- A list that can grow past about 15 entries gets a filter field above it (People has one).
+
+**Data views (Recap, Activity, and anything that shows time):**
+- Top to bottom: figures first (`FigureCard`), then a timeline bar (logo gradient for time toward a Loop, gray for Unfocused time), then the details, grouped (by hour, by Loop or by kind), never as a raw log.
+- Consecutive entries in the same place that count the same way are merged before showing.
+- Durations are short (`Style.shortDuration`: "45s", "8m", "1h 5m"; the Recap uses "1h 5m" / "<1m"), never "8 min, 18 secs".
+- Each entry names what it counted toward (a Loop chip with the open-loop mark) or "Unfocused", in that order of emphasis.
+
+**Polish bar:** if a screen looks less finished than the Recap, it isn't done. Compare side by side before merging.
 
 ## Keys
 
@@ -159,13 +195,13 @@ New keys must not collide with these or with text editing (⌘⌫ is taken by te
   - **Let go**, never "Drop" or "Delete";
   - **Unfocus**, **Open Anchors**, **Edit**.
 - Plain-language labels where a term is abstract: People directions read "They're waiting on me" / "I'm waiting on them".
-- English everywhere, including relative times ("2 days ago", "just now" within a minute), through `Style.relative`. Never mix in the system language.
+- English everywhere, including dates, durations and relative times ("2 days ago", "just now" within a minute, through `Style.relative`). The app declares English as its only language (`CFBundleLocalizations`), so formatters speak English while keeping the user's region conventions (24-hour time, date order). Never mix in the system language.
 - Say what will happen ("Open Anchors", not "Open"). Short, calm sentences; no exclamation marks, no blame.
 
 ## Motion and sound
 
 - `.snappy` for state changes in the panel. With Reduce Motion, everything becomes a short fade, and the glow stops drifting.
-- Sounds are rare and earned: a soft "Glass" for Close Loop and at the end of a Tie-off. Nothing else makes a sound.
+- Sounds are rare and earned: a soft "Glass" for Close Loop (panel and Loops window) and at the end of a Tie-off. Inside a Tie-off, only the end makes a sound. Nothing else does.
 
 ## Feedback and timing
 
@@ -189,6 +225,8 @@ New keys must not collide with these or with text editing (⌘⌫ is taken by te
 3. Glossary words, one name and one key per action, and plain language where needed?
 4. Feedback for every action, and Undo for anything that ends a Loop?
 5. Does the cursor land in the field? (`--show panel|left-off|tie-off|banner|focus-preview`, then check the log.)
-6. Style tokens instead of literals; glass only on floating chrome; no system accent?
-7. Reduce Motion, VoiceOver, and readable over a busy background?
-8. This file updated if anything here changed.
+6. Style tokens instead of literals; glass only on floating chrome; no system accent (no `List(selection:)`, no default sidebar selection)?
+7. Window rules: fixed list width next to the detail, nothing scrolls under the title, one row anatomy, a filter for long lists, data views as figures → timeline → grouped details?
+8. Does it look as finished as the Recap, side by side?
+9. Reduce Motion, VoiceOver, and readable over a busy background?
+10. This file updated if anything here changed.

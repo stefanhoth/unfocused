@@ -28,7 +28,12 @@ final class TieOffController {
   /// A floating sheet of glass, like the panel: the SwiftUI view draws everything.
   private func makeWindow() -> FloatingPanel {
     let window = FloatingPanel(
-      contentRect: NSRect(x: 0, y: 0, width: 560, height: 420),
+      contentRect: NSRect(
+        x: 0,
+        y: 0,
+        width: Style.tieOffSize.width + 2 * Style.glowMargin,
+        height: Style.tieOffSize.height + 2 * Style.glowMargin
+      ),
       styleMask: [.borderless],
       backing: .buffered,
       defer: false
@@ -36,7 +41,8 @@ final class TieOffController {
     window.title = "Tie-off"
     window.isOpaque = false
     window.backgroundColor = .clear
-    window.hasShadow = true
+    // Own shadow and glow in the view, like the panel: the system shadow follows the rectangle.
+    window.hasShadow = false
     window.isMovableByWindowBackground = true
     window.level = .floating
     window.isReleasedWhenClosed = false
@@ -50,6 +56,8 @@ struct TieOffView: View {
   @State var tieOff: TieOff
   let close: () -> Void
   @State private var celebrated = false
+  /// The last step, for ⌘Z: which Loop, and whether it was Closed or let go (and needs reopening).
+  @State private var lastStep: (loop: Loop, reopen: Bool)?
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   private var motion: CalmMotion { CalmMotion(reduceMotion: reduceMotion) }
@@ -65,8 +73,16 @@ struct TieOffView: View {
         finished
       }
     }
-    .frame(width: 560, height: 420)
+    .frame(width: Style.tieOffSize.width, height: Style.tieOffSize.height)
     .calmGlass(cornerRadius: Style.tieOffRadius)
+    .overlay(GradientGlow(cornerRadius: Style.tieOffRadius))
+    .shadow(color: .black.opacity(0.25), radius: 24, y: 10)
+    .padding(Style.glowMargin)
+    .tint(Style.brand)
+    .background {
+      // ⌘Z takes back the last step; a hidden button carries the shortcut.
+      Button("Undo") { undo() }.keyboardShortcut("z", modifiers: .command).hidden()
+    }
   }
 
   // MARK: One Loose End
@@ -76,6 +92,10 @@ struct TieOffView: View {
       HStack {
         Text("Tie-off").font(.caption.weight(.medium)).foregroundStyle(.secondary)
         Spacer()
+        if lastStep != nil {
+          KeyHints.Keycap(key: "⌘Z")
+          Text("Undo").font(.caption).foregroundStyle(.secondary)
+        }
         Text("\(tieOff.done + 1) of \(tieOff.total)").font(.caption).monospacedDigit().foregroundStyle(.secondary)
       }
       GeometryReader { geometry in
@@ -91,46 +111,13 @@ struct TieOffView: View {
     .padding([.horizontal, .top], 28)
   }
 
+  /// The same summary as the panel's detail, so a Loose End reads the same everywhere.
   private func card(_ aging: LoopAging) -> some View {
-    let loop = aging.loop
-    let people = model.involvements(of: loop)
-    let anchors = model.anchors(of: loop)
-    return VStack(alignment: .leading, spacing: 12) {
-      HStack(alignment: .firstTextBaseline) {
-        AgingMark(aging: aging)
-        Text(loop.title).font(.system(size: 26, weight: .semibold)).lineLimit(3)
-      }
-      LooseEndNote(aging: aging)
-      if let note = loop.whereILeftOff {
-        Label(note, systemImage: "bookmark").foregroundStyle(.secondary)
-      }
-      if !people.isEmpty {
-        HStack(spacing: 8) {
-          ForEach(people, id: \.person.id) { involvement in
-            Label(
-              "\(involvement.person.name) · \(involvement.direction.label)",
-              systemImage: involvement.direction == .owed ? "arrow.left" : "arrow.right"
-            )
-            .font(.caption)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(.quaternary, in: Capsule())
-            .help(involvement.direction.help)
-          }
-        }
-      }
-      if !anchors.isEmpty {
-        VStack(alignment: .leading, spacing: 4) {
-          ForEach(Array(anchors.prefix(3).enumerated()), id: \.offset) { _, anchor in
-            Label(anchor.title, systemImage: "link").font(.callout).lineLimit(1).foregroundStyle(.secondary)
-          }
-        }
-      }
-    }
-    .padding(.horizontal, 28)
-    .padding(.vertical, 20)
-    .id(loop.id)
-    .transition(.asymmetric(insertion: motion.slide(from: .trailing), removal: motion.slide(from: .leading)))
+    LoopSummary(model: model, loop: aging.loop, prominent: true) { EmptyView() }
+      .padding(.horizontal, 28)
+      .padding(.vertical, 20)
+      .id(aging.loop.id)
+      .transition(.asymmetric(insertion: motion.slide(from: .trailing), removal: motion.slide(from: .leading)))
   }
 
   private func actions(_ aging: LoopAging) -> some View {
@@ -141,8 +128,9 @@ struct TieOffView: View {
     return VStack(alignment: .leading, spacing: 10) {
       HStack {
         Button {
-          model.focus(loop)
-          advance()
+          // Not opening Anchors here: those apps would take the keyboard from the Tie-off. O opens them.
+          model.focus(loop, openAnchors: false)
+          advance(loop, reopen: false)
         } label: {
           keyLabel(focusLabel, "F")
         }
@@ -150,7 +138,7 @@ struct TieOffView: View {
         .buttonStyle(.glassProminent)
         Button {
           model.close(loop)
-          advance()
+          advance(loop, reopen: true)
         } label: {
           keyLabel("Close Loop", "C")
         }
@@ -158,7 +146,7 @@ struct TieOffView: View {
         .buttonStyle(.glass)
         Button {
           model.letGo(loop)
-          advance()
+          advance(loop, reopen: true)
         } label: {
           keyLabel("Let go", "L")
         }
@@ -176,6 +164,7 @@ struct TieOffView: View {
         .disabled(anchors.isEmpty)
         Button {
           withAnimation(motion.snappy) { tieOff.notNow() }
+          lastStep = (loop, false)
           celebrateIfDone()
         } label: {
           keyLabel("Not now", "N")
@@ -191,15 +180,24 @@ struct TieOffView: View {
   }
 
   private func keyLabel(_ title: String, _ key: String) -> some View {
-    HStack(spacing: 6) {
+    HStack(spacing: 8) {
       Text(title).lineLimit(1)
-      Text(key).font(.caption.monospaced()).foregroundStyle(.secondary)
+      KeyHints.Keycap(key: key)
     }
   }
 
-  private func advance() {
+  private func advance(_ loop: Loop, reopen: Bool) {
     withAnimation(motion.snappy) { tieOff.next() }
+    lastStep = (loop, reopen)
     celebrateIfDone()
+  }
+
+  /// Takes back the last step: reopens a Closed or let-go Loop and shows it again.
+  private func undo() {
+    guard let lastStep else { return }
+    if lastStep.reopen { model.reopen(lastStep.loop) }
+    withAnimation(motion.snappy) { tieOff.back() }
+    self.lastStep = nil
   }
 
   // MARK: Done
@@ -209,14 +207,14 @@ struct TieOffView: View {
       Spacer()
       Image(systemName: tieOff.total == 0 ? "checkmark.circle" : "checkmark.seal.fill")
         .font(.system(size: 64))
-        .foregroundStyle(.green)
+        .foregroundStyle(Style.logoLinearGradient)
         .symbolEffect(.bounce, value: reduceMotion ? false : celebrated)
         .scaleEffect(celebrated || reduceMotion ? 1 : 0.6)
         .animation(.spring(response: 0.4, dampingFraction: 0.5), value: celebrated)
       Text(tieOff.total == 0 ? "No Loose Ends" : "All tied off").font(.title2.weight(.semibold))
       Text(summary).foregroundStyle(.secondary).multilineTextAlignment(.center)
       Spacer()
-      Button("Done", action: close).keyboardShortcut(.defaultAction).buttonStyle(.glassProminent)
+      Button("Finish", action: close).keyboardShortcut(.defaultAction).buttonStyle(.glassProminent)
     }
     .frame(maxWidth: .infinity)
     .padding(24)

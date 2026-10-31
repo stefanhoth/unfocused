@@ -42,14 +42,38 @@ struct MainWindow: View {
 
   var body: some View {
     NavigationSplitView {
-      List(selection: $app.section) {
-        ForEach(AppSection.groups, id: \.title) { group in
-          Section(group.title) {
+      // Our own rows, not a List: List selection follows the system accent (red on some Macs).
+      ScrollView {
+        VStack(alignment: .leading, spacing: 2) {
+          ForEach(AppSection.groups, id: \.title) { group in
+            Text(group.title)
+              .font(.caption.weight(.semibold))
+              .foregroundStyle(.secondary)
+              .padding(.horizontal, 10)
+              .padding(.top, 14)
+              .padding(.bottom, 4)
             ForEach(group.sections) { section in
-              Label(section.title, systemImage: section.systemImage).tag(section)
+              let selected = (app.section ?? .loops) == section
+              Button {
+                app.section = section
+              } label: {
+                Label {
+                  Text(section.title).foregroundStyle(.primary)
+                } icon: {
+                  Image(systemName: section.systemImage)
+                    .foregroundStyle(selected ? AnyShapeStyle(Style.brand) : AnyShapeStyle(.secondary))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Style.rowBackground(selected: selected))
+                .contentShape(Rectangle())
+              }
+              .buttonStyle(.plain)
             }
           }
         }
+        .padding(.horizontal, 10)
       }
       .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 240)
     } detail: {
@@ -61,5 +85,7 @@ struct MainWindow: View {
       }
     }
     .frame(minWidth: 900, minHeight: 520)
+    // The app's own tint, not the system accent (a red accent made normal actions look like errors).
+    .tint(Style.brand)
   }
 }

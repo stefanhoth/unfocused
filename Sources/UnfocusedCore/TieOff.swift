@@ -28,6 +28,13 @@ public struct TieOff: Hashable, Sendable {
     position += 1
   }
 
+  /// Steps back to the previous Loose End (for Undo). If it was set aside, it no longer is.
+  public mutating func back() {
+    guard position > 0 else { return }
+    position -= 1
+    if let current, let index = setAside.lastIndex(of: current) { setAside.remove(at: index) }
+  }
+
   /// Not now: moves on without touching the Loop. This isn't Engagement.
   public mutating func notNow() {
     if let current { setAside.append(current) }

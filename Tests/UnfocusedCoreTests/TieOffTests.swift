@@ -78,4 +78,22 @@ struct TieOffTests {
     _ = try core.capture(title: "Fresh")
     #expect(try core.startTieOff().isFinished)
   }
+
+  @Test("stepping back returns to the previous Loose End and takes back Not now")
+  func back() throws {
+    let (core, time) = try makeCore()
+    let first = try core.capture(title: "First")
+    try activeDays(1, core, time)
+    _ = try core.capture(title: "Second")
+    try activeDays(3, core, time)
+
+    var tieOff = try core.startTieOff()
+    tieOff.notNow()
+    #expect(tieOff.setAside.map(\.loop.id) == [first.id])
+    tieOff.back()
+    #expect(tieOff.current?.loop.id == first.id)
+    #expect(tieOff.setAside.isEmpty)
+    tieOff.back()
+    #expect(tieOff.current?.loop.id == first.id)
+  }
 }

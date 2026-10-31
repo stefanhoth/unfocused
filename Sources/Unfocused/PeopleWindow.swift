@@ -10,42 +10,53 @@ struct PeopleWindow: View {
   @State private var selectedID: Person.ID?
   @State private var importing = false
   @State private var renaming: Person?
+  @State private var deleting: Person?
+  @State private var query = ""
   @State private var newName = ""
 
   var body: some View {
-    // A plain split (not NavigationSplitView): this view sits inside the main window's sidebar
-    // layout, and navigation split views don't nest.
-    HSplitView {
-      List(model.people, selection: $selectedID) { person in
-        Text(person.name)
-          .contextMenu { personMenu(person) }
-      }
-      .safeAreaInset(edge: .top) {
-        Text("Who your Loops involve: people waiting on you, and people you're waiting on.")
-          .font(.caption)
-          .foregroundStyle(.secondary)
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(.horizontal, 12)
-          .padding(.vertical, 8)
-      }
-      .overlay {
+    let shown = query.trimmingCharacters(in: .whitespaces).isEmpty ? model.people : model.searchPeople(query)
+    // A fixed-width list next to the detail: split views drifted and clipped the detail.
+    HStack(spacing: 0) {
+      VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 8) {
+          TextField("Filter", text: $query, prompt: Text("Find a Person"))
+            .textFieldStyle(.roundedBorder)
+          Text("Who your Loops involve: people waiting on you, and people you're waiting on.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(12)
+        Divider()
         if model.people.isEmpty {
           ContentUnavailableView {
             Label("No People yet", systemImage: "person.2")
           } description: {
-            Text(
-              "People are who your Loops involve: someone waiting on you, or someone you're waiting on. "
-                + "Import a list of names, or type @name when capturing a Loop."
-            )
+            Text("Import a list of names, or type @name when capturing a Loop.")
           } actions: {
             Button("Import Names…") { importing = true }
           }
+          .frame(maxHeight: .infinity)
+        } else {
+          SelectableList(items: shown, selection: $selectedID) { person in
+            let open = model.loops(involving: person).filter { $0.state == .open }.count
+            HStack {
+              Text(person.name)
+              Spacer()
+              if open > 0 {
+                Text("\(open) open").font(.caption).monospacedDigit().foregroundStyle(.secondary)
+              }
+            }
+            .contextMenu { personMenu(person) }
+          }
         }
       }
-      .frame(minWidth: 220, idealWidth: 260, maxWidth: 440)
+      .frame(width: 320)
       .toolbar {
         Button("Import Names…", systemImage: "square.and.arrow.down") { importing = true }
       }
+      Divider()
       Group {
         if let person = model.people.first(where: { $0.id == selectedID }) {
           PersonDetail(model: model, person: person)
@@ -53,12 +64,22 @@ struct PeopleWindow: View {
           Text("Select a Person").foregroundStyle(.secondary)
         }
       }
-      .frame(minWidth: 360, maxWidth: .infinity, maxHeight: .infinity)
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     .frame(minWidth: 640, minHeight: 380)
     .navigationTitle("People")
     .onAppear { model.refresh() }
     .sheet(isPresented: $importing) { ImportPeopleSheet(model: model) }
+    .confirmationDialog(
+      "Delete \(deleting?.name ?? "")?",
+      isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })
+    ) {
+      Button("Delete", role: .destructive) {
+        if let deleting { model.delete(deleting) }
+      }
+    } message: {
+      Text("They're removed from every Loop they're on. The Loops stay. This can't be undone.")
+    }
     .alert("Rename", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
       TextField("Name", text: $newName)
       Button("Rename") {
@@ -79,7 +100,7 @@ struct PeopleWindow: View {
       }
     }
     Divider()
-    Button("Delete", role: .destructive) { model.delete(person) }
+    Button("Delete…", role: .destructive) { deleting = person }
   }
 }
 
