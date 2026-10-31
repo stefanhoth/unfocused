@@ -9,7 +9,7 @@ struct UnfocusedApp: App {
   var body: some Scene {
     MenuBarExtra {
       if let model = appDelegate.model {
-        MenuContent(model: model, panel: appDelegate.panel)
+        MenuContent(model: model, panel: appDelegate.panel, tieOff: appDelegate.tieOff)
       } else {
         Text("unfocused couldn't start. See ~/Library/Logs/unfocused.")
         Button("Quit unfocused") { NSApplication.shared.terminate(nil) }
@@ -35,7 +35,7 @@ struct UnfocusedApp: App {
     }
 
     Settings {
-      if let model = appDelegate.model { SettingsView(model: model) }
+      if let model = appDelegate.model { SettingsView(model: model, reminder: appDelegate.reminder) }
     }
   }
 }
@@ -50,6 +50,7 @@ enum WindowID {
 struct MenuContent: View {
   let model: AppModel
   let panel: PanelController?
+  let tieOff: TieOffController?
   @Environment(\.openWindow) private var openWindow
   @Environment(\.openSettings) private var openSettings
 
@@ -72,6 +73,9 @@ struct MenuContent: View {
       Divider()
     }
     Button("Open Panel (\(model.hotKey.label))") { panel?.show() }
+    Button(model.looseEnds.isEmpty ? "Tie-off…" : "Tie-off (\(model.looseEnds.count) Loose Ends)…") {
+      tieOff?.show()
+    }
     Button("Loops…") {
       NSApp.activate()
       openWindow(id: WindowID.loops)
@@ -122,6 +126,8 @@ struct MenuBarLabel: View {
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   @Published private(set) var model: AppModel?
   @Published private(set) var panel: PanelController?
+  @Published private(set) var tieOff: TieOffController?
+  @Published private(set) var reminder: TieOffReminder?
   private var recorder: ActivityRecorder?
 
   func applicationWillFinishLaunching(_ notification: Notification) {
@@ -142,6 +148,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
       let banner = SwitchBannerController(model: model, panelController: panel)
       recorder.onSwitchSuggestion = { banner.update($0) }
       self.recorder = recorder
+      let tieOff = TieOffController(model: model)
+      self.tieOff = tieOff
+      reminder = TieOffReminder(model: model, tieOff: tieOff)
       model.endStaleFocus()
       environment.log.info("Launched, database ready")
     } catch {
@@ -151,6 +160,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     recorder?.start()
+    reminder?.start()
     guard let model, !model.activateSavedHotKey() else { return }
     // First launch with a taken hotkey: ask for another one right away.
     NSApp.activate()

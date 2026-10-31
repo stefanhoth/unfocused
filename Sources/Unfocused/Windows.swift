@@ -174,6 +174,35 @@ private struct LoopDetail: View {
   }
 }
 
+/// Settings for the optional daily Tie-off notification.
+private struct TieOffReminderSection: View {
+  let reminder: TieOffReminder
+  @State private var enabled = false
+  @State private var time = Date()
+
+  var body: some View {
+    Section("Tie-off") {
+      Toggle("Remind me to tie off Loose Ends every day", isOn: $enabled)
+        .onChange(of: enabled) { reminder.setEnabled(enabled) }
+      if enabled {
+        DatePicker("At", selection: $time, displayedComponents: .hourAndMinute)
+          .onChange(of: time) {
+            let parts = Calendar.current.dateComponents([.hour, .minute], from: time)
+            reminder.setMinuteOfDay((parts.hour ?? 16) * 60 + (parts.minute ?? 30))
+          }
+      }
+      Text("Only when there are Loose Ends. This is the only notification unfocused sends.")
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    }
+    .onAppear {
+      enabled = reminder.isEnabled
+      let minute = reminder.minuteOfDay
+      time = Calendar.current.date(bySettingHour: minute / 60, minute: minute % 60, second: 0, of: Date()) ?? Date()
+    }
+  }
+}
+
 /// One entry of a Loop's work log: when, where, how long, and why it counts toward the Loop.
 private struct WorkLogRow: View {
   let piece: AttributedStretch
@@ -256,6 +285,7 @@ extension LoopChange {
 /// Settings: currently the panel hotkey.
 struct SettingsView: View {
   let model: AppModel
+  let reminder: TieOffReminder?
 
   var body: some View {
     Form {
@@ -270,6 +300,9 @@ struct SettingsView: View {
       if let problem = model.hotKeyProblem {
         Label(problem, systemImage: "exclamationmark.triangle")
           .foregroundStyle(.orange)
+      }
+      if let reminder {
+        TieOffReminderSection(reminder: reminder)
       }
       Section("Loose Ends") {
         Stepper(
