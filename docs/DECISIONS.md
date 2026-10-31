@@ -2,6 +2,7 @@
 
 Smaller calls that don't warrant an ADR. Newest first; add entries in the PR that makes the decision.
 
+- **2026-11-01**: Settings is a section of the main window (sidebar group **App**), not a SwiftUI `Settings` scene. ⌘, still opens it, via the app menu's Settings… item and the menu bar menu, so everything the app keeps is a click away from Settings. Without the scene, code that opens windows from outside a view uses `AppDelegate.show(_:)`, which borrows `openWindow` from the menu bar label.
 - **2026-10-31**: "Dropped" is renamed **Let go** in the glossary, the app and the code (`LoopState.letGo`, `Core.letGo(_:)`). It names a conscious decision not to finish, the counterpart to Close Loop, where "Drop" sounded like deleting. The stored raw value stays `"dropped"`, so existing data needs no migration.
 - **2026-10-31**: Panel keys: ⌘C Close Loop, ⌘L Let go, matching C and L in the Tie-off and the menu's "Close Loop". One name per action: the label is "Close Loop" (closing the loop), never "Done", which the glossary avoids. ⌘C only closes when a Loop is selected or Focused; otherwise it copies. ⌘⌫ was tried for this but the text field takes it for itself.
 - **2026-10-31**: Local builds are `build/Unfocused Dev.app` (display name "unfocused dev"); releases stay `build/Unfocused.app`. macOS shows apps by file name in Privacy & Security, so a dev build can't be mistaken for a release there.

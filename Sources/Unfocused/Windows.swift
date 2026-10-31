@@ -291,7 +291,7 @@ extension LoopChange {
   }
 }
 
-/// Settings: currently the panel hotkey.
+/// The main window's Settings section.
 struct SettingsView: View {
   let model: AppModel
   let reminder: TieOffReminder?
@@ -378,7 +378,6 @@ struct SettingsView: View {
       }
     }
     .formStyle(.grouped)
-    .frame(width: 460)
-    .padding()
+    .navigationTitle("Settings")
   }
 }

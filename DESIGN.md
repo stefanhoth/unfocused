@@ -24,9 +24,8 @@ How unfocused looks, reads and behaves. Every screen and every UI change follows
 | **Focus notice** | Confirms a Focus change for ~2 s | Glass, bottom center above the Dock |
 | **Switch Focus banner** | "Looks like you're on …" after a dwell in another Loop's Anchor | Glass, top right |
 | **Tie-off** | Walk the Loose Ends one at a time | Glass, floating |
-| **Main window** | Sidebar: **Work** (Loops, People), **Look back** (Recap, Activity) | Solid |
+| **Main window** | Sidebar: **Work** (Loops, People), **Look back** (Recap, Activity), **App** (Settings). ⌘, opens it at Settings | Solid |
 | **Edit Loop** (⌘E) | Title, Where I left off, People, Anchors in one place | Solid |
-| **Settings** (⌘,) | Its own window, where macOS users expect it | Solid |
 | **Menu bar item** | Open-loop glyph; with a dot and the title (up to 18 characters) while Focused | Template image |
 
 Glass is for floating chrome only. Anything with a lot of text to read (windows, forms) stays solid.
@@ -108,12 +107,13 @@ Glass is for floating chrome only. Anything with a lot of text to read (windows,
 - Focus here doesn't open the Loop's Anchors (those apps would take the keyboard from the Tie-off); O does.
 - The end gets a bounce in the logo gradient, a sound, and a **Finish** button.
 
-### Main window: Loops, People, Recap, Activity
+### Main window: Loops, People, Recap, Activity, Settings
 
 - **Loops:** the detail is the same summary as the panel's (title and status, Where I left off, last seen, People, Anchors), with its actions as buttons (Focus, Close Loop, Let go, Edit…), then time worked on and history. Editing happens in Edit Loop, not inline. Close Loop and Let go confirm with Undo, as in the panel.
 - **People:** a filter field and a one-line explanation above the list. Each name shows how many open Loops involve them. Deleting a person asks first, since it can't be undone.
 - **Activity:** one day at a time with previous/next and Today. Figures (recorded, toward Loops, Unfocused time), a timeline, then entries grouped by hour, merged, with the app icon, the Loop chip and a short duration.
 - **Recap:** day or week; Focus periods in the timeline use the logo gradient, Unfocused time is gray.
+- **Settings:** a section like the others, not a window of its own, so everything the app keeps is one click away from it. ⌘, (from the menu or while the app is active) opens the main window there.
 
 ## Window rules
 
