@@ -23,6 +23,7 @@ Built with SwiftPM only, no Xcode project (ADR 0006). Command Line Tools are eno
 ## Language and decisions
 
 - Use the terms in `GLOSSARY.md` exactly, in code, tests, issues and UI. Respect the `_Avoid_` lists.
+- UI follows `DESIGN.md`: its principles, the main flows (what goes on which screen, with which keys) and the visual language. Read it before any UI change, run its checklist, and update it in the same PR when a change departs from it.
 - Architecture decisions: `docs/adr/` (with `status:` frontmatter; superseded ADRs are kept). Smaller calls: `docs/DECISIONS.md`, added in the same PR.
 
 ## Testing
