@@ -28,6 +28,7 @@ enum Style {
     Color(red: 0.96, green: 0.58, blue: 0.45),
   ]
   static let tieOffRadius: CGFloat = 28
+  static let tieOffSize = CGSize(width: 600, height: 460)
   static let bannerRadius: CGFloat = 18
   static let rowRadius: CGFloat = 10
   /// Loose Ends and aging: the one warm accent in an otherwise calm palette.

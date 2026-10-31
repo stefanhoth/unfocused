@@ -20,7 +20,7 @@ struct UnfocusedApp: App {
     }
 
     Settings {
-      WithModel(app: appDelegate) { SettingsView(model: $0, reminder: appDelegate.reminder) }
+      WithModel(app: appDelegate) { SettingsView(model: $0, reminder: appDelegate.reminder).tint(Style.brand) }
     }
   }
 }

@@ -13,9 +13,11 @@ struct ActivityWindow: View {
     let titles = model.loopTitles()
     VStack(alignment: .leading, spacing: 0) {
       HStack {
+        Button("Previous day", systemImage: "chevron.left") { move(-1) }.labelStyle(.iconOnly)
         DatePicker("Day", selection: $day, displayedComponents: .date)
           .labelsHidden()
           .fixedSize()
+        Button("Next day", systemImage: "chevron.right") { move(1) }.labelStyle(.iconOnly)
         Spacer()
         Text(
           "\(Duration.seconds(total).formatted(.units(width: .abbreviated))) recorded · "
@@ -23,7 +25,7 @@ struct ActivityWindow: View {
         )
         .foregroundStyle(.secondary)
         if model.activityPaused {
-          Label("Paused", systemImage: "pause.circle").foregroundStyle(.orange)
+          Label("Recording paused", systemImage: "pause.circle").foregroundStyle(.secondary)
         }
       }
       .padding(12)
@@ -45,7 +47,9 @@ struct ActivityWindow: View {
               Text(stretch.anchor.title).lineLimit(1)
               Group {
                 if let loopID = stretch.loopID, let title = titles[loopID] {
-                  Text("\(stretch.anchor.source.displayName) · \(title), \(stretch.reason.explanation)")
+                  Text(
+                    "\(stretch.anchor.source.displayName) · \(Text(title).fontWeight(.medium).foregroundStyle(.primary)), \(stretch.reason.explanation)"
+                  )
                 } else {
                   Text("\(stretch.anchor.source.displayName) · Unfocused")
                 }
@@ -64,6 +68,10 @@ struct ActivityWindow: View {
     }
     .frame(minWidth: 520, minHeight: 400)
     .navigationTitle("Activity")
+  }
+
+  private func move(_ days: Int) {
+    day = Calendar.current.date(byAdding: .day, value: days, to: day) ?? day
   }
 }
 

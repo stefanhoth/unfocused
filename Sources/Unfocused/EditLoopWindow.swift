@@ -80,6 +80,7 @@ struct EditLoopView: View {
         .padding(16)
       }
       .frame(minWidth: 520, minHeight: 520)
+      .tint(Style.brand)
       .onAppear {
         title = loop.title
         note = loop.whereILeftOff ?? ""

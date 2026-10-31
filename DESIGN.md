@@ -103,7 +103,17 @@ Glass is for floating chrome only. Anything with a lot of text to read (windows,
 
 ### Tie-off
 
-- One Loose End at a time, single keys: F Focus (or Follow up with …), C Close Loop, L Let go, O Open Anchors, N Not now, esc Stop. The end gets a bounce and a sound.
+- One Loose End at a time, shown with the same summary as the panel's detail.
+- Single keys, as keycaps on the buttons: F Focus (or Follow up with …), C Close Loop, L Let go, O Open Anchors, N Not now, esc Stop. ⌘Z takes back the last step and reopens a Loop that was Closed or let go.
+- Focus here doesn't open the Loop's Anchors (those apps would take the keyboard from the Tie-off); O does.
+- The end gets a bounce in the logo gradient, a sound, and a **Finish** button.
+
+### Main window: Loops, People, Recap, Activity
+
+- **Loops:** the detail is the same summary as the panel's (title and status, Where I left off, last seen, People, Anchors), with its actions as buttons (Focus, Close Loop, Let go, Edit…), then time worked on and history. Editing happens in Edit Loop, not inline. Close Loop and Let go confirm with Undo, as in the panel.
+- **People:** each name shows how many open Loops involve them. Deleting a person asks first, since it can't be undone.
+- **Activity:** one day at a time with previous/next; each stretch names the Loop it counts toward.
+- **Recap:** day or week; Focus periods in the timeline use the logo gradient, Unfocused time is gray.
 
 ## Keys
 
@@ -159,13 +169,13 @@ New keys must not collide with these or with text editing (⌘⌫ is taken by te
   - **Let go**, never "Drop" or "Delete";
   - **Unfocus**, **Open Anchors**, **Edit**.
 - Plain-language labels where a term is abstract: People directions read "They're waiting on me" / "I'm waiting on them".
-- English everywhere, including relative times ("2 days ago", "just now" within a minute), through `Style.relative`. Never mix in the system language.
+- English everywhere, including dates, durations and relative times ("2 days ago", "just now" within a minute, through `Style.relative`). The app declares English as its only language (`CFBundleLocalizations`), so formatters speak English while keeping the user's region conventions (24-hour time, date order). Never mix in the system language.
 - Say what will happen ("Open Anchors", not "Open"). Short, calm sentences; no exclamation marks, no blame.
 
 ## Motion and sound
 
 - `.snappy` for state changes in the panel. With Reduce Motion, everything becomes a short fade, and the glow stops drifting.
-- Sounds are rare and earned: a soft "Glass" for Close Loop and at the end of a Tie-off. Nothing else makes a sound.
+- Sounds are rare and earned: a soft "Glass" for Close Loop (panel and Loops window) and at the end of a Tie-off. Inside a Tie-off, only the end makes a sound. Nothing else does.
 
 ## Feedback and timing
 

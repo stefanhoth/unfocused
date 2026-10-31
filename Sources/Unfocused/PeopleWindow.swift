@@ -10,6 +10,7 @@ struct PeopleWindow: View {
   @State private var selectedID: Person.ID?
   @State private var importing = false
   @State private var renaming: Person?
+  @State private var deleting: Person?
   @State private var newName = ""
 
   var body: some View {
@@ -17,8 +18,15 @@ struct PeopleWindow: View {
     // layout, and navigation split views don't nest.
     HSplitView {
       List(model.people, selection: $selectedID) { person in
-        Text(person.name)
-          .contextMenu { personMenu(person) }
+        let open = model.loops(involving: person).filter { $0.state == .open }.count
+        HStack {
+          Text(person.name)
+          Spacer()
+          if open > 0 {
+            Text("\(open) open").font(.caption).monospacedDigit().foregroundStyle(.secondary)
+          }
+        }
+        .contextMenu { personMenu(person) }
       }
       .safeAreaInset(edge: .top) {
         Text("Who your Loops involve: people waiting on you, and people you're waiting on.")
@@ -59,6 +67,16 @@ struct PeopleWindow: View {
     .navigationTitle("People")
     .onAppear { model.refresh() }
     .sheet(isPresented: $importing) { ImportPeopleSheet(model: model) }
+    .confirmationDialog(
+      "Delete \(deleting?.name ?? "")?",
+      isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })
+    ) {
+      Button("Delete", role: .destructive) {
+        if let deleting { model.delete(deleting) }
+      }
+    } message: {
+      Text("They're removed from every Loop they're on. The Loops stay. This can't be undone.")
+    }
     .alert("Rename", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
       TextField("Name", text: $newName)
       Button("Rename") {
@@ -79,7 +97,7 @@ struct PeopleWindow: View {
       }
     }
     Divider()
-    Button("Delete", role: .destructive) { model.delete(person) }
+    Button("Delete…", role: .destructive) { deleting = person }
   }
 }
 

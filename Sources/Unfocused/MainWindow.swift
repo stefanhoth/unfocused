@@ -61,5 +61,7 @@ struct MainWindow: View {
       }
     }
     .frame(minWidth: 900, minHeight: 520)
+    // The app's own tint, not the system accent (a red accent made normal actions look like errors).
+    .tint(Style.brand)
   }
 }

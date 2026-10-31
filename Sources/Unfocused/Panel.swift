@@ -948,7 +948,7 @@ struct Confirmation: Identifiable {
   let undo: (() -> Void)?
 }
 
-private struct ConfirmationBar: View {
+struct ConfirmationBar: View {
   let confirmation: Confirmation
 
   var body: some View {

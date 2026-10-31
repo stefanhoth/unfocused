@@ -202,8 +202,8 @@ private struct TimelineBar: View {
     }
   }
 
-  private func color(_ entry: Recap.TimelineEntry) -> Color {
-    entry.kind == .unfocused ? .gray.opacity(0.5) : .accentColor
+  private func color(_ entry: Recap.TimelineEntry) -> AnyShapeStyle {
+    entry.kind == .unfocused ? AnyShapeStyle(.gray.opacity(0.5)) : AnyShapeStyle(Style.logoLinearGradient)
   }
 
   private func help(_ entry: Recap.TimelineEntry) -> String {

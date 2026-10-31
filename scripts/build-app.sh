@@ -47,6 +47,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <plist version="1.0">
 <dict>
   <key>CFBundleIdentifier</key><string>com.stefanhoth.unfocused</string>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleLocalizations</key><array><string>en</string></array>
   <key>CFBundleName</key><string>${DISPLAY_NAME}</string>
   <key>CFBundleDisplayName</key><string>${DISPLAY_NAME}</string>
   <key>CFBundleExecutable</key><string>Unfocused</string>
