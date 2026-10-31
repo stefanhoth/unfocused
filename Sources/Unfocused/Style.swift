@@ -4,6 +4,9 @@ import SwiftUI
 /// hierarchy, key hints always visible. Windows with lots of text stay solid.
 enum Style {
   static let panelRadius: CGFloat = 24
+  /// The panel: a list of Loops on the left, the selected Loop's details on the right.
+  static let panelSize = CGSize(width: 880, height: 440)
+  static let panelListWidth: CGFloat = 380
   static let tieOffRadius: CGFloat = 28
   static let bannerRadius: CGFloat = 18
   static let rowRadius: CGFloat = 10
