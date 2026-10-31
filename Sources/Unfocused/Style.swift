@@ -8,6 +8,15 @@ enum Style {
   /// The panel: a list of Loops on the left, the selected Loop's details on the right.
   static let panelSize = CGSize(width: 880, height: 440)
   static let panelListWidth: CGFloat = 380
+  /// Transparent room around floating surfaces for their own shadow and glow.
+  static let glowMargin: CGFloat = 36
+  /// The app icon's gradient: sky blue to peach.
+  static let logoGradient: [Color] = [
+    Color(red: 0.42, green: 0.64, blue: 0.96),
+    Color(red: 0.55, green: 0.80, blue: 0.97),
+    Color(red: 0.98, green: 0.76, blue: 0.58),
+    Color(red: 0.96, green: 0.58, blue: 0.45),
+  ]
   static let tieOffRadius: CGFloat = 28
   static let bannerRadius: CGFloat = 18
   static let rowRadius: CGFloat = 10
@@ -96,6 +105,31 @@ struct AppIcon: View {
         .frame(width: size, height: size)
     } else {
       Image(systemName: "app.dashed").frame(width: size, height: size)
+    }
+  }
+}
+
+/// A soft glow in the logo's gradient around a floating surface, with a thin gradient edge. It
+/// drifts slowly; with Reduce Motion it stays still.
+struct GradientGlow: View {
+  let cornerRadius: CGFloat
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var angle = 0.0
+
+  var body: some View {
+    let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+    let gradient = AngularGradient(
+      colors: Style.logoGradient + [Style.logoGradient[0]],
+      center: .center,
+      angle: .degrees(angle)
+    )
+    ZStack {
+      shape.stroke(gradient, lineWidth: 14).blur(radius: 22).opacity(0.55)
+      shape.strokeBorder(gradient, lineWidth: 1.5).opacity(0.85)
+    }
+    .onAppear {
+      guard !reduceMotion else { return }
+      withAnimation(.linear(duration: 12).repeatForever(autoreverses: false)) { angle = 360 }
     }
   }
 }

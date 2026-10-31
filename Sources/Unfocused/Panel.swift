@@ -96,7 +96,12 @@ final class PanelController {
 
   private func makePanel() -> FloatingPanel {
     let panel = FloatingPanel(
-      contentRect: NSRect(x: 0, y: 0, width: Style.panelSize.width, height: Style.panelSize.height),
+      contentRect: NSRect(
+        x: 0,
+        y: 0,
+        width: Style.panelSize.width + 2 * Style.glowMargin,
+        height: Style.panelSize.height + 2 * Style.glowMargin
+      ),
       styleMask: [.borderless, .nonactivatingPanel],
       backing: .buffered,
       defer: false
@@ -104,7 +109,9 @@ final class PanelController {
     // The SwiftUI view draws the glass; the window itself is invisible.
     panel.isOpaque = false
     panel.backgroundColor = .clear
-    panel.hasShadow = true
+    // No system shadow: macOS draws it from the window's rectangle, which showed as a square around
+    // the rounded glass. The view draws its own shadow and glow in a transparent margin instead.
+    panel.hasShadow = false
     panel.isMovableByWindowBackground = true
     panel.level = .floating
     panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -234,6 +241,9 @@ struct PanelView: View {
     }
     .frame(width: Style.panelSize.width, height: Style.panelSize.height)
     .calmGlass(cornerRadius: Style.panelRadius)
+    .background(GradientGlow(cornerRadius: Style.panelRadius))
+    .shadow(color: .black.opacity(0.25), radius: 24, y: 10)
+    .padding(Style.glowMargin)
     // The view appears before its borderless panel is the key window, and SwiftUI drops a focus
     // request made then. Ask again once the panel has become key.
     .onAppear { fieldFocused = true }
