@@ -299,6 +299,18 @@ struct SettingsView: View {
           Text("Private browser windows are never recorded.").font(.caption).foregroundStyle(.secondary)
         }
       }
+      Section("Troubleshooting") {
+        HStack {
+          VStack(alignment: .leading, spacing: 2) {
+            Text("Export diagnostics")
+            Text("Logs and app version only. No Loops, People or Activity.")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
+          Spacer()
+          Button("Export…") { DiagnosticsExporter.exportInteractively(core: model.core, log: model.log) }
+        }
+      }
     }
     .formStyle(.grouped)
     .frame(width: 460)
