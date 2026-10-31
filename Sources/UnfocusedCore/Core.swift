@@ -50,6 +50,7 @@ public final class Core: Sendable {
     try database.writer.write { db in
       guard let record = try LoopRecord.fetchOne(db, key: loopID.uuidString) else { throw CoreError.loopNotFound }
       guard record.state == LoopState.open.rawValue else { throw CoreError.loopNotOpen }
+      try Self.clearInterruption(db)
       if let current = try Self.openFocus(db) {
         if current.loopId == loopID.uuidString { return }
         try Self.end(current, at: now, db)
@@ -63,6 +64,7 @@ public final class Core: Sendable {
   public func unfocus() throws {
     let now = time.now.timeIntervalSince1970
     try database.writer.write { db in
+      try Self.clearInterruption(db)
       if let current = try Self.openFocus(db) { try Self.end(current, at: now, db) }
     }
   }
@@ -235,6 +237,7 @@ public final class Core: Sendable {
       guard let current = LoopState(rawValue: record.state), allowed.contains(current) else {
         throw CoreError.invalidStateChange
       }
+      if target != .open { try Self.clearInterruption(of: record.id, db) }
       if target != .open, let focus = try Self.openFocus(db), focus.loopId == record.id {
         try Self.end(focus, at: now.timeIntervalSince1970, db)
       }
@@ -258,7 +261,7 @@ public final class Core: Sendable {
     try FocusSessionRecord.filter(Column("end") == nil).order(Column("start").desc).fetchOne(db)
   }
 
-  private static func end(_ session: FocusSessionRecord, at time: Double, _ db: Database) throws {
+  static func end(_ session: FocusSessionRecord, at time: Double, _ db: Database) throws {
     var ended = session
     ended.end = time
     try ended.update(db)
