@@ -152,7 +152,7 @@ struct TieOffView: View {
           model.close(loop)
           advance()
         } label: {
-          keyLabel("Close", "C")
+          keyLabel("Close Loop", "C")
         }
         .keyboardShortcut("c", modifiers: [])
         .buttonStyle(.glass)

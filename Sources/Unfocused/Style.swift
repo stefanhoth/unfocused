@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// The Calm Glass look (ticket #17): Liquid Glass on floating chrome only, system vibrancy for
@@ -7,6 +8,25 @@ enum Style {
   /// The panel: a list of Loops on the left, the selected Loop's details on the right.
   static let panelSize = CGSize(width: 880, height: 440)
   static let panelListWidth: CGFloat = 380
+  /// Transparent room around floating surfaces for their own shadow and glow.
+  static let glowMargin: CGFloat = 36
+  /// The app's own tint (the icon's blue), so controls don't take on a red system accent and read
+  /// as warnings.
+  static let brand = Color(red: 0.42, green: 0.64, blue: 0.96)
+  static let logoLinearGradient = LinearGradient(
+    colors: logoGradient,
+    startPoint: .leading,
+    endPoint: .trailing
+  )
+  /// How much of the window background color sits under the glass: more is easier to read.
+  static let glassBacking = 0.6
+  /// The app icon's gradient: sky blue to peach.
+  static let logoGradient: [Color] = [
+    Color(red: 0.42, green: 0.64, blue: 0.96),
+    Color(red: 0.55, green: 0.80, blue: 0.97),
+    Color(red: 0.98, green: 0.76, blue: 0.58),
+    Color(red: 0.96, green: 0.58, blue: 0.45),
+  ]
   static let tieOffRadius: CGFloat = 28
   static let bannerRadius: CGFloat = 18
   static let rowRadius: CGFloat = 10
@@ -16,15 +36,39 @@ enum Style {
   static let focus = Color.green
 
   /// A row's background: a clear accent tint when selected, nothing otherwise (no glass on glass).
+  /// A quiet, neutral highlight that works with any accent color and doesn't read as a warning.
   static func rowBackground(selected: Bool) -> some View {
-    RoundedRectangle(cornerRadius: rowRadius).fill(selected ? Color.accentColor.opacity(0.18) : .clear)
+    RoundedRectangle(cornerRadius: rowRadius)
+      .fill(Color.primary.opacity(selected ? 0.09 : 0))
+      .overlay(RoundedRectangle(cornerRadius: rowRadius).strokeBorder(Color.primary.opacity(selected ? 0.08 : 0)))
+  }
+
+  @MainActor private static let relativeFormatter: RelativeDateTimeFormatter = {
+    let formatter = RelativeDateTimeFormatter()
+    // The interface is English; mixing in the system language ("vor 10 Sekunden") reads oddly.
+    formatter.locale = Locale(identifier: "en_US")
+    formatter.unitsStyle = .full
+    return formatter
+  }()
+
+  /// "10 seconds ago", "2 days ago", in the interface language.
+  @MainActor static func relative(_ date: Date, to now: Date = Date()) -> String {
+    // Within a minute (including a moment "in the future" from clock jitter) it's just now.
+    if abs(now.timeIntervalSince(date)) < 60 { return "just now" }
+    return relativeFormatter.localizedString(for: date, relativeTo: now)
   }
 }
 
 extension View {
   /// A floating surface of Liquid Glass.
+  /// A floating surface of Liquid Glass with a backing layer, so text behind it doesn't compete
+  /// with the text on it (the plain glass let busy pages show through too much).
   func calmGlass(cornerRadius: CGFloat) -> some View {
-    glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
+    background(
+      RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        .fill(Color(nsColor: .windowBackgroundColor).opacity(Style.glassBacking))
+    )
+    .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
   }
 }
 
@@ -39,18 +83,95 @@ struct CalmMotion {
   }
 }
 
-/// The footer of key hints, shown on every floating surface.
+/// The footer of key hints, shown on every floating surface: each key as a small keycap.
+/// Items read "<key> <what it does>", e.g. "⌘↩ Capture new".
 struct KeyHints: View {
   let items: [String]
+  /// `false` for a row of actions inside content (no padding, no divider), e.g. under a Loop.
+  var footer = true
 
   var body: some View {
-    HStack(spacing: 16) {
-      ForEach(items, id: \.self) { Text($0) }
+    if footer {
+      row
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+        .overlay(alignment: .top) { Divider().opacity(0.5) }
+    } else {
+      row
+    }
+  }
+
+  private var row: some View {
+    HStack(spacing: 14) {
+      ForEach(items, id: \.self) { item in
+        let parts = item.split(separator: " ", maxSplits: 1).map(String.init)
+        HStack(spacing: 5) {
+          Keycap(key: parts[0])
+          if parts.count > 1 { Text(parts[1]) }
+        }
+      }
       Spacer()
     }
-    .font(.caption)
-    .foregroundStyle(.tertiary)
-    .padding(.horizontal, 18)
-    .padding(.vertical, 12)
+    .font(.system(size: 12))
+    .foregroundStyle(.secondary)
+  }
+}
+
+extension KeyHints {
+  /// One key, drawn as a small keycap.
+  struct Keycap: View {
+    let key: String
+
+    var body: some View {
+      Text(key)
+        .font(.system(size: 11, weight: .medium))
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 2)
+        .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.1)))
+    }
+  }
+}
+
+/// A small app icon, e.g. next to an Anchor; a generic symbol if the app isn't installed.
+struct AppIcon: View {
+  let bundleID: String
+  var size: CGFloat = 16
+
+  var body: some View {
+    if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+      Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+        .resizable()
+        .frame(width: size, height: size)
+    } else {
+      Image(systemName: "app.dashed").frame(width: size, height: size)
+    }
+  }
+}
+
+/// A thin, crisp edge in the logo's gradient with a tight halo, drawn over a floating surface so
+/// it stands out from whatever is behind. It drifts slowly; with Reduce Motion it stays still.
+struct GradientGlow: View {
+  let cornerRadius: CGFloat
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var angle = 0.0
+
+  var body: some View {
+    let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+    let gradient = AngularGradient(
+      colors: Style.logoGradient + [Style.logoGradient[0]],
+      center: .center,
+      angle: .degrees(angle)
+    )
+    ZStack {
+      // A tight halo just outside the edge, then a crisp line on the edge itself.
+      shape.stroke(gradient, lineWidth: 3).blur(radius: 5).opacity(0.9)
+      shape.strokeBorder(gradient, lineWidth: 1.5)
+    }
+    .allowsHitTesting(false)
+    .onAppear {
+      guard !reduceMotion else { return }
+      withAnimation(.linear(duration: 12).repeatForever(autoreverses: false)) { angle = 360 }
+    }
   }
 }

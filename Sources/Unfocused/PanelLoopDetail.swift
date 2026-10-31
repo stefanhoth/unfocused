@@ -5,6 +5,10 @@ import UnfocusedCore
 struct PanelLoopDetail: View {
   let model: AppModel
   let loop: Loop
+  /// The Focused Loop filling the panel: a larger title.
+  var prominent = false
+  /// Keys that act on this Loop, shown with it rather than in the panel's footer.
+  var actions: [String] = []
 
   var body: some View {
     let aging = model.aging[loop.id]
@@ -13,18 +17,23 @@ struct PanelLoopDetail: View {
     let people = model.involvements(of: loop)
     let anchors = model.anchors(of: loop)
     ScrollView {
-      VStack(alignment: .leading, spacing: 14) {
+      VStack(alignment: .leading, spacing: 18) {
         VStack(alignment: .leading, spacing: 4) {
-          Text(loop.title).font(.title3.weight(.semibold)).lineLimit(3)
+          Text(loop.title).font(prominent ? .system(size: 28, weight: .semibold) : .title3.weight(.semibold))
+            .lineLimit(3)
           Text(when(lastWorked: lastWorked)).font(.callout).foregroundStyle(.secondary)
           LooseEndNote(aging: aging)
+        }
+
+        if !actions.isEmpty {
+          KeyHints(items: actions, footer: false)
         }
 
         whereILeftOff
 
         if let lastSeen {
           Label {
-            Text("Last seen in \(lastSeen.anchor.title) · \(lastSeen.end.formatted(.relative(presentation: .named)))")
+            Text("Last seen in \(lastSeen.anchor.title) · \(Style.relative(lastSeen.end))")
               .lineLimit(2)
           } icon: {
             Image(systemName: "clock.arrow.circlepath")
@@ -51,20 +60,26 @@ struct PanelLoopDetail: View {
 
         if !anchors.isEmpty {
           VStack(alignment: .leading, spacing: 4) {
-            Text("⌘O opens \(anchors.count == 1 ? "it" : "them")").font(.caption).foregroundStyle(.tertiary)
+            Text(anchors.count == 1 ? "Anchor" : "Anchors").font(.caption.weight(.medium)).foregroundStyle(.secondary)
             ForEach(Array(anchors.prefix(3).enumerated()), id: \.offset) { _, anchor in
               Button {
                 AnchorOpener.open(anchor)
               } label: {
-                Label(anchor.title, systemImage: "link").font(.callout).lineLimit(1)
+                HStack(spacing: 8) {
+                  AppIcon(bundleID: anchor.source.bundleID)
+                  Text(anchor.title).lineLimit(1)
+                  Image(systemName: "arrow.up.forward").font(.caption2).foregroundStyle(.tertiary)
+                }
+                .font(.callout)
+                .contentShape(Rectangle())
               }
-              .buttonStyle(.link)
+              .buttonStyle(.plain)
               .help("Open")
             }
           }
         }
       }
-      .padding(18)
+      .padding(22)
       .frame(maxWidth: .infinity, alignment: .leading)
     }
   }
@@ -87,8 +102,8 @@ struct PanelLoopDetail: View {
 
   private func when(lastWorked: Date?) -> String {
     if let lastWorked {
-      return "Last worked on \(lastWorked.formatted(.relative(presentation: .named)))"
+      return "Last worked on \(Style.relative(lastWorked))"
     }
-    return "Captured \(loop.capturedAt.formatted(.relative(presentation: .named))), not worked on yet"
+    return "Captured \(Style.relative(loop.capturedAt)), not worked on yet"
   }
 }
