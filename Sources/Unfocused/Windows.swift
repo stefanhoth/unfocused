@@ -268,6 +268,17 @@ struct SettingsView: View {
         Label(problem, systemImage: "exclamationmark.triangle")
           .foregroundStyle(.orange)
       }
+      Section("Focus") {
+        Picker(
+          "Pause Focus after",
+          selection: Binding(get: { model.focusIdleMinutes }, set: { model.focusIdleMinutes = $0 })
+        ) {
+          ForEach([10, 15, 20, 30, 45, 60], id: \.self) { Text("\($0) minutes idle").tag($0) }
+        }
+        Text("Locking the screen pauses Focus right away; sleep or shutdown ends it.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
       Section("Activity") {
         Stepper(
           "Keep Activity for \(model.activityRetentionDays) days",

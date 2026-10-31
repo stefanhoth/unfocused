@@ -11,6 +11,10 @@ final class ActivityRecorder {
 
   private let core: Core
   private let log: Log
+  /// Called when the user is back after a Focus was interrupted, to ask what to do with it.
+  var onReturn: ((FocusInterruption) -> Void)?
+  /// The interruption the user was already asked about, so they're asked once.
+  private var askedAbout: FocusInterruption?
   private var timer: Timer?
   private var lastPrune = Date.distantPast
   private var observers: [(NotificationCenter, any NSObjectProtocol)] = []
@@ -24,10 +28,11 @@ final class ActivityRecorder {
     let workspace = NSWorkspace.shared.notificationCenter
     let distributed = DistributedNotificationCenter.default()
     observe(workspace, NSWorkspace.didActivateApplicationNotification) { $0.sample() }
-    observe(workspace, NSWorkspace.willSleepNotification) { $0.stop(at: Date()) }
+    observe(workspace, NSWorkspace.willSleepNotification) { $0.away(at: Date(), .sleep) }
+    observe(workspace, NSWorkspace.willPowerOffNotification) { $0.away(at: Date(), .sleep) }
     observe(workspace, NSWorkspace.screensDidSleepNotification) { $0.stop(at: Date()) }
     observe(workspace, NSWorkspace.didWakeNotification) { $0.sample() }
-    observe(distributed, Notification.Name("com.apple.screenIsLocked")) { $0.stop(at: Date()) }
+    observe(distributed, Notification.Name("com.apple.screenIsLocked")) { $0.away(at: Date(), .idle) }
     observe(distributed, Notification.Name("com.apple.screenIsUnlocked")) { $0.sample() }
 
     timer = Timer.scheduledTimer(withTimeInterval: Self.sampleInterval, repeats: true) { [weak self] _ in
@@ -40,10 +45,15 @@ final class ActivityRecorder {
   func sample() {
     pruneDaily()
     let idle = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .null)
+    let idleSince = Date().addingTimeInterval(-idle)
+    if idle >= ((try? core.focusIdleThreshold()) ?? 1800) {
+      interrupt(at: idleSince, .idle)
+    }
     if idle >= Self.idleThreshold {
-      stop(at: Date().addingTimeInterval(-idle))
+      stop(at: idleSince)
       return
     }
+    askIfBack()
     let front = NSWorkspace.shared.frontmostApplication
     // unfocused's own panel and windows don't count; keep whatever was in front before.
     guard front?.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
@@ -53,6 +63,27 @@ final class ActivityRecorder {
     } catch {
       log.error("Recording Activity failed: \(error)")
     }
+  }
+
+  /// The user left: stop Activity and interrupt Focus.
+  private func away(at time: Date, _ reason: FocusInterruptionReason) {
+    stop(at: time)
+    interrupt(at: time, reason)
+  }
+
+  private func interrupt(at time: Date, _ reason: FocusInterruptionReason) {
+    do {
+      try core.interruptFocus(at: time, because: reason)
+    } catch {
+      log.error("Interrupting Focus failed: \(error)")
+    }
+  }
+
+  /// Asks about an interrupted Focus once the user is active again.
+  private func askIfBack() {
+    guard let interruption = try? core.interruptedFocus(), interruption != askedAbout else { return }
+    askedAbout = interruption
+    onReturn?(interruption)
   }
 
   private func stop(at time: Date) {

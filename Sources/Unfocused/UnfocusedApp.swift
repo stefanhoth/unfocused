@@ -125,7 +125,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
       HotKeyCenter.shared.onPress = { panel.toggle() }
       self.model = model
       self.panel = panel
-      recorder = ActivityRecorder(core: model.core, log: environment.log)
+      let recorder = ActivityRecorder(core: model.core, log: environment.log)
+      recorder.onReturn = { [weak model] interruption in
+        model?.refresh()
+        panel.askAboutInterruption(interruption)
+      }
+      self.recorder = recorder
+      model.endStaleFocus()
       environment.log.info("Launched, database ready")
     } catch {
       Log(category: "app", file: nil).error("Startup failed: \(error)")
