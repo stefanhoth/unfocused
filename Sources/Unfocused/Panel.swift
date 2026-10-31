@@ -168,6 +168,7 @@ struct PanelView: View {
   @State private var selection = -1
   /// While Focused: true once the user stepped from the Focused Loop into the list (↓).
   @State private var browsing = false
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   /// The Loop just Focused, whose Anchors open once Where I left off is answered or skipped.
   @State private var anchorsToOpenAfterLeftOff: Loop?
   /// Direction per mentioned name; unmentioned names default to Owed.
@@ -244,6 +245,7 @@ struct PanelView: View {
       case .welcomeBack(let interruption): welcomeBackContent(interruption)
       }
     }
+    .animation(reduceMotion ? .easeInOut(duration: 0.15) : .snappy, value: isHero)
     .frame(width: Style.panelSize.width, height: Style.panelSize.height)
     .calmGlass(cornerRadius: Style.panelRadius)
     .overlay(GradientGlow(cornerRadius: Style.panelRadius))
@@ -272,11 +274,18 @@ struct PanelView: View {
   // MARK: Search
 
   @ViewBuilder private var searchContent: some View {
-    if let focused = model.focusedLoop, !isHero {
-      focusStrip(focused)
+    // While Focused, the Focused Loop comes first and the search sits below it; typing or ↓ turns
+    // it into the slim strip and the search moves up. The field itself never changes place in the
+    // view tree, so the cursor and typing aren't lost.
+    if let focused = model.focusedLoop {
+      if isHero {
+        focusHero(focused)
+      } else {
+        focusStrip(focused)
+      }
     }
     inputField(
-      isHero ? "Switch to another Loop, or note something new…" : "Search your Loops, or type something new…",
+      isHero ? "Switch to another Loop…" : "Search your Loops, or type something new…",
       systemImage: "magnifyingglass"
     )
     .onChange(of: text) { selection = text.isEmpty ? -1 : 0 }
@@ -360,6 +369,14 @@ struct PanelView: View {
       return .handled
     }
 
+    if isHero {
+      hints(["⌘K Done", "⌘O Open", "⌘U Unfocus", "↓ Switch", "⌘↩ Capture new", "esc Hide"])
+    } else {
+      searchBody
+    }
+  }
+
+  @ViewBuilder private var searchBody: some View {
     if let context {
       contextLine(context)
     }
@@ -395,12 +412,7 @@ struct PanelView: View {
   }
 
   @ViewBuilder private var searchResults: some View {
-    if isHero, let focused = model.focusedLoop {
-      focusHero(focused)
-      hints(["⌘O Open", "⌘K Done", "⌘U Unfocus", "↓ Switch", "⌘↩ Capture new", "esc Hide"])
-    } else {
-      browseResults
-    }
+    browseResults
   }
 
   /// While Focused, the panel is about the Focused Loop; switching is one deliberate step (↓ or
@@ -425,15 +437,12 @@ struct PanelView: View {
         }
       }
       .padding(.horizontal, 22)
-      .padding(.top, 18)
+      .padding(.top, 22)
       PanelLoopDetail(model: model, loop: loop, prominent: true)
-      Text("Switching? Type to search, or press ↓.")
-        .font(.callout)
-        .foregroundStyle(.tertiary)
-        .padding(.horizontal, 22)
-        .padding(.bottom, 14)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    .overlay(alignment: .bottom) { Divider().opacity(0.5) }
+    .transition(.opacity.combined(with: .move(edge: .top)))
   }
 
   @ViewBuilder private var browseResults: some View {
