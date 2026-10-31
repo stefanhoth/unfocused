@@ -3,7 +3,7 @@ import Testing
 import UnfocusedCore
 
 private func page(_ path: String) -> Anchor {
-  Anchor.webPage(url: "https://example.com/\(path)", title: path, source: .safari)!
+  Anchor(source: .safari, identifier: "example.com/\(path)", link: "https://example.com/\(path)", title: path)
 }
 
 @Suite("Activity recording")

@@ -79,7 +79,10 @@ struct MenuContent: View {
       NSApp.activate()
       openWindow(id: WindowID.activity)
     }
-    Toggle("Pause Activity Recording", isOn: Binding(get: { model.activityPaused }, set: model.setActivityPaused))
+    Toggle(
+      "Pause Activity Recording",
+      isOn: Binding(get: { model.activityPaused }, set: { model.setActivityPaused($0) })
+    )
     Divider()
     Button("Settings…") {
       NSApp.activate()
