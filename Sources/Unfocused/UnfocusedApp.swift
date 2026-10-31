@@ -194,6 +194,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     guard let index = arguments.firstIndex(of: "--show"), arguments.indices.contains(index + 1) else { return }
     switch arguments[index + 1] {
     case "panel": panel?.show()
+    // Where did you leave off? for the newest Open Loop. Nothing is saved unless ↩ is pressed.
+    case "left-off": if let loop = model?.openLoops.first { panel?.askWhereILeftOff(loop) }
     case "tie-off": tieOff?.show()
     case "banner": banner?.update(model?.openLoops.first)
     // Shows the menu bar label and notice as if a Loop were Focused, without changing any data.
