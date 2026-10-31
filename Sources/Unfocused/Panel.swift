@@ -314,9 +314,14 @@ struct PanelView: View {
     }
     .onKeyPress(characters: ["k", "d"], phases: .down) { press in
       guard press.modifiers.contains(.command), let loop = actionLoop else { return .ignored }
-      let left = press.characters == "k" ? model.close(loop) : model.drop(loop)
-      if let left { askWhereILeftOff(left) }
-      selection = min(selection, max(results.count - 1, 0))
+      // A Closed or Dropped Loop needs no Where I left off; it's done or let go.
+      let wasHero = isHero
+      if press.characters == "k" { model.close(loop) } else { model.drop(loop) }
+      if wasHero {
+        dismiss()
+      } else {
+        selection = min(selection, results.count - 1)
+      }
       return .handled
     }
     .onKeyPress(characters: ["o"], phases: .down) { press in
