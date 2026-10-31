@@ -65,6 +65,9 @@ struct MessageAnchorTests {
       ("Thread - design (Private Channel) - Acme - Slack", "slack-window:acme/design", "Slack: design · Acme"),
       ("Slack | general | Acme", "slack-window:acme/general", "Slack: general · Acme"),
       ("#launch - Acme - Slack", "slack-window:acme/launch", "Slack: launch · Acme"),
+      // Recorded on Slack 4.4x: an unread counter sits between the workspace and "Slack".
+      ("berlin (Channel) - leadership - 3 new items - Slack", "slack-window:leadership/berlin", "Slack: berlin · leadership"),
+      ("* berlin (Channel) - leadership - 1 new item - Slack", "slack-window:leadership/berlin", "Slack: berlin · leadership"),
     ]
   )
   func slackWindow(title: String, identifier: String, display: String) throws {

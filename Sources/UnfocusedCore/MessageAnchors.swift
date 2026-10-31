@@ -64,6 +64,9 @@ extension Anchor {
       return nil
     }
     parts = parts.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+    // Unread counters ("3 new items", "1 new item") aren't part of the conversation or workspace.
+    parts.removeAll { $0.range(of: #"^\d+ new items?$"#, options: .regularExpression) != nil }
+    if let first = parts.first, first.hasPrefix("* ") { parts[0] = String(first.dropFirst(2)) }
     guard parts.count >= 2, let workspace = parts.last else { return nil }
     // Some titles lead with a section ("Thread", "Huddle"); the conversation is the part with a kind.
     let conversationPart =
