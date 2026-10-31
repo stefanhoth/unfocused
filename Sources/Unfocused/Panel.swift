@@ -50,7 +50,8 @@ final class PanelController {
         model: model,
         context: mode == .search ? context : nil,
         initialMode: mode,
-        dismiss: { [weak self] in self?.hide() }
+        dismiss: { [weak self] in self?.hide() },
+        focusField: { [weak self] in self?.focusFieldSoon() }
       )
     )
     panel.center()
@@ -58,11 +59,25 @@ final class PanelController {
     panel.makeKeyAndOrderFront(nil)
     // On a panel's first showing, SwiftUI's focus request arrives before the window can take it.
     // Once SwiftUI has laid the view out, put the cursor in the text field directly.
-    DispatchQueue.main.async { [weak panel] in
-      guard let panel else { return }
-      panel.makeKey()
-      if let field = Self.firstTextField(in: panel.contentView) { panel.makeFirstResponder(field) }
+    focusFieldSoon()
+  }
+
+  /// Makes the panel key and puts the cursor in its text field after SwiftUI's next layout pass.
+  /// Uses the panel itself: `NSApp.keyWindow` is often nil for a non-activating panel.
+  func focusFieldSoon() {
+    for delay in [0.0, 0.05] {
+      DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+        guard let panel = self?.panel, panel.isVisible else { return }
+        panel.makeKey()
+        Self.focusTextField(in: panel)
+      }
     }
+  }
+
+  /// Puts the cursor in the window's first editable text field, if it has one.
+  static func focusTextField(in window: NSWindow?) {
+    guard let window, let field = firstTextField(in: window.contentView) else { return }
+    window.makeFirstResponder(field)
   }
 
   private static func firstTextField(in view: NSView?) -> NSTextField? {
@@ -130,6 +145,8 @@ struct PanelView: View {
   let model: AppModel
   let context: CaptureContext?
   let dismiss: () -> Void
+  /// Puts the cursor in the panel's text field once SwiftUI has laid out the current mode.
+  let focusField: () -> Void
 
   @State private var mode: PanelMode
   @State private var text = ""
@@ -143,10 +160,17 @@ struct PanelView: View {
   @State private var suggestedTitle: String?
   @FocusState private var fieldFocused: Bool
 
-  init(model: AppModel, context: CaptureContext?, initialMode: PanelMode, dismiss: @escaping () -> Void) {
+  init(
+    model: AppModel,
+    context: CaptureContext?,
+    initialMode: PanelMode,
+    dismiss: @escaping () -> Void,
+    focusField: @escaping () -> Void = {}
+  ) {
     self.model = model
     self.context = context
     self.dismiss = dismiss
+    self.focusField = focusField
     _mode = State(initialValue: initialMode)
   }
 
@@ -491,7 +515,9 @@ struct PanelView: View {
   private func askWhereILeftOff(_ loop: Loop) {
     text = ""
     mode = .leftOff(loop)
+    // The mode's new text field only exists after this update; focus it once it's laid out.
     fieldFocused = true
+    focusField()
   }
 
   private func contextLine(_ context: CaptureContext) -> some View {
@@ -529,18 +555,35 @@ struct PanelView: View {
   // MARK: Where I left off
 
   @ViewBuilder private func leftOffContent(_ loop: Loop) -> some View {
-    VStack(alignment: .leading, spacing: 4) {
-      Text("Where did you leave off?").font(.caption).foregroundStyle(.secondary)
-      Text(loop.title).font(.headline)
+    Spacer(minLength: 0)
+    VStack(spacing: 8) {
+      Image(systemName: "bookmark").font(.system(size: 26, weight: .medium)).foregroundStyle(.secondary)
+      Text("Where did you leave off?").font(.title2.weight(.semibold))
+      Text(loop.title).foregroundStyle(.secondary).lineLimit(1)
     }
-    .padding([.horizontal, .top], 16)
+    .frame(maxWidth: .infinity)
+    .padding(.horizontal, 28)
 
-    inputField(loop.whereILeftOff ?? "One line to get back in quickly (optional)")
+    inputField("e.g. Halfway through section 2, next: permissions")
+      .background(RoundedRectangle(cornerRadius: 14).fill(.quaternary.opacity(0.6)))
+      .padding(.horizontal, 28)
+      .padding(.top, 18)
       .onKeyPress(.return) {
         model.setWhereILeftOff(loop, to: text)
         dismiss()
         return .handled
       }
+
+    Text(
+      loop.whereILeftOff.map { "Last time: \($0). ↩ on an empty line keeps it." }
+        ?? "One line, so you can get back in quickly next time. Optional."
+    )
+    .font(.caption)
+    .foregroundStyle(.tertiary)
+    .lineLimit(1)
+    .frame(maxWidth: .infinity)
+    .padding(.horizontal, 28)
+    .padding(.top, 8)
 
     Spacer(minLength: 0)
     hints(["↩ Save", "esc Skip"])
