@@ -30,11 +30,11 @@ build: ## Build all targets
 test: ## Run all tests
 	swift test -Xswiftc -warnings-as-errors $(TEST_FLAGS)
 
-app: ## Assemble build/Unfocused.app (release, ad-hoc signed)
+app: ## Assemble the app bundle: build/Unfocused Dev.app locally, build/Unfocused.app for releases
 	scripts/build-app.sh
 
 run: app ## Build and launch the app bundle
-	open build/Unfocused.app
+	open build/*.app
 
 clean:
 	rm -rf .build build
