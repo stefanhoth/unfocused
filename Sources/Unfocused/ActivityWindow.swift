@@ -9,7 +9,7 @@ struct ActivityWindow: View {
   var body: some View {
     let stretches = model.attributedActivity(on: day).filter { $0.duration >= 1 }
     let total = stretches.reduce(0) { $0 + $1.duration }
-    let unfocused = stretches.filter { $0.reason == .unfocused }.reduce(0) { $0 + $1.duration }
+    let unfocused = stretches.filter { $0.isUnfocusedTime }.reduce(0) { $0 + $1.duration }
     let titles = model.loopTitles()
     VStack(alignment: .leading, spacing: 0) {
       HStack {

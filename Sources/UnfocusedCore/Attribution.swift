@@ -7,7 +7,7 @@ public enum AttributionReason: String, Sendable, CaseIterable {
   case anchor
   /// It happened elsewhere while the Loop was Focused.
   case focus
-  /// It matched no Loop: Unfocused time.
+  /// It matched no Loop.
   case unfocused
 }
 
@@ -19,16 +19,30 @@ public struct AttributedStretch: Hashable, Sendable {
   /// `nil` for Unfocused time.
   public let loopID: UUID?
   public let reason: AttributionReason
+  /// The Loop that was Focused at the time, if any.
+  public let focusedLoopID: UUID?
 
-  public init(anchor: Anchor, start: Date, end: Date, loopID: UUID?, reason: AttributionReason) {
+  public init(
+    anchor: Anchor,
+    start: Date,
+    end: Date,
+    loopID: UUID?,
+    reason: AttributionReason,
+    focusedLoopID: UUID? = nil
+  ) {
     self.anchor = anchor
     self.start = start
     self.end = end
     self.loopID = loopID
     self.reason = reason
+    self.focusedLoopID = focusedLoopID
   }
 
   public var duration: TimeInterval { end.timeIntervalSince(start) }
+
+  /// Unfocused time: it didn't go toward the Focused Loop, either because nothing was Focused or
+  /// because it went elsewhere (another Loop's Anchor, or no Loop at all).
+  public var isUnfocusedTime: Bool { focusedLoopID == nil || loopID != focusedLoopID }
 }
 
 extension Core {
@@ -36,7 +50,7 @@ extension Core {
 
   /// Activity between `from` and `to`, each piece attributed by rule:
   /// time in a Loop's Anchor goes to that Loop, other time during a Focus goes to the Focused Loop,
-  /// everything else is Unfocused time. Stretches are split where a Focus starts or ends.
+  /// everything else goes to no Loop. Stretches are split where a Focus starts or ends.
   public func attributedActivity(from: Date, to: Date) throws -> [AttributedStretch] {
     let stretches = try activity(from: from, to: to)
     guard !stretches.isEmpty else { return [] }
@@ -62,19 +76,20 @@ extension Core {
     }
 
     return stretches.flatMap { stretch -> [AttributedStretch] in
-      let start = stretch.start.timeIntervalSince1970
-      let end = stretch.end.timeIntervalSince1970
-      let focused = Set(Self.sessions(sessions, overlapping: start, end, now: now).map(\.loopId))
-      if let owner = Self.preferredOwner(owners[stretch.anchor.identifier] ?? [], focused: focused) {
-        return [Self.piece(stretch, start, end, UUID(uuidString: owner.id), .anchor)]
+      let candidates = owners[stretch.anchor.identifier] ?? []
+      return Self.split(stretch, by: sessions, now: now).map { start, end, focusedID in
+        let focused = UUID(uuidString: focusedID ?? "")
+        if let owner = Self.preferredOwner(candidates, focused: focusedID) {
+          return Self.piece(stretch, start, end, UUID(uuidString: owner.id), .anchor, focused)
+        }
+        return Self.piece(stretch, start, end, focused, focused == nil ? .unfocused : .focus, focused)
       }
-      return Self.split(stretch, start, end, by: sessions, now: now)
     }
   }
 
-  /// Total Unfocused time between `from` and `to`.
+  /// Total Unfocused time between `from` and `to`: everything that didn't go toward the Focused Loop.
   public func unfocusedTime(from: Date, to: Date) throws -> TimeInterval {
-    try attributedActivity(from: from, to: to).filter { $0.reason == .unfocused }.reduce(0) { $0 + $1.duration }
+    try attributedActivity(from: from, to: to).filter(\.isUnfocusedTime).reduce(0) { $0 + $1.duration }
   }
 
   /// When, where and why time was attributed to a Loop, oldest first.
@@ -122,9 +137,9 @@ extension Core {
   }
 
   /// Among Loops sharing an Anchor: the Focused one, then an Open one, then the most recently changed.
-  private static func preferredOwner(_ candidates: [LoopRecord], focused: Set<String>) -> LoopRecord? {
+  private static func preferredOwner(_ candidates: [LoopRecord], focused: String?) -> LoopRecord? {
     func rank(_ loop: LoopRecord) -> Int {
-      if focused.contains(loop.id) { return 2 }
+      if loop.id == focused { return 2 }
       return loop.state == LoopState.open.rawValue ? 1 : 0
     }
     return candidates.max { lhs, rhs in
@@ -132,30 +147,25 @@ extension Core {
     }
   }
 
-  /// Splits a stretch outside any Anchor into Focus pieces and Unfocused pieces.
-  private static func split(
-    _ stretch: ActivityStretch,
-    _ start: Double,
-    _ end: Double,
-    by sessions: [FocusSessionRecord],
-    now: Double
-  ) -> [AttributedStretch] {
+  /// Splits a stretch where a Focus starts or ends: pieces with the Focused Loop's id, or `nil`.
+  private static func split(_ stretch: ActivityStretch, by sessions: [FocusSessionRecord], now: Double)
+    -> [(start: Double, end: Double, focused: String?)]
+  {
+    let start = stretch.start.timeIntervalSince1970
+    let end = stretch.end.timeIntervalSince1970
     let overlapping = Self.sessions(sessions, overlapping: start, end, now: now)
-    if start == end {
-      let loop = overlapping.last.flatMap { UUID(uuidString: $0.loopId) }
-      return [piece(stretch, start, end, loop, loop == nil ? .unfocused : .focus)]
-    }
-    var pieces: [AttributedStretch] = []
+    if start == end { return [(start, end, overlapping.last?.loopId)] }
+    var pieces: [(start: Double, end: Double, focused: String?)] = []
     var cursor = start
     for session in overlapping {
       let focusStart = max(session.start, cursor)
       let focusEnd = min(session.end ?? now, end)
       guard focusEnd > focusStart else { continue }
-      if focusStart > cursor { pieces.append(piece(stretch, cursor, focusStart, nil, .unfocused)) }
-      pieces.append(piece(stretch, focusStart, focusEnd, UUID(uuidString: session.loopId), .focus))
+      if focusStart > cursor { pieces.append((cursor, focusStart, nil)) }
+      pieces.append((focusStart, focusEnd, session.loopId))
       cursor = focusEnd
     }
-    if cursor < end { pieces.append(piece(stretch, cursor, end, nil, .unfocused)) }
+    if cursor < end { pieces.append((cursor, end, nil)) }
     return pieces
   }
 
@@ -164,14 +174,16 @@ extension Core {
     _ start: Double,
     _ end: Double,
     _ loopID: UUID?,
-    _ reason: AttributionReason
+    _ reason: AttributionReason,
+    _ focusedLoopID: UUID?
   ) -> AttributedStretch {
     AttributedStretch(
       anchor: stretch.anchor,
       start: Date(timeIntervalSince1970: start),
       end: Date(timeIntervalSince1970: end),
       loopID: loopID,
-      reason: reason
+      reason: reason,
+      focusedLoopID: focusedLoopID
     )
   }
 }

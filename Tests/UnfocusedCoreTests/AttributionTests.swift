@@ -78,6 +78,42 @@ struct AttributionTests {
     #expect(try core.unfocusedTime(from: start, to: time.now) == .minutes(7))
   }
 
+  @Test("Unfocused time is everything that didn't go toward the Focused Loop")
+  func unfocusedTimeDefinition() throws {
+    let (core, time) = try makeCore()
+    let start = time.now
+    let spec = try core.capture(title: "Spec", anchor: page("spec"))
+    let review = try core.capture(title: "Review", anchor: page("review"))
+
+    try spend(2, on: page("review"), core, time)  // nothing Focused, in a Loop's Anchor
+    try core.focus(spec.id)
+    try spend(3, on: page("spec"), core, time)  // toward the Focused Loop
+    try spend(4, on: page("notes"), core, time)  // toward the Focused Loop, by fallback
+    try spend(5, on: page("review"), core, time)  // another Loop's Anchor during Focus
+
+    let attributed = try core.attributedActivity(from: start, to: time.now)
+    #expect(attributed.map(\.loopID) == [review.id, spec.id, spec.id, review.id])
+    #expect(attributed.map(\.isUnfocusedTime) == [true, false, false, true])
+    #expect(try core.unfocusedTime(from: start, to: time.now) == .minutes(7))
+  }
+
+  @Test("a stretch in an Anchor that spans the start of a Focus is split too")
+  func anchorSplitAtFocus() throws {
+    let (core, time) = try makeCore()
+    let start = time.now
+    let spec = try core.capture(title: "Spec", anchor: page("spec"))
+    try spend(2, on: page("spec"), core, time)
+    try core.focus(spec.id)
+    for _ in 0..<3 {
+      time.advance(by: .minutes(1))
+      try core.recordActivity(page("spec"))
+    }
+
+    let attributed = try core.attributedActivity(from: start, to: time.now)
+    #expect(attributed.map(\.duration) == [.minutes(2), .minutes(3)])
+    #expect(attributed.map(\.isUnfocusedTime) == [true, false])
+  }
+
   @Test("a stretch that spans the start of a Focus is split at the boundary")
   func splitAtFocus() throws {
     let (core, time) = try makeCore()

@@ -279,6 +279,7 @@ final class AppModel {
     var joined: [AttributedStretch] = []
     for piece in log where piece.duration >= 1 {
       if let last = joined.last, last.anchor.identifier == piece.anchor.identifier, last.reason == piece.reason,
+        last.focusedLoopID == piece.focusedLoopID,
         piece.start.timeIntervalSince(last.end) <= 120
       {
         joined[joined.count - 1] = AttributedStretch(
@@ -286,7 +287,8 @@ final class AppModel {
           start: last.start,
           end: piece.end,
           loopID: piece.loopID,
-          reason: piece.reason
+          reason: piece.reason,
+          focusedLoopID: piece.focusedLoopID
         )
       } else {
         joined.append(piece)
