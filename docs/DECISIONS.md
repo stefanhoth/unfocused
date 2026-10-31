@@ -2,6 +2,7 @@
 
 Smaller calls that don't warrant an ADR. Newest first; add entries in the PR that makes the decision.
 
+- **2026-10-31**: The release pushes the cask to `main` with a write deploy key in its own job, because personal repos can't add "GitHub Actions" to a ruleset bypass list. Only that job holds the key, and it runs nothing but `scripts/write-cask.sh`.
 - **2026-10-31**: No PR auto-update workflow. Branch updates pushed with the built-in `GITHUB_TOKEN` don't trigger CI, so an updated PR loses its required checks and blocks. Out-of-date PRs are rebased by whoever drives them.
 - **2026-10-30**: Releases are CalVer (`YYYY.MM.DD`, then `.2`, `.3` on the same day) and run by hand from the Release workflow, not on every merge. Every update of an unnotarized app needs a Gatekeeper approval, so frequent automatic releases would cost the user more than they'd gain.
 - **2026-10-30**: Release signing runs in a separate job from the build, so the job holding the certificate never resolves or compiles dependencies.
