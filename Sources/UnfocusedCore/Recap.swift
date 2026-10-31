@@ -45,8 +45,25 @@ public struct Recap: Hashable, Sendable {
   /// Titles of every Loop the timeline mentions.
   public let titles: [UUID: String]
 
-  /// The Recap as Markdown, for pasting into notes. `name` turns a place into a readable name.
-  public func markdown(name: (String) -> String = { $0 }) -> String {
+  /// The figures as plain lines, for the Reasoner to write a summary from. Titles only; no pages.
+  public var facts: String {
+    var lines = ["Period: \(period.duration > 86_400 ? "a week" : "a day")"]
+    lines.append("Finished: \(closed.isEmpty ? "none" : closed.map(\.title).joined(separator: "; "))")
+    lines.append(
+      "Worked on, not finished yet: "
+        + (movedForward.isEmpty
+          ? "none" : movedForward.map { "\($0.loop.title) (\(Self.format($0.time)))" }.joined(separator: "; "))
+    )
+    lines.append(
+      "New ideas noted for later: \(captured.isEmpty ? "none" : captured.map(\.title).joined(separator: "; "))"
+    )
+    lines.append("Unfocused time: \(Self.format(unfocusedTime))")
+    return lines.joined(separator: "\n")
+  }
+
+  /// The Recap as Markdown, for pasting into notes. `name` turns a place into a readable name;
+  /// `summary` is the optional prose summary, placed under the heading.
+  public func markdown(name: (String) -> String = { $0 }, summary: String? = nil) -> String {
     var lines: [String] = []
     func section(_ title: String, _ items: [String]) {
       guard !items.isEmpty else { return }
@@ -56,6 +73,10 @@ public struct Recap: Hashable, Sendable {
     }
     let start = period.start.formatted(date: .complete, time: .omitted)
     lines.append("# Recap: \(start)")
+    if let summary {
+      lines.append("")
+      lines.append(summary)
+    }
     section("Closed", closed.map(\.title))
     section("Moved forward", movedForward.map { "\($0.loop.title) (\(Self.format($0.time)))" })
     section("Captured", captured.map(\.title))
