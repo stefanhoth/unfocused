@@ -31,14 +31,19 @@ if [ -f Branding/AppIcon.png ]; then
   ICON_KEY="<key>CFBundleIconFile</key><string>AppIcon</string>"
 fi
 
+# Local builds carry a "dev" qualifier in system lists (Accessibility, notifications, Activity
+# Monitor), so they can't be mistaken for a release.
+DISPLAY_NAME="unfocused"
+case "$VERSION" in *-dev) DISPLAY_NAME="unfocused dev" ;; esac
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>CFBundleIdentifier</key><string>com.stefanhoth.unfocused</string>
-  <key>CFBundleName</key><string>unfocused</string>
-  <key>CFBundleDisplayName</key><string>unfocused</string>
+  <key>CFBundleName</key><string>${DISPLAY_NAME}</string>
+  <key>CFBundleDisplayName</key><string>${DISPLAY_NAME}</string>
   <key>CFBundleExecutable</key><string>Unfocused</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>${VERSION}</string>
@@ -52,5 +57,16 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-codesign --force --sign - --timestamp=none "$APP"
+# Dev builds: sign with the stable self-signed certificate when it's on this Mac, so macOS keeps
+# permissions (Accessibility, Automation) across rebuilds, like it does across releases.
+# Otherwise sign ad hoc; then every rebuild looks like a new app and permissions must be re-granted.
+SIGNING_DIR="${UNFOCUSED_SIGNING_DIR:-$HOME/Library/Application Support/unfocused-dev/signing}"
+if [ -z "${CI:-}" ] && [ -f "$SIGNING_DIR/unfocused-signing.p12" ] && [ -f "$SIGNING_DIR/p12-password.txt" ]; then
+  P12_BASE64="$(base64 < "$SIGNING_DIR/unfocused-signing.p12")" \
+    P12_PASSWORD="$(cat "$SIGNING_DIR/p12-password.txt")" \
+    "$(dirname "$0")/sign-app.sh" "$APP" >/dev/null
+  echo "Signed with the stable certificate"
+else
+  codesign --force --sign - --timestamp=none "$APP"
+fi
 echo "Built $APP ($VERSION)"
