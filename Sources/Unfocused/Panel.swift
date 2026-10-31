@@ -88,6 +88,16 @@ final class FloatingPanel: NSPanel {
   }
 }
 
+extension RelatedReason {
+  var label: String {
+    switch self {
+    case .samePerson(let name): "with \(name)"
+    case .similarTitle: "similar title"
+    case .sameSource: "same place"
+    }
+  }
+}
+
 enum PanelMode: Equatable {
   /// Search Open Loops, Focus one, or Capture a new one.
   case search
@@ -131,6 +141,12 @@ struct PanelView: View {
 
   private var mentioned: [String] { model.mentionedNames(in: text) }
 
+  /// Open Loops related to the new title, offered as "add to this Loop instead".
+  private var related: [RelatedLoop] {
+    guard mentionQuery == nil else { return [] }
+    return model.relatedLoops(toCapture: text, anchor: context?.anchor)
+  }
+
   /// The Loop that already has what's in front of the user as an Anchor.
   private var existingLoop: Loop? {
     context.flatMap { model.loop(anchoredAt: $0.anchor) }
@@ -150,7 +166,7 @@ struct PanelView: View {
         shown.insert(existing, at: 0)
       }
     }
-    return Array(shown.prefix(8))
+    return Array(shown.prefix(text.isEmpty ? 8 : 4))
   }
 
   var body: some View {
@@ -209,6 +225,12 @@ struct PanelView: View {
         let left = press.characters == "k" ? model.close(loop) : model.drop(loop)
         if let left { askWhereILeftOff(left) }
         selection = min(selection, max(results.count - 1, 0))
+        return .handled
+      }
+      .onKeyPress(characters: ["1", "2", "3"], phases: .down) { press in
+        guard press.modifiers.contains(.command), let digit = Int(press.characters), related.indices.contains(digit - 1)
+        else { return .ignored }
+        addToRelated(related[digit - 1].loop)
         return .handled
       }
       .onKeyPress(.downArrow) {
@@ -298,12 +320,44 @@ struct PanelView: View {
       .padding(8)
     }
 
+    if !text.isEmpty {
+      captureNudges
+    }
+
     Spacer(minLength: 0)
     hints(
       context == nil
         ? ["↩ Focus", "⌘↩ Capture new", "⌘K Close", "⌘D Drop", "@ Person", "esc Hide"]
         : ["↩ Focus", "⌘↩ Capture new", "⌥↩ Add here as Anchor", "⌘K Close", "⌘D Drop", "esc Hide"]
     )
+  }
+
+  /// Related Loops to add to instead, and a gentle note about Loose Ends. Capture still works.
+  @ViewBuilder private var captureNudges: some View {
+    let related = related
+    if !related.isEmpty {
+      Divider()
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Add to an existing Loop instead?").font(.caption).foregroundStyle(.secondary)
+        ForEach(Array(related.enumerated()), id: \.element.loop.id) { index, item in
+          HStack {
+            Text("⌘\(index + 1)").font(.caption.monospaced()).foregroundStyle(.secondary)
+            Text(item.loop.title).lineLimit(1)
+            Text(item.reasons.map(\.label).joined(separator: " · ")).font(.caption).foregroundStyle(.tertiary)
+            Spacer()
+          }
+        }
+      }
+      .padding(.horizontal, 16)
+      .padding(.vertical, 8)
+    }
+    if let looseEnds = model.looseEndsOlderThanNewIdea() {
+      Label("\(looseEnds) Loose Ends are older than this idea.", systemImage: "hourglass")
+        .font(.caption)
+        .foregroundStyle(.orange)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 6)
+    }
   }
 
   private var mentionChips: some View {
@@ -345,6 +399,11 @@ struct PanelView: View {
     guard let context, results.indices.contains(selection) else { return }
     let loop = results[selection]
     model.addAnchor(context.anchor, to: loop)
+    if let left = model.focus(loop, openAnchors: false) { askWhereILeftOff(left) } else { dismiss() }
+  }
+
+  private func addToRelated(_ loop: Loop) {
+    model.add(to: loop, anchor: context?.anchor, mentionsIn: text, directions: directions)
     if let left = model.focus(loop, openAnchors: false) { askWhereILeftOff(left) } else { dismiss() }
   }
 
