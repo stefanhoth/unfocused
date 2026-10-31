@@ -101,6 +101,11 @@ final class AppModel {
     _ = changeState(of: loop, "reopening") { try core.reopen(loop.id) }
   }
 
+  /// Not now on the switch banner: no more suggestions until the Focus changes.
+  func notNowSilentSwitch() {
+    perform("saving Not now") { try core.notNowSilentSwitch() }
+  }
+
   // MARK: Interrupted Focus
 
   /// The Focus that sleep, idle or a screen lock stopped, if the user hasn't answered yet.

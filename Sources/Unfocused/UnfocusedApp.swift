@@ -130,6 +130,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         model?.refresh()
         panel.askAboutInterruption(interruption)
       }
+      let banner = SwitchBannerController(model: model, panelController: panel)
+      recorder.onSwitchSuggestion = { banner.update($0) }
       self.recorder = recorder
       model.endStaleFocus()
       environment.log.info("Launched, database ready")

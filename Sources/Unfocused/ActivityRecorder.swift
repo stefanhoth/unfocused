@@ -13,6 +13,8 @@ final class ActivityRecorder {
   private let log: Log
   /// Called when the user is back after a Focus was interrupted, to ask what to do with it.
   var onReturn: ((FocusInterruption) -> Void)?
+  /// Called after every sample with the Loop the user seems to be on without Focusing it, or `nil`.
+  var onSwitchSuggestion: ((Loop?) -> Void)?
   /// The interruption the user was already asked about, so they're asked once.
   private var askedAbout: FocusInterruption?
   private var timer: Timer?
@@ -51,6 +53,7 @@ final class ActivityRecorder {
     }
     if idle >= Self.idleThreshold {
       stop(at: idleSince)
+      onSwitchSuggestion?(nil)
       return
     }
     askIfBack()
@@ -60,6 +63,7 @@ final class ActivityRecorder {
     let context = ContextReader.read(front, prompting: false)
     do {
       try core.recordActivity(context?.isPrivate == true ? nil : context?.anchor)
+      onSwitchSuggestion?(try core.silentSwitchSuggestion())
     } catch {
       log.error("Recording Activity failed: \(error)")
     }
