@@ -19,6 +19,9 @@ final class AppModel {
   /// Why the chosen hotkey can't be used, shown in Settings.
   private(set) var hotKeyProblem: String?
   private(set) var lastError: String?
+  /// Settings are read from Core on demand; this goes up on every change so views showing a
+  /// setting redraw (they observe this, not the database).
+  private var settingsRevision = 0
 
   @ObservationIgnored let core: Core
   @ObservationIgnored let log: Log
@@ -193,17 +196,26 @@ final class AppModel {
 
   /// Active days without Engagement before a Loop is a Loose End.
   var looseEndThreshold: Int {
-    get { (try? core.looseEndThreshold()) ?? 3 }
+    get {
+      _ = settingsRevision
+      return (try? core.looseEndThreshold()) ?? 3
+    }
     set {
       perform("saving the Loose End threshold") { try core.setLooseEndThreshold(newValue) }
-      refresh()
+      settingsRevision += 1
     }
   }
 
   /// Minutes without input that pause Focus.
   var focusIdleMinutes: Int {
-    get { Int(((try? core.focusIdleThreshold()) ?? 1800) / 60) }
-    set { perform("saving the idle time") { try core.setFocusIdleThreshold(TimeInterval(newValue) * 60) } }
+    get {
+      _ = settingsRevision
+      return Int(((try? core.focusIdleThreshold()) ?? 1800) / 60)
+    }
+    set {
+      perform("saving the idle time") { try core.setFocusIdleThreshold(TimeInterval(newValue) * 60) }
+      settingsRevision += 1
+    }
   }
 
   func loop(anchoredAt anchor: Anchor) -> Loop? {
@@ -385,13 +397,25 @@ final class AppModel {
   func recap(weekOf date: Date) -> Recap? { try? core.recap(weekOf: date) }
 
   var excludedApps: [String] {
-    get { (try? core.excludedApps()) ?? [] }
-    set { perform("saving excluded apps") { try core.setExcludedApps(newValue) } }
+    get {
+      _ = settingsRevision
+      return (try? core.excludedApps()) ?? []
+    }
+    set {
+      perform("saving excluded apps") { try core.setExcludedApps(newValue) }
+      settingsRevision += 1
+    }
   }
 
   var activityRetentionDays: Int {
-    get { (try? core.activityRetentionDays()) ?? 90 }
-    set { perform("saving Activity retention") { try core.setActivityRetentionDays(newValue) } }
+    get {
+      _ = settingsRevision
+      return (try? core.activityRetentionDays()) ?? 90
+    }
+    set {
+      perform("saving Activity retention") { try core.setActivityRetentionDays(newValue) }
+      settingsRevision += 1
+    }
   }
 
   // MARK: Hotkey
