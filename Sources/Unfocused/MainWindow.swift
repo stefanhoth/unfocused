@@ -64,8 +64,10 @@ struct MainWindow: View {
                 Label {
                   Text(section.title).foregroundStyle(.primary)
                 } icon: {
+                  // One width for every symbol, so the titles line up.
                   Image(systemName: section.systemImage)
                     .foregroundStyle(selected ? AnyShapeStyle(Style.brand) : AnyShapeStyle(.secondary))
+                    .frame(width: 22)
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 7)
