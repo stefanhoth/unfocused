@@ -45,6 +45,9 @@ final class TieOffController {
     window.hasShadow = false
     window.isMovableByWindowBackground = true
     window.level = .floating
+    // Panels hide while the app is inactive. Opened from `--show tie-off` or the reminder, macOS may
+    // decline the activation request, and opening Anchors makes another app active: keep it up.
+    window.hidesOnDeactivate = false
     window.isReleasedWhenClosed = false
     return window
   }
