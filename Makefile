@@ -12,7 +12,7 @@ TESTING_PLUGINS := $(wildcard $(shell xcode-select -p)/usr/lib/swift/host/plugin
 TEST_FLAGS := $(if $(TESTING_PLUGINS),-Xswiftc -plugin-path -Xswiftc $(TESTING_PLUGINS))
 endif
 
-.PHONY: setup lint format build test app run clean reasoner-examples demo
+.PHONY: setup lint format build test app run clean reasoner-examples demo site site-og
 
 setup: ## Install the git pre-commit hook
 	git config core.hooksPath .githooks
@@ -39,6 +39,14 @@ run: app ## Build and launch the app bundle
 
 demo: app ## Launch the dev build on made-up data (SHOW=panel, FOCUSED=1), for screenshots
 	scripts/demo-app.sh $(if $(FOCUSED),--focused) $(if $(SHOW),--show $(SHOW))
+
+site: ## Serve the landing page (site/public) at http://127.0.0.1:8787
+	python3 -m http.server 8787 --bind 127.0.0.1 --directory site/public
+
+site-og: ## Render site/public/og.png, the social sharing image, from site/og/og.html
+	"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --user-data-dir="$$(mktemp -d)" \
+	  --hide-scrollbars --window-size=1200,630 --force-device-scale-factor=1 --virtual-time-budget=3000 \
+	  --allow-file-access-from-files --screenshot="$(CURDIR)/site/public/og.png" "file://$(CURDIR)/site/og/og.html"
 
 clean:
 	rm -rf .build build

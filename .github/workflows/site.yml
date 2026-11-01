@@ -1,0 +1,89 @@
+name: Site
+
+# The landing page at unfocused.stefanhoth.com: static files in site/public, served by Cloudflare
+# Workers (same setup as monomix and stefanhoth.com). PRs get a preview URL; main deploys.
+# Not a required check: it only runs when site/ changes.
+on:
+  pull_request:
+    paths: [site/**, .github/workflows/site.yml]
+  push:
+    branches: [main]
+    paths: [site/**, .github/workflows/site.yml]
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    name: Deploy site preview
+    # Fork PRs get no secrets.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    env:
+      PR_ALIAS: pr-${{ github.event.number }}
+    steps:
+      # No build step and no npm install of our own: the job uploads site/public as it is.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Upload preview version
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: 4.120.1
+          workingDirectory: site
+          command: versions upload --preview-alias ${{ env.PR_ALIAS }}
+      - name: Register GitHub deployment
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PREVIEW_URL: https://${{ env.PR_ALIAS }}-unfocused.stefanhoth-de.workers.dev
+        with:
+          script: |
+            const { data: deployment } = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.payload.pull_request.head.sha,
+              environment: "site-preview",
+              auto_merge: false,
+              required_contexts: [],
+              transient_environment: true,
+              production_environment: false,
+              description: `Site preview for PR #${context.issue.number}`,
+            });
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.id,
+              state: "success",
+              environment_url: process.env.PREVIEW_URL,
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              description: "Deployed to Cloudflare Workers",
+            });
+
+  deploy:
+    name: Deploy site
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: site
+      url: https://unfocused.stefanhoth.com
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: 4.120.1
+          workingDirectory: site
+          command: deploy

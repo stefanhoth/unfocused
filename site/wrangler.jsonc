@@ -1,0 +1,13 @@
+{
+  // unfocused.stefanhoth.com: static files only, served by Cloudflare Workers (no Worker script).
+  "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
+  "name": "unfocused",
+  "compatibility_date": "2026-10-01",
+  "preview_urls": true,
+  "routes": [{ "pattern": "unfocused.stefanhoth.com", "custom_domain": true }],
+  "assets": {
+    "directory": "./public",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none"
+  }
+}

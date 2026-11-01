@@ -4,6 +4,8 @@ A local-only macOS menu bar app that keeps track of the work you've already star
 
 No server, no account. Your data, logs and on-device AI stay on your Mac.
 
+Website: <https://unfocused.stefanhoth.com>
+
 > Status: early development. See the [v1 spec](https://github.com/stefanhoth/unfocused/issues/1).
 
 ## Install
@@ -39,3 +41,4 @@ The app stores its database in `~/Library/Application Support/unfocused/` and lo
 - [docs/DECISIONS.md](docs/DECISIONS.md): smaller decisions
 - [docs/local-development.md](docs/local-development.md): building and running locally
 - [docs/github-repo-settings.md](docs/github-repo-settings.md): one-time repo setup
+- [site/README.md](site/README.md): the landing page
