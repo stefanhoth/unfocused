@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>unfocused: finish what you started, on your Mac</title>
+  <meta name="description" content="unfocused is a free menu bar app for macOS 26 or later. It remembers the work you've started in every app and shows it to you before you start something new. Nothing leaves your Mac.">
+  <link rel="canonical" href="https://unfocused.stefanhoth.com/">
+  <meta name="theme-color" content="#262523">
+  <meta name="color-scheme" content="light">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="unfocused">
+  <meta property="og:url" content="https://unfocused.stefanhoth.com/">
+  <meta property="og:title" content="unfocused: finish what you started">
+  <meta property="og:description" content="A menu bar app for macOS 26 or later that remembers the work you've already started, in every app, and puts it in front of you before you start something new.">
+  <meta property="og:image" content="https://unfocused.stefanhoth.com/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The unfocused panel listing three Open Loops, next to the words Finish what you started.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="unfocused: finish what you started">
+  <meta name="twitter:description" content="A menu bar app for macOS 26 or later that remembers the work you've already started and shows it to you before you start something new.">
+  <meta name="twitter:image" content="https://unfocused.stefanhoth.com/og.png">
+
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preload" href="fonts/switzer-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/switzer-600.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+  <script>document.documentElement.classList.add('js')</script>
+</head>
+<body>
+
+<header class="hero" id="top">
+  <img class="hero__room" src="img/knot-class-1919.webp" width="1800" height="1212" alt="A room of young sailors in 1919, each holding a length of rope, learning knots from an instructor.">
+  <div class="hero__card">
+    <h1 class="hero__title" data-rise data-i="0">
+      <span>Finish what</span> <span>you</span> <span>started.</span>
+    </h1>
+    <div class="hero__body">
+      <div class="hero__text" data-rise data-i="1">
+        <p class="hero__facts">A menu bar app for macOS&nbsp;26 or&nbsp;later<br>Free, with the source on GitHub<br>Nothing leaves your Mac</p>
+        <p class="hero__lede">unfocused remembers the work you've started in every app and shows it to you before you start something new.</p>
+      </div>
+      <figure class="hero__plate" data-rise data-i="2">
+        <img src="img/panel.webp" width="1752" height="874" alt="The unfocused panel with three Open Loops: the vacation policy marked You're here, the Q1 plan in Notion as a Loose End, and Sam's RFC.">
+      </figure>
+    </div>
+    <div class="hero__foot" data-rise data-i="3">
+      <a class="wordmark" href="#top"><img src="img/app-icon.webp" width="36" height="36" alt="">unfocused</a>
+      <a class="button" href="#install">Install with Homebrew</a>
+      <a class="link-plain hero__download" href="https://github.com/stefanhoth/unfocused/releases/latest">Download the latest release</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section class="week" id="three-open" aria-labelledby="three-open-title">
+  <div class="week__intro" data-reveal>
+    <h2 class="head" id="three-open-title">Three things open. Not a fourth.</h2>
+    <p>On Monday you started the Q1 plan in Notion. Then the team's vacation policy for the holidays came up, and you switched to that. Since yesterday, Sam's RFC is also waiting for the rest of your review.</p>
+    <p>Each one lives in a different app, and none is finished. unfocused keeps all three in one list and shows it to you before you start something else.</p>
+  </div>
+  <div class="slip" data-reveal>
+    <h3>Open right now</h3>
+    <ul>
+      <li><span>Vacation policy for the holidays</span><span>Focused, 25 min</span></li>
+      <li><span>Review Sam's RFC</span><span>since yesterday</span></li>
+      <li><span>Q1 plan in Notion</span><span>since Monday</span></li>
+    </ul>
+    <h3>A new request comes in</h3>
+    <ul>
+      <li><span>⌃Space shows the three Loops first</span><span>1 s</span></li>
+      <li><span>A fourth Loop takes ⌘↩, one key more</span><span>1 s</span></li>
+    </ul>
+    <h3>You finish one instead</h3>
+    <ul>
+      <li><span>Focus the RFC and read your last note</span><span>5 s</span></li>
+      <li><span>Send your comments to Sam</span><span>20 min</span></li>
+      <li><span>Close Loop with ⌘C</span><span>1 s</span></li>
+    </ul>
+    <p class="slip__total"><span>Closed: Review Sam's RFC</span><span>2 Loops open</span></p>
+  </div>
+</section>
+
+<section class="showcase" id="open-loops" aria-labelledby="open-loops-title">
+  <div class="showcase__intro" data-reveal>
+    <h2 class="head showcase__title" id="open-loops-title">Keep track of Open Loops. Close them first.</h2>
+    <p>unfocused doesn't replace your todo app, your notes or your team's tickets. The work stays where it is. unfocused keeps a list of what you started, links each entry to the exact spot, and shows the list whenever you switch.</p>
+  </div>
+  <div class="showcase__plate">
+    <div class="tabs" role="tablist" aria-label="Panel states">
+      <button role="tab" aria-selected="true" aria-controls="plate-img" data-step="0">Unfocused</button>
+      <button role="tab" aria-selected="false" aria-controls="plate-img" data-step="1">Focused</button>
+      <button role="tab" aria-selected="false" aria-controls="plate-img" data-step="2">Leaving</button>
+    </div>
+    <figure class="plate-frame">
+      <img id="plate-img" src="img/panel.webp" width="1752" height="874" alt="The panel while unfocused: Open Loops, Loose Ends first.">
+    </figure>
+  </div>
+  <div class="showcase__text">
+    <div class="step" data-step="0" data-src="img/panel.webp" data-alt="The panel while unfocused: Open Loops, Loose Ends first.">
+      <figure class="step__pic"><img src="img/panel.webp" width="1752" height="874" loading="lazy" alt="The panel while unfocused: Open Loops, Loose Ends first."></figure>
+      <h3 class="lead strong">One key from any app</h3>
+      <p>⌃Space opens the panel over whatever is in front. Everything you started is there, Loose Ends first. ↩ Focuses a Loop and opens its Anchors, such as the Slack thread, the draft or the page you were on.</p>
+    </div>
+    <div class="step" data-step="1" data-src="img/panel-focused.webp" data-alt="The panel while a Loop is Focused: its title, Where I left off, Close Loop as the first action.">
+      <figure class="step__pic"><img src="img/panel-focused.webp" width="1752" height="874" loading="lazy" alt="The panel while a Loop is Focused: its title, Where I left off, Close Loop as the first action."></figure>
+      <h3 class="lead strong">The Focused Loop comes first</h3>
+      <p>While you're Focused, the panel is about that one Loop. It shows where you left off, who you're waiting on, and Close Loop as the first action. A new Loop takes ⌘↩, one key more than finishing.</p>
+    </div>
+    <div class="step" data-step="2" data-src="img/leaving.webp" data-alt="Where did you leave off? asked when leaving a Loop, with the last note shown.">
+      <figure class="step__pic"><img src="img/leaving.webp" width="1752" height="874" loading="lazy" alt="Where did you leave off? asked when leaving a Loop, with the last note shown."></figure>
+      <h3 class="lead strong">Where you left off</h3>
+      <p>When you switch to another Loop, unfocused asks where you left off before the other app takes the screen. You write one line. Next time you Focus that Loop, the line is the first thing you see.</p>
+    </div>
+    <div class="showcase__actions">
+      <a class="cell cell--ink" href="#install">Install with Homebrew</a>
+      <a class="cell" href="https://github.com/stefanhoth/unfocused">Source on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<section class="keeps" id="keeps" aria-labelledby="keeps-title">
+  <h2 class="head keeps__title" id="keeps-title" data-reveal>What it keeps for you</h2>
+  <div class="sheets">
+    <article class="sheet sheet--sky" data-i="0">
+      <h3 class="sheet__name">Anchors back to the work</h3>
+      <p class="sheet__text">Each Loop links to the exact spot where the work is: the Slack conversation, the Mail message, the page in Safari, Chrome or Firefox, the note in Obsidian, the file in Pages. ⌘O opens all of them.</p>
+      <p class="sheet__keys"><span><kbd>⌥↩</kbd> Add the window in front</span><span><kbd>⌘O</kbd> Open Anchors</span></p>
+      <img class="sheet__pic" src="img/loops.webp" width="2062" height="1144" loading="lazy" alt="The Loops window: the three Open Loops with their last notes, the Q1 plan in Notion marked as a Loose End.">
+    </article>
+    <article class="sheet sheet--peach" data-i="1">
+      <h3 class="sheet__name">Loose Ends come back</h3>
+      <p class="sheet__text">A Loop nobody touched for three active days becomes a Loose End. Weekends and holidays don't count, only days you used your Mac. The Tie-off shows the Loose Ends one at a time, and for each you choose Focus, Close Loop, Let go or Not now.</p>
+      <p class="sheet__keys"><span><kbd>F</kbd> Focus</span><span><kbd>C</kbd> Close Loop</span><span><kbd>L</kbd> Let go</span><span><kbd>N</kbd> Not now</span></p>
+      <img class="sheet__pic sheet__pic--plate" src="img/plate-99-splices-and-knots.webp" width="1245" height="1664" loading="lazy" alt="Engraved plate from 1890 showing rope ends frayed, whipped, spliced and knotted.">
+    </article>
+    <article class="sheet sheet--stone" data-i="2">
+      <h3 class="sheet__name">Where your time went</h3>
+      <p class="sheet__text">unfocused also records which window was in front and counts the time toward the Loop it belongs to. The Recap shows what you finished, what moved forward and how much time went elsewhere. You see what pulled you away, and you have a record of what you got done. Copy it as Markdown for your standup.</p>
+      <p class="sheet__keys"><span><b>1</b> Closed</span><span><b>2</b> Moved forward</span><span><b>55m</b> toward Loops</span><span><b>34m</b> Unfocused time</span></p>
+      <img class="sheet__pic" src="img/recap.webp" width="2062" height="1144" loading="lazy" alt="The Recap for one day: a written summary, figures for Closed, Moved forward, Captured and Unfocused time, a timeline and the Loops by group.">
+    </article>
+    <article class="sheet sheet--ink" data-i="3">
+      <h3 class="sheet__name">Private by design</h3>
+      <p class="sheet__text">The way you get things done is personal. unfocused never shares your Activity, not with a server, not with an advertiser, not with anyone you work with. It notes which window was in front, never what's in it or what you type, and it skips 1Password and private windows.</p>
+      <p class="sheet__keys"><span><b>100%</b> local</span><span><b>0</b> servers</span><span><b>0</b> accounts</span></p>
+      <img class="sheet__pic" src="img/activity.webp" width="2062" height="1144" loading="lazy" alt="The Activity view: time recorded, time toward Loops, Unfocused time, and the day's windows grouped by hour.">
+    </article>
+  </div>
+</section>
+
+<section class="letter-wrap" id="why" aria-labelledby="why-title">
+  <article class="letter" data-reveal>
+    <img class="letter__icon" src="img/app-icon.webp" width="44" height="44" alt="">
+    <h2 class="lead strong" id="why-title">Why I made this</h2>
+    <p>I start things everywhere. A draft in Notion, a Slack thread I promised to answer, a review someone asked me for. Then something urgent comes up and I switch. By Friday I've started more than I've finished, and I can't say where the week went.</p>
+    <p>None of my tools sees all of it. My todo app has the tasks I planned, the tickets have the team's work, my notes have my notes. None of them knows what I started.</p>
+    <p>unfocused doesn't replace any of them. It remembers what I started, and when I'm about to start something else, it shows me what's already open.</p>
+    <p>It also shows me where my time went. I notice what pulls me away, and I can see the work I got done.</p>
+    <p>It runs on my Mac and nowhere else. There's no account and no server, and nothing is shared with anyone.</p>
+    <p class="letter__sign">Stefan Hoth<span>Made unfocused</span></p>
+    <div class="letter__stub">
+      <p>It's early. Tell me what doesn't work for you.</p>
+      <a class="button" href="https://github.com/stefanhoth/unfocused/issues">Open an issue</a>
+    </div>
+  </article>
+</section>
+
+<section class="faq" id="questions" aria-labelledby="questions-title">
+  <h2 class="head" id="questions-title" data-reveal>Questions</h2>
+  <div class="faq__text" data-reveal>
+    <p><b>What does it cost?</b> Nothing. unfocused is free, and its source is on GitHub.</p>
+    <p><b>What do I need?</b> macOS 26 or later. The written Recap summary and the check whether a window belongs to your Focused Loop use Apple Intelligence; without it, unfocused falls back to plain rules and everything else works.</p>
+    <p><b>Which apps can it anchor to?</b> Pages in Safari, Chrome and Firefox, Slack conversations, Mail messages, Notion pages, Obsidian notes, Todoist tasks, files in Finder, and documents open in Pages, Numbers, Preview or TextEdit. Any other app gets an Anchor that reopens it with its window title.</p>
+    <p><b>Does it read what I type?</b> No. Activity records which app and window was in front, and when. It never records content, keystrokes or screenshots.</p>
+    <p><b>Why does it ask for Accessibility?</b> To read window titles, so Capture can grab the exact thread or document in front of you. It asks only when a feature first needs it, and Capture works without it.</p>
+    <p><b>Why does macOS warn me when I open it?</b> The builds aren't notarized by Apple yet. Approve it once in System Settings, Privacy &amp; Security, Open Anyway, after installing and after each update.</p>
+    <p><b>How do I update?</b> Run <code>brew upgrade --cask unfocused</code>. Your Loops and the Accessibility permission stay.</p>
+    <p><b>Where is my data?</b> In <code>~/Library/Application Support/unfocused/</code>, one SQLite file. Logs are in <code>~/Library/Logs/unfocused/</code>.</p>
+    <p><b>How do I remove it?</b> Run <code>brew uninstall --cask unfocused</code>. Delete the folder above to remove your data as well.</p>
+    <p><b>Is it a todo app?</b> No. It doesn't replace your todo app, your notes or your tickets, and it has no due dates, projects or priorities. Your work stays where it is. unfocused remembers that you started it.</p>
+    <p><b>Can my employer see it?</b> No. unfocused is 100% local and never shares your Activity, not with a server, an advertiser or anyone you work with. There's no account and no sync.</p>
+    <p><b>Will it nag me?</b> No. The only notification it sends is an optional daily Tie-off reminder, at a time you choose.</p>
+  </div>
+</section>
+
+<section class="capture" id="try" aria-labelledby="try-title">
+  <form class="capture__sentence" id="capture-form" autocomplete="off">
+    <div class="capture__title">
+      <h2 id="try-title">I already started</h2>
+      <label class="sr-only" for="capture-input">Something you already started</label>
+      <input id="capture-input" name="loop" type="text" placeholder="something" maxlength="60" aria-describedby="capture-hint">
+      <button type="submit" class="capture__key" aria-label="Capture with Command Return">⌘↩</button>
+    </div>
+    <p class="capture__hint" id="capture-hint">Type it and press ⌘↩, like in the panel. Plain ↩ only Focuses Loops you already have.</p>
+  </form>
+  <div class="mini" data-ui aria-live="polite">
+    <ul class="mini__list" id="mini-list">
+      <li class="mini__row"><span class="ring" aria-hidden="true"></span><span class="mini__title">Vacation policy for the holidays</span><span class="mini__age">9h</span></li>
+      <li class="mini__row mini__row--loose"><span class="ring ring--loose" aria-hidden="true"></span><span class="mini__title">Q1 plan in Notion<small>Loose End · untouched for 6 active days</small></span><span class="mini__age">6d</span></li>
+      <li class="mini__row"><span class="ring" aria-hidden="true"></span><span class="mini__title">Review Sam's RFC</span><span class="mini__age">1d</span></li>
+    </ul>
+    <p class="mini__note" id="mini-note">Three Loops are already open. A new one goes on top.</p>
+  </div>
+</section>
+
+<section class="install" id="install" aria-labelledby="install-title">
+  <h2 class="head" id="install-title">Install</h2>
+  <div class="ticket">
+    <div class="ticket__main">
+      <p>With <a class="link-plain" href="https://brew.sh">Homebrew</a>, in Terminal:</p>
+      <div class="cmd">
+        <pre><code id="cmd-install">brew tap stefanhoth/unfocused https://github.com/stefanhoth/unfocused
+brew install --cask stefanhoth/unfocused/unfocused</code></pre>
+        <button class="copy" type="button" data-copy="cmd-install">Copy</button>
+      </div>
+      <p class="ticket__then">Then open unfocused from Applications. macOS says it can't check the app, because the builds aren't notarized yet. Open System Settings, go to Privacy &amp; Security and click Open Anyway. You do this once after installing and once after each update.</p>
+    </div>
+    <div class="ticket__stub">
+      <p class="ticket__req">macOS 26 or later<br>Free</p>
+      <a class="button" href="https://github.com/stefanhoth/unfocused/releases/latest">Download the app</a>
+      <p class="small">Or take the zip from the latest GitHub release.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot" aria-labelledby="foot-title">
+  <figure class="foot__pic">
+    <img src="img/rigging-plate-1806.webp" width="1400" height="1819" loading="lazy" alt="Detail of an 1806 engraving of rigging: knots, bends, splices and seizings, numbered.">
+  </figure>
+  <div class="foot__side">
+    <a class="wordmark wordmark--small" href="#top"><img src="img/app-icon.webp" width="28" height="28" alt="">unfocused</a>
+    <h2 class="sr-only" id="foot-title">More</h2>
+    <nav class="foot__menu" aria-label="Sections">
+      <a href="#three-open">Three open</a>
+      <a href="#open-loops">Open Loops</a>
+      <a href="#keeps">What it keeps</a>
+      <a href="#questions">Questions</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/stefanhoth/unfocused">GitHub</a>
+    </nav>
+    <div class="foot__blocks">
+      <p>Made by <a class="link-plain" href="https://stefanhoth.com">Stefan Hoth</a>. Questions and bugs: <a class="link-plain" href="https://github.com/stefanhoth/unfocused/issues">GitHub issues</a>.</p>
+      <p class="foot__credits">Pictures: "Making knots and splices" (1919), public domain; Captain H. Paasch, Illustrated Marine Encyclopedia (1890), plate 99, <a class="link-plain" href="https://commons.wikimedia.org/wiki/File:Paasch_Illus_Mar_Ency_1890_pl_99_-_Splices_and_Knots.jpg">CC BY-SA 4.0</a>; "Ship-building: ropes and blocks", engraving (1806), Wellcome Collection, <a class="link-plain" href="https://commons.wikimedia.org/wiki/File:Ship-building;_ropes_and_blocks._Engraving._Wellcome_V0024359EL.jpg">CC BY 4.0</a>. All via Wikimedia Commons. The app screenshots show made-up data.</p>
+    </div>
+    <p class="foot__legal">© 2026 Stefan Hoth</p>
+  </div>
+</footer>
+
+<script src="main.js" defer></script>
+</body>
+</html>

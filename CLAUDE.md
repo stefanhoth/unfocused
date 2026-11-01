@@ -11,6 +11,7 @@ All work goes through the Makefile; CI runs the same targets.
 - `make format`: fix formatting
 - `make app` / `make run`: assemble and launch `build/Unfocused Dev.app` (releases build `build/Unfocused.app`)
 - `make demo SHOW=panel`: the dev build on made-up data, for screenshots
+- `make site`: serve the landing page locally
 
 Built with SwiftPM only, no Xcode project (ADR 0006). Command Line Tools are enough.
 
@@ -20,6 +21,7 @@ Built with SwiftPM only, no Xcode project (ADR 0006). Command Line Tools are eno
 - `Sources/Unfocused`: the app shell. Thin adapters only: UI, hotkeys, Accessibility, context readers, wiring Core to the real file system.
 - `Tests/UnfocusedCoreTests`: tests through Core's public interface.
 - `scripts/build-app.sh`: bundles the release binary into an `.app`.
+- `site/`: the landing page at unfocused.stefanhoth.com, static files deployed to Cloudflare by `.github/workflows/site.yml`. See `site/README.md`.
 
 ## Language and decisions
 

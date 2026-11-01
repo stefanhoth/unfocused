@@ -6,3 +6,8 @@ build/
 xcuserdata/
 DerivedData/
 .DS_Store
+
+# Landing page working files
+.taste-skill/
+site/assets-src/*.jpg
+.wrangler/
