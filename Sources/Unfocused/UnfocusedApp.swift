@@ -221,8 +221,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     open(id: WindowID.main)
   }
 
-  /// For design review and screenshots: `--show panel`, `--show tie-off`, `--show settings` or
-  /// `--show banner` opens that surface right after launch.
+  /// For design review and screenshots: `--show panel`, `--show tie-off`, `--show banner` or a
+  /// main window section (`--show recap`, `--show settings`, …) opens that surface right after launch.
   private func showForReview() {
     let arguments = CommandLine.arguments
     guard let index = arguments.firstIndex(of: "--show"), arguments.indices.contains(index + 1) else { return }
@@ -231,14 +231,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     // Where did you leave off? for the newest Open Loop. Nothing is saved unless ↩ is pressed.
     case "left-off": if let loop = model?.openLoops.first { panel?.askWhereILeftOff(loop) }
     case "tie-off": tieOff?.show()
-    case "settings": show(.settings)
     case "banner": banner?.update(model?.openLoops.first)
     // Shows the menu bar label and notice as if a Loop were Focused, without changing any data.
     case "focus-preview":
       let preview = Loop(id: UUID(), title: "Write the onboarding spec", state: .open, capturedAt: Date())
       focusedTitle = preview.title
       focusNotice?.show(focused: preview, left: nil)
-    default: break
+    case let name:
+      if let section = AppSection(rawValue: name) { show(section) }
     }
   }
 }

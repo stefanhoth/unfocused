@@ -12,7 +12,7 @@ TESTING_PLUGINS := $(wildcard $(shell xcode-select -p)/usr/lib/swift/host/plugin
 TEST_FLAGS := $(if $(TESTING_PLUGINS),-Xswiftc -plugin-path -Xswiftc $(TESTING_PLUGINS))
 endif
 
-.PHONY: setup lint format build test app run clean reasoner-examples
+.PHONY: setup lint format build test app run clean reasoner-examples demo
 
 setup: ## Install the git pre-commit hook
 	git config core.hooksPath .githooks
@@ -36,6 +36,9 @@ app: ## Assemble the app bundle: build/Unfocused Dev.app locally, build/Unfocuse
 
 run: app ## Build and launch the app bundle
 	open build/*.app
+
+demo: app ## Launch the dev build on made-up data (SHOW=panel, FOCUSED=1), for screenshots
+	scripts/demo-app.sh $(if $(FOCUSED),--focused) $(if $(SHOW),--show $(SHOW))
 
 clean:
 	rm -rf .build build
