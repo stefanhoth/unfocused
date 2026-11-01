@@ -41,4 +41,8 @@ Built with SwiftPM only, no Xcode project (ADR 0006). Command Line Tools are eno
 
 ## Releases
 
-Manual CalVer releases via the Release workflow; `docs/release-checklist.md` lists the manual checks. Signing uses a stable self-signed certificate (Actions secrets); `scripts/sign-app.sh` only works on CI because trusting the certificate needs sudo.
+Manual CalVer releases via the Release workflow; `docs/release-checklist.md` lists the manual checks. Signing uses a stable self-signed certificate (Actions secrets). Local `make app` signs with the same certificate when it is in `~/Library/Application Support/unfocused-dev/signing/`, so permissions survive rebuilds.
+
+## Local builds
+
+`docs/local-development.md` covers the toolchain and SDK pin, dev vs. release bundles (same bundle ID and data), signing and Accessibility, `--show` review flags, screenshots, logs and diagnostics. Read it before building, running or debugging the app locally, and keep it current when that setup changes.

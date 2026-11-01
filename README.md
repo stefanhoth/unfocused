@@ -30,11 +30,12 @@ make format  # fix formatting
 make run     # build build/Unfocused Dev.app and launch it
 ```
 
-The app stores its database in `~/Library/Application Support/unfocused/` and logs in `~/Library/Logs/unfocused/`.
+The app stores its database in `~/Library/Application Support/unfocused/` and logs in `~/Library/Logs/unfocused/`. Dev builds share both with releases. Signing, permissions, review flags and debugging: [docs/local-development.md](docs/local-development.md).
 
 ## Project docs
 
 - [GLOSSARY.md](GLOSSARY.md): the domain language (Loop, Focus, Anchor, Loose End, Tie-off, …)
 - [docs/adr/](docs/adr/): architecture decisions
 - [docs/DECISIONS.md](docs/DECISIONS.md): smaller decisions
+- [docs/local-development.md](docs/local-development.md): building and running locally
 - [docs/github-repo-settings.md](docs/github-repo-settings.md): one-time repo setup
