@@ -309,7 +309,7 @@ struct PanelView: View {
     .onChange(of: text) { selection = text.isEmpty ? -1 : 0 }
     .onKeyPress(.return, phases: .down) { press in
       if press.modifiers.contains(.option) {
-        addContextToSelected()
+        addContextHere()
       } else if press.modifiers.contains(.command) {
         captureTyped()
       } else if !suggestions.isEmpty {
@@ -392,6 +392,9 @@ struct PanelView: View {
     }
 
     if isHero {
+      if let context {
+        contextLine(context)
+      }
       hints([
         KeyHint("↓ Switch", action: startBrowsing),
         KeyHint("⌘↩ Capture new", action: captureTyped),
@@ -576,7 +579,7 @@ struct PanelView: View {
         KeyHint("⌘↩ Capture new", action: captureTyped),
       ]
         + (context == nil || !results.indices.contains(selection)
-          ? [] : [KeyHint("⌥↩ Add here", action: addContextToSelected)])
+          ? [] : [KeyHint("⌥↩ Add here", action: addContextHere)])
         + [
           KeyHint("@ Person", action: startMention),
           KeyHint("esc Hide", action: close),
@@ -801,9 +804,41 @@ struct PanelView: View {
     close()
   }
 
-  /// Adds what's in front of the user as an Anchor to the selected Loop, then Focuses it.
-  private func addContextToSelected() {
-    guard let context, results.indices.contains(selection) else { return }
+  /// While Focused: whether there's a window in front that isn't one of the Focused Loop's Anchors.
+  private var canAddContextToFocused: Bool {
+    guard let context, let focused = model.focusedLoop else { return false }
+    return !model.anchors(of: focused).contains { $0.identifier == context.anchor.identifier }
+  }
+
+  /// ⌥↩ Add here: adds what's in front of the user as an Anchor. While Focused, to the Focused Loop,
+  /// which stays Focused; otherwise to the selected Loop, which is then Focused.
+  private func addContextHere() {
+    guard let context else { return }
+    if isHero, let focused = model.focusedLoop {
+      guard canAddContextToFocused else {
+        confirm(
+          Confirmation(
+            text: "Already an Anchor of “\(focused.title)”",
+            systemImage: "info.circle",
+            celebrate: false,
+            undo: nil
+          )
+        )
+        return
+      }
+      model.addAnchor(context.anchor, to: focused)
+      confirm(
+        Confirmation(
+          text: "Added “\(context.anchor.title)” to “\(focused.title)”",
+          systemImage: "plus.circle",
+          celebrate: false,
+          undo: nil
+        )
+      )
+      fieldFocused = true
+      return
+    }
+    guard results.indices.contains(selection) else { return }
     let loop = results[selection]
     model.addAnchor(context.anchor, to: loop)
     if let left = model.focus(loop, openAnchors: false) { askWhereILeftOff(left) } else { dismiss() }
@@ -882,6 +917,22 @@ struct PanelView: View {
   }
 
   private func captureTyped() {
+    // While Focused, an empty ⌘↩ would quietly start a new Loop named after the window in front and
+    // switch Focus to it, one key away from ⌥↩. Capturing a new Loop here takes a typed title.
+    if isHero, text.trimmingCharacters(in: .whitespaces).isEmpty {
+      confirm(
+        Confirmation(
+          text: canAddContextToFocused
+            ? "Type a title to capture a new Loop, or ⌥↩ to add this window as an Anchor"
+            : "Type a title to capture a new Loop",
+          systemImage: "info.circle",
+          celebrate: false,
+          undo: nil
+        )
+      )
+      fieldFocused = true
+      return
+    }
     guard let loop = model.capture(title: text, anchor: context?.anchor, directions: directions) else { return }
     // The user is already where the new Loop lives; don't reopen it.
     if let left = model.focus(loop, openAnchors: false) {
@@ -899,18 +950,39 @@ struct PanelView: View {
 
   private func contextLine(_ context: CaptureContext) -> some View {
     VStack(alignment: .leading, spacing: 8) {
-      HStack(spacing: 6) {
-        AppIcon(bundleID: context.anchor.source.bundleID, size: 14)
-        Text(context.anchor.title).lineLimit(1)
+      HStack(spacing: 12) {
+        HStack(spacing: 6) {
+          AppIcon(bundleID: context.anchor.source.bundleID, size: 14)
+          Text(context.anchor.title).lineLimit(1)
+        }
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(Capsule().fill(Color.primary.opacity(0.06)))
+        .contentShape(Capsule())
+        .onTapGesture { if !isHero { fillContextTitle(context) } }
+        .help(
+          isHero
+            ? "Where you are now."
+            : "Where you are now. ⌘↩ captures with it as the Anchor; ⇥ or a click copies its title into the field."
+        )
+        if isHero {
+          // While Focused, what's in front can join the Focused Loop as another Anchor.
+          if canAddContextToFocused {
+            KeyHints.Hint(item: KeyHint("⌥↩ Add as Anchor", action: addContextHere))
+              .font(.callout)
+              .foregroundStyle(.secondary)
+              .fixedSize()
+          } else {
+            Label("One of this Loop's Anchors", systemImage: "checkmark")
+              .font(.callout)
+              .foregroundStyle(.tertiary)
+              .fixedSize()
+          }
+        }
+        Spacer(minLength: 0)
       }
-      .font(.callout)
-      .foregroundStyle(.secondary)
-      .padding(.horizontal, 10)
-      .padding(.vertical, 5)
-      .background(Capsule().fill(Color.primary.opacity(0.06)))
-      .contentShape(Capsule())
-      .onTapGesture { fillContextTitle(context) }
-      .help("Where you are now. ⌘↩ captures with it as the Anchor; ⇥ or a click copies its title into the field.")
       if context.missingAccessibility {
         HStack(spacing: 10) {
           Image(systemName: "hand.raised").font(.system(size: 15, weight: .medium)).foregroundStyle(Style.looseEnd)

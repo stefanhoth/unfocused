@@ -61,8 +61,10 @@ Glass is for floating chrome only. Anything with a lot of text to read (windows,
   - ⌘U Unfocus at the right of that line, since it changes your state, not the Loop;
   - the title large, then Where I left off and Anchors;
   - its actions: ⌘C Close Loop, ⌘O Open Anchors, ⌘E Edit.
-- The search field sits **below** it ("Switch to another Loop…").
+- The search field sits **below** it ("Switch to another Loop…"), then the chip for where you are, as when unfocused. On the same line: **⌥↩ Add as Anchor** when that window isn't one of the Focused Loop's Anchors yet, otherwise "One of this Loop's Anchors".
 - **Footer:** ↓ Switch, ⌘↩ Capture new, esc Hide.
+- ⌥↩ adds the window in front to the Focused Loop as an Anchor; it stays Focused and the panel confirms "Added … to …".
+- ⌘↩ with an empty field doesn't capture the window in front here: that would start a new Loop and switch Focus, one key away from ⌥↩. The panel says to type a title first.
 - Typing or ↓ animates into the list: the Focused Loop collapses into a slim strip on top (logo-gradient tint), and the search moves up. ↑ past the first row, or a click on the strip, goes back.
 - **Let go is not offered here.** Letting go of what you chose to Focus on takes Unfocus first.
 
@@ -151,7 +153,7 @@ These are rules, not suggestions. A screen that breaks one doesn't ship. The one
 | ⌃Space (configurable) | Open the panel | anywhere |
 | ↩ | Focus the selected Loop · Save/Keep a note · Continue | panel |
 | ⌘↩ | Capture a new Loop (never plain ↩) | panel |
-| ⌥↩ | Add the window in front to the selected Loop | panel |
+| ⌥↩ | Add the window in front to the Focused Loop, or to the selected Loop and Focus it | panel |
 | ⌘C | Close Loop (copies text when no Loop is selected) | panel, Welcome back |
 | ⌘L | Let go | panel list, Welcome back |
 | ⌘U | Unfocus | panel, Welcome back |
