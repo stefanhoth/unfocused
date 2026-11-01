@@ -40,14 +40,14 @@ The direction is "the page is the object": the app's own vocabulary is rope (Loo
 One-time setup, done by hand:
 
 1. Add the repository secrets `CLOUDFLARE_API_TOKEN` (Workers Scripts: Edit, plus Zone → Workers Routes: Edit for `stefanhoth.com`) and `CLOUDFLARE_ACCOUNT_ID`, as for monomix.
-2. Create the `unfocused` Worker once, before the first PR preview: `wrangler versions upload` refuses a Worker that doesn't exist yet. It was created as a placeholder script, with preview URLs on and the plain workers.dev address off (`enabled: false, previews_enabled: true` on the script's subdomain settings). Running `wrangler deploy` in `site/` does the same.
+2. Create the `unfocused` Worker once, before the first PR preview: `wrangler versions upload` refuses a Worker that doesn't exist yet. It was created as a placeholder script, with preview URLs on and the plain workers.dev address off (`enabled: false, previews_enabled: true` on the script's subdomain settings). Alternatively, `wrangler deploy` in `site/` creates it with the real site and the custom domain straight away.
 3. The first deploy from `main` replaces the placeholder with the site and adds the `unfocused.stefanhoth.com` custom domain, including its DNS record.
 4. Set the repository's website to `https://unfocused.stefanhoth.com`.
 
 ## Picture credits
 
-- “Making knots and splices” (1919), public domain, via Wikimedia Commons.
+- "Making knots and splices" (1919), public domain, via Wikimedia Commons.
 - Captain H. Paasch, *Illustrated Marine Encyclopedia* (1890), plate 99, CC BY-SA 4.0, via Wikimedia Commons.
-- “Ship-building: ropes and blocks”, engraving (1806), Wellcome Collection, CC BY 4.0, via Wikimedia Commons.
+- "Ship-building: ropes and blocks", engraving (1806), Wellcome Collection, CC BY 4.0, via Wikimedia Commons.
 
 The footer of the page carries the same credits with links.
