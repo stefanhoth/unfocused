@@ -85,10 +85,29 @@ struct CalmMotion {
   }
 }
 
+/// One key hint: "<key> <what it does>", e.g. "⌘↩ Capture new". With an action, the hint is also
+/// a button, so everything the keys do can be done with the mouse too (DESIGN.md).
+struct KeyHint: ExpressibleByStringLiteral {
+  let text: String
+  var action: (() -> Void)?
+
+  init(_ text: String, action: (() -> Void)? = nil) {
+    self.text = text
+    self.action = action
+  }
+
+  init(stringLiteral text: String) {
+    self.init(text)
+  }
+
+  var key: String { String(text.split(separator: " ", maxSplits: 1).first ?? "") }
+  var label: String? { text.split(separator: " ", maxSplits: 1).dropFirst().first.map(String.init) }
+}
+
 /// The footer of key hints, shown on every floating surface: each key as a small keycap.
-/// Items read "<key> <what it does>", e.g. "⌘↩ Capture new".
+/// Hints with an action can be clicked.
 struct KeyHints: View {
-  let items: [String]
+  let items: [KeyHint]
   /// `false` for a row of actions inside content (no padding, no divider), e.g. under a Loop.
   var footer = true
 
@@ -104,18 +123,63 @@ struct KeyHints: View {
   }
 
   private var row: some View {
-    HStack(spacing: 14) {
-      ForEach(items, id: \.self) { item in
-        let parts = item.split(separator: " ", maxSplits: 1).map(String.init)
-        HStack(spacing: 5) {
-          Keycap(key: parts[0])
-          if parts.count > 1 { Text(parts[1]) }
-        }
+    // Each hint carries 6 pt of padding for its hover fill, so the gaps between labels stay at 14 pt.
+    HStack(spacing: 2) {
+      ForEach(items, id: \.text) { item in
+        Hint(item: item)
       }
       Spacer()
     }
     .font(.system(size: 12))
     .foregroundStyle(.secondary)
+  }
+}
+
+extension KeyHints {
+  /// A keycap and its label; a button when the hint has an action.
+  struct Hint: View {
+    let item: KeyHint
+
+    var body: some View {
+      let content = HStack(spacing: 5) {
+        Keycap(key: item.key)
+        if let label = item.label { Text(label) }
+      }
+      if let action = item.action {
+        Button(action: action) { content }
+          .buttonStyle(HintButtonStyle())
+          .help(item.label ?? item.key)
+      } else {
+        content.padding(.horizontal, 6).padding(.vertical, 3)
+      }
+    }
+  }
+
+  /// A key hint you can click: no chrome until the pointer is over it, then a quiet fill.
+  struct HintButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+      HoverHighlight(pressed: configuration.isPressed) { configuration.label }
+    }
+  }
+}
+
+/// A quiet fill under the pointer, for clickable rows and hints that otherwise look like text.
+struct HoverHighlight<Content: View>: View {
+  var pressed = false
+  var cornerRadius: CGFloat = 6
+  @ViewBuilder let content: () -> Content
+  @State private var hovering = false
+
+  var body: some View {
+    content()
+      .padding(.horizontal, 6)
+      .padding(.vertical, 3)
+      .background(
+        RoundedRectangle(cornerRadius: cornerRadius)
+          .fill(Color.primary.opacity(pressed ? 0.12 : hovering ? 0.07 : 0))
+      )
+      .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
+      .onHover { hovering = $0 }
   }
 }
 

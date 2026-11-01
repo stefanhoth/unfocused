@@ -93,8 +93,7 @@ struct TieOffView: View {
         Text("Tie-off").font(.caption.weight(.medium)).foregroundStyle(.secondary)
         Spacer()
         if lastStep != nil {
-          KeyHints.Keycap(key: "⌘Z")
-          Text("Undo").font(.caption).foregroundStyle(.secondary)
+          KeyHints.Hint(item: KeyHint("⌘Z Undo", action: undo)).font(.caption).foregroundStyle(.secondary)
         }
         Text("\(tieOff.done + 1) of \(tieOff.total)").font(.caption).monospacedDigit().foregroundStyle(.secondary)
       }
