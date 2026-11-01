@@ -392,14 +392,11 @@ struct PanelView: View {
     }
 
     if isHero {
-      hints(
-        [KeyHint("↓ Switch", action: startBrowsing)]
-          + (canAddContextToFocused ? [KeyHint("⌥↩ Add here", action: addContextHere)] : [])
-          + [
-            KeyHint("⌘↩ Capture new", action: captureTyped),
-            KeyHint("esc Hide", action: close),
-          ]
-      )
+      hints([
+        KeyHint("↓ Switch", action: startBrowsing),
+        KeyHint("⌘↩ Capture new", action: captureTyped),
+        KeyHint("esc Hide", action: close),
+      ])
     } else {
       searchBody
     }
@@ -484,8 +481,9 @@ struct PanelView: View {
         actions: [
           KeyHint("⌘C Close Loop") { finishActionLoop(close: true) },
           KeyHint("⌘O Open Anchors", action: openAnchorsOfActionLoop),
-          KeyHint("⌘E Edit", action: editActionLoop),
         ]
+          + (addAsAnchorLabel.map { [KeyHint("⌥↩ \($0)", action: addContextHere)] } ?? [])
+          + [KeyHint("⌘E Edit", action: editActionLoop)]
       )
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -810,6 +808,14 @@ struct PanelView: View {
     return !model.anchors(of: focused).contains { $0.identifier == context.anchor.identifier }
   }
 
+  /// The Focused Loop's ⌥↩ action, naming the window it would add, e.g.
+  /// "Add as Anchor: Firefox: Release checklist…"; nil when there's nothing new to add.
+  private var addAsAnchorLabel: String? {
+    guard canAddContextToFocused, let title = context?.anchor.title else { return nil }
+    let short = title.count > 40 ? title.prefix(39).trimmingCharacters(in: .whitespaces) + "…" : title
+    return "Add as Anchor: \(short)"
+  }
+
   /// ⌥↩ Add here: adds what's in front of the user as an Anchor. While Focused, to the Focused Loop,
   /// which stays Focused; otherwise to the selected Loop, which is then Focused.
   private func addContextHere() {
@@ -917,6 +923,22 @@ struct PanelView: View {
   }
 
   private func captureTyped() {
+    // While Focused, an empty ⌘↩ would quietly start a new Loop named after the window in front and
+    // switch Focus to it, one key away from ⌥↩. Capturing a new Loop here takes a typed title.
+    if isHero, text.trimmingCharacters(in: .whitespaces).isEmpty {
+      confirm(
+        Confirmation(
+          text: canAddContextToFocused
+            ? "Type a title to capture a new Loop, or ⌥↩ to add this window as an Anchor"
+            : "Type a title to capture a new Loop",
+          systemImage: "info.circle",
+          celebrate: false,
+          undo: nil
+        )
+      )
+      fieldFocused = true
+      return
+    }
     guard let loop = model.capture(title: text, anchor: context?.anchor, directions: directions) else { return }
     // The user is already where the new Loop lives; don't reopen it.
     if let left = model.focus(loop, openAnchors: false) {
