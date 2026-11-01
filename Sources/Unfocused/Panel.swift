@@ -309,7 +309,7 @@ struct PanelView: View {
     .onChange(of: text) { selection = text.isEmpty ? -1 : 0 }
     .onKeyPress(.return, phases: .down) { press in
       if press.modifiers.contains(.option) {
-        addContextToSelected()
+        addContextHere()
       } else if press.modifiers.contains(.command) {
         captureTyped()
       } else if !suggestions.isEmpty {
@@ -392,11 +392,14 @@ struct PanelView: View {
     }
 
     if isHero {
-      hints([
-        KeyHint("↓ Switch", action: startBrowsing),
-        KeyHint("⌘↩ Capture new", action: captureTyped),
-        KeyHint("esc Hide", action: close),
-      ])
+      hints(
+        [KeyHint("↓ Switch", action: startBrowsing)]
+          + (canAddContextToFocused ? [KeyHint("⌥↩ Add here", action: addContextHere)] : [])
+          + [
+            KeyHint("⌘↩ Capture new", action: captureTyped),
+            KeyHint("esc Hide", action: close),
+          ]
+      )
     } else {
       searchBody
     }
@@ -576,7 +579,7 @@ struct PanelView: View {
         KeyHint("⌘↩ Capture new", action: captureTyped),
       ]
         + (context == nil || !results.indices.contains(selection)
-          ? [] : [KeyHint("⌥↩ Add here", action: addContextToSelected)])
+          ? [] : [KeyHint("⌥↩ Add here", action: addContextHere)])
         + [
           KeyHint("@ Person", action: startMention),
           KeyHint("esc Hide", action: close),
@@ -801,9 +804,41 @@ struct PanelView: View {
     close()
   }
 
-  /// Adds what's in front of the user as an Anchor to the selected Loop, then Focuses it.
-  private func addContextToSelected() {
-    guard let context, results.indices.contains(selection) else { return }
+  /// While Focused: whether there's a window in front that isn't one of the Focused Loop's Anchors.
+  private var canAddContextToFocused: Bool {
+    guard let context, let focused = model.focusedLoop else { return false }
+    return !model.anchors(of: focused).contains { $0.identifier == context.anchor.identifier }
+  }
+
+  /// ⌥↩ Add here: adds what's in front of the user as an Anchor. While Focused, to the Focused Loop,
+  /// which stays Focused; otherwise to the selected Loop, which is then Focused.
+  private func addContextHere() {
+    guard let context else { return }
+    if isHero, let focused = model.focusedLoop {
+      guard canAddContextToFocused else {
+        confirm(
+          Confirmation(
+            text: "Already an Anchor of “\(focused.title)”",
+            systemImage: "info.circle",
+            celebrate: false,
+            undo: nil
+          )
+        )
+        return
+      }
+      model.addAnchor(context.anchor, to: focused)
+      confirm(
+        Confirmation(
+          text: "Added “\(context.anchor.title)” to “\(focused.title)”",
+          systemImage: "plus.circle",
+          celebrate: false,
+          undo: nil
+        )
+      )
+      fieldFocused = true
+      return
+    }
+    guard results.indices.contains(selection) else { return }
     let loop = results[selection]
     model.addAnchor(context.anchor, to: loop)
     if let left = model.focus(loop, openAnchors: false) { askWhereILeftOff(left) } else { dismiss() }
