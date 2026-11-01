@@ -17,7 +17,7 @@ let package = Package(
     .executable(name: "reasoner-examples", targets: ["ReasonerExamples"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/groue/GRDB.swift.git", from: "7.11.1")
+    .package(url: "https://github.com/groue/GRDB.swift.git", from: "7.12.0")
   ],
   targets: [
     .target(
