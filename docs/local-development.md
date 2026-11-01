@@ -86,7 +86,7 @@ open "build/Unfocused Dev.app" --args --show panel
 | `left-off` | Where did you leave off? for the newest Open Loop (nothing is saved unless ↩ is pressed) |
 | `tie-off` | the Tie-off (the finish screen when there are no Loose Ends) |
 | `banner` | the Switch Focus banner for the newest Open Loop |
-| `settings` | the main window at Settings |
+| `loops`, `people`, `recap`, `activity`, `settings` | the main window at that section |
 | `focus-preview` | the Focus notice and menu bar title for a made-up Loop, without changing data |
 
 - **`open` ignores `--args` when the app is already running**; it just brings it forward. Quit the running copy first:
@@ -115,6 +115,21 @@ screencapture -x -o -l <id> /tmp/unfocused.png
 ```
 
 The owner name is the display name ("unfocused dev"), in lower case.
+
+### Screenshots on made-up data
+
+Screenshots for the site, docs or issues must not show your own Loops. `make demo` launches the dev build with its home folder in `build/demo-home`, filled by `scripts/demo-data.py` with made-up Loops, People and two weeks of Activity:
+
+```bash
+make demo SHOW=panel           # or left-off, banner, loops, recap, activity, people
+make demo SHOW=panel FOCUSED=1 # with one Loop Focused (build/demo-home-focused)
+```
+
+- Each run resets the demo data, with dates relative to now. Your real database and settings in `~/Library` aren't touched (defaults such as the hotkey still come from your real preferences).
+- Launching through `open` makes the app its own responsible process, so it keeps your Accessibility grant and the panel shows no "can't see window titles" note.
+- The "where you are" chip shows the window that was in front when the panel opened. Put a neutral window there first, for example a local page in a browser.
+- While it runs, the demo copy records Activity like any other, so the Activity view also shows what you had in front.
+- Panel windows include a transparent margin with the glow. To crop it: `cwebp -crop 76 74 1752 874` on a 1904×1024 capture.
 
 ## Logs and diagnostics
 

@@ -10,6 +10,7 @@ All work goes through the Makefile; CI runs the same targets.
 - `make lint`: `swift format lint --strict` + build with warnings as errors (CI-gating)
 - `make format`: fix formatting
 - `make app` / `make run`: assemble and launch `build/Unfocused Dev.app` (releases build `build/Unfocused.app`)
+- `make demo SHOW=panel`: the dev build on made-up data, for screenshots
 
 Built with SwiftPM only, no Xcode project (ADR 0006). Command Line Tools are enough.
 
