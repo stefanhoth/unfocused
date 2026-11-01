@@ -392,6 +392,9 @@ struct PanelView: View {
     }
 
     if isHero {
+      if let context {
+        contextLine(context)
+      }
       hints([
         KeyHint("↓ Switch", action: startBrowsing),
         KeyHint("⌘↩ Capture new", action: captureTyped),
@@ -481,9 +484,8 @@ struct PanelView: View {
         actions: [
           KeyHint("⌘C Close Loop") { finishActionLoop(close: true) },
           KeyHint("⌘O Open Anchors", action: openAnchorsOfActionLoop),
+          KeyHint("⌘E Edit", action: editActionLoop),
         ]
-          + (addAsAnchorLabel.map { [KeyHint("⌥↩ \($0)", action: addContextHere)] } ?? [])
-          + [KeyHint("⌘E Edit", action: editActionLoop)]
       )
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -808,14 +810,6 @@ struct PanelView: View {
     return !model.anchors(of: focused).contains { $0.identifier == context.anchor.identifier }
   }
 
-  /// The Focused Loop's ⌥↩ action, naming the window it would add, e.g.
-  /// "Add as Anchor: Firefox: Release checklist…"; nil when there's nothing new to add.
-  private var addAsAnchorLabel: String? {
-    guard canAddContextToFocused, let title = context?.anchor.title else { return nil }
-    let short = title.count > 40 ? title.prefix(39).trimmingCharacters(in: .whitespaces) + "…" : title
-    return "Add as Anchor: \(short)"
-  }
-
   /// ⌥↩ Add here: adds what's in front of the user as an Anchor. While Focused, to the Focused Loop,
   /// which stays Focused; otherwise to the selected Loop, which is then Focused.
   private func addContextHere() {
@@ -956,18 +950,39 @@ struct PanelView: View {
 
   private func contextLine(_ context: CaptureContext) -> some View {
     VStack(alignment: .leading, spacing: 8) {
-      HStack(spacing: 6) {
-        AppIcon(bundleID: context.anchor.source.bundleID, size: 14)
-        Text(context.anchor.title).lineLimit(1)
+      HStack(spacing: 12) {
+        HStack(spacing: 6) {
+          AppIcon(bundleID: context.anchor.source.bundleID, size: 14)
+          Text(context.anchor.title).lineLimit(1)
+        }
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(Capsule().fill(Color.primary.opacity(0.06)))
+        .contentShape(Capsule())
+        .onTapGesture { if !isHero { fillContextTitle(context) } }
+        .help(
+          isHero
+            ? "Where you are now."
+            : "Where you are now. ⌘↩ captures with it as the Anchor; ⇥ or a click copies its title into the field."
+        )
+        if isHero {
+          // While Focused, what's in front can join the Focused Loop as another Anchor.
+          if canAddContextToFocused {
+            KeyHints.Hint(item: KeyHint("⌥↩ Add as Anchor", action: addContextHere))
+              .font(.callout)
+              .foregroundStyle(.secondary)
+              .fixedSize()
+          } else {
+            Label("One of this Loop's Anchors", systemImage: "checkmark")
+              .font(.callout)
+              .foregroundStyle(.tertiary)
+              .fixedSize()
+          }
+        }
+        Spacer(minLength: 0)
       }
-      .font(.callout)
-      .foregroundStyle(.secondary)
-      .padding(.horizontal, 10)
-      .padding(.vertical, 5)
-      .background(Capsule().fill(Color.primary.opacity(0.06)))
-      .contentShape(Capsule())
-      .onTapGesture { fillContextTitle(context) }
-      .help("Where you are now. ⌘↩ captures with it as the Anchor; ⇥ or a click copies its title into the field.")
       if context.missingAccessibility {
         HStack(spacing: 10) {
           Image(systemName: "hand.raised").font(.system(size: 15, weight: .medium)).foregroundStyle(Style.looseEnd)
