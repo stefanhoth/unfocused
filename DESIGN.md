@@ -11,7 +11,7 @@ How unfocused looks, reads and behaves. Every screen and every UI change follows
 1. **Finish before you start.** Ending a Loop is always closer at hand than starting one. Capturing a new Loop takes ⌘↩, never plain ↩: the extra key is deliberate friction. While Focused, Close Loop is the first action shown.
 2. **The Focused Loop comes first.** When a Loop is Focused, the panel is about that Loop. Switching to another one is a deliberate step (↓ or typing), never the first thing offered.
 3. **Calm, never judgmental.** Unfocused time is reported, not scolded. Let go is a legitimate outcome, not a failure. Normal actions never look like errors: no red for anything the user meant to do.
-4. **Keyboard-first, keys visible.** Every action has one key, shown as a keycap where the action applies. One action has one name and one key everywhere.
+4. **Keyboard-first, keys visible, mouse welcome.** Every action has one key, shown as a keycap where the action applies. One action has one name and one key everywhere. Everything the keys do can also be done with the mouse: a keycap hint for an action is itself a button.
 5. **Every action answers.** The user sees what happened (a confirmation, a notice, an animation), and anything that ends a Loop can be undone right there.
 6. **Never lose the user's place.** Text fields have the cursor when they appear. Where I left off is asked before anything else can take the screen away.
 7. **Say what it means.** UI words are the glossary's words. Where a term is abstract (Owed, Waiting), the label says it in plain language and the glossary term sits in the tooltip.
@@ -38,14 +38,15 @@ Glass is for floating chrome only. Anything with a lot of text to read (windows,
 - **Nothing is selected** when the panel opens. ↓ selects the first Loop; typing selects the best match. With nothing selected, ↩ does nothing.
 - **Rows:** title, aging mark, Loose End or follow-up line, how long ago it was last worked on ("now", "5m", "3h", "2d", "3w"), and a **You're here** badge when the window in front is one of the Loop's Anchors.
 - **Detail of the selected Loop** (what you need to get back in): title, "Last worked on …", Where I left off as readable text in its own box, Loose End line, "Last seen in …", the Loop's actions as keycaps, People, Anchors with app icons.
-- **Footer:** only panel-wide keys. ↑↓ Choose, ⌘↩ Capture new, ⌥↩ Add here (when a window is in front), @ Person, esc Hide.
+- **Footer:** only panel-wide keys. ↑↓ Choose, ⌘↩ Capture new, ⌥↩ Add here (when a window is in front and a Loop is selected), @ Person, esc Hide.
+- **With the mouse:** a click on a row selects it, a double-click Focuses it. Clicking a keycap hint does what its key does. The cursor stays in the field.
 
 ### Capture
 
-- Type, then ⌘↩. With no match, an outlined row reads 'Capture "…"' with ⌘↩ on the right and a plus in the logo gradient.
-- Related Loops ("Add to an existing Loop instead?") appear under the field. ⌘1–⌘3 adds the current window and the mentioned People to that Loop instead.
+- Type, then ⌘↩. With no match, an outlined row reads 'Capture "…"' with ⌘↩ on the right and a plus in the logo gradient; clicking the row captures too.
+- Related Loops ("Add to an existing Loop instead?") appear under the field. ⌘1–⌘3, or a click on one, adds the current window and the mentioned People to that Loop instead.
 - Several Loose Ends add one quiet line: "N Loose Ends are older than this idea." Capture is never blocked.
-- `@Name` adds a Person. ⇥ switches who's waiting.
+- `@Name` adds a Person; suggestions can be clicked. ⇥ or a click on the chip switches who's waiting. A click on the "where you are" chip fills in its title, like ⇥.
 
 ### Focus a Loop, or switch
 
@@ -62,7 +63,7 @@ Glass is for floating chrome only. Anything with a lot of text to read (windows,
   - its actions: ⌘C Close Loop, ⌘O Open Anchors, ⌘E Edit.
 - The search field sits **below** it ("Switch to another Loop…").
 - **Footer:** ↓ Switch, ⌘↩ Capture new, esc Hide.
-- Typing or ↓ animates into the list: the Focused Loop collapses into a slim strip on top (logo-gradient tint), and the search moves up. ↑ past the first row goes back.
+- Typing or ↓ animates into the list: the Focused Loop collapses into a slim strip on top (logo-gradient tint), and the search moves up. ↑ past the first row, or a click on the strip, goes back.
 - **Let go is not offered here.** Letting go of what you chose to Focus on takes Unfocus first.
 
 ### Leave a Loop: Where did you leave off?
@@ -138,6 +139,8 @@ These are rules, not suggestions. A screen that breaks one doesn't ship. The one
 - Consecutive entries in the same place that count the same way are merged before showing.
 - Durations are short (`Style.shortDuration`: "45s", "8m", "1h 5m"; the Recap uses "1h 5m" / "<1m"), never "8 min, 18 secs".
 - Each entry names what it counted toward (a Loop chip with the open-loop mark) or "Unfocused", in that order of emphasis.
+
+**Mouse:** every action reachable by key is reachable by click. Keycap hints that stand for an action are buttons (`KeyHint` with an action) with a quiet hover fill (`HoverHighlight`), never chrome. Selectable rows select on click; rows whose ↩ does something do it on double-click. Hidden shortcut-only buttons are fine only when a visible control does the same.
 
 **Polish bar:** if a screen looks less finished than the Recap, it isn't done. Compare side by side before merging.
 
@@ -221,12 +224,13 @@ New keys must not collide with these or with text editing (⌘⌫ is taken by te
 ## Checklist for a UI change
 
 1. Which flow does it belong to, and does it keep that flow's order and keys?
-2. Does it respect the principles, especially "finish before you start" and "the Focused Loop comes first"?
-3. Glossary words, one name and one key per action, and plain language where needed?
-4. Feedback for every action, and Undo for anything that ends a Loop?
-5. Does the cursor land in the field? (`--show panel|left-off|tie-off|banner|focus-preview`, then check the log.)
-6. Style tokens instead of literals; glass only on floating chrome; no system accent (no `List(selection:)`, no default sidebar selection)?
-7. Window rules: fixed list width next to the detail, nothing scrolls under the title, one row anatomy, a filter for long lists, data views as figures → timeline → grouped details?
-8. Does it look as finished as the Recap, side by side?
-9. Reduce Motion, VoiceOver, and readable over a busy background?
-10. This file updated if anything here changed.
+2. Can every action be done with the mouse as well as the keys?
+3. Does it respect the principles, especially "finish before you start" and "the Focused Loop comes first"?
+4. Glossary words, one name and one key per action, and plain language where needed?
+5. Feedback for every action, and Undo for anything that ends a Loop?
+6. Does the cursor land in the field? (`--show panel|left-off|tie-off|banner|focus-preview`, then check the log.)
+7. Style tokens instead of literals; glass only on floating chrome; no system accent (no `List(selection:)`, no default sidebar selection)?
+8. Window rules: fixed list width next to the detail, nothing scrolls under the title, one row anatomy, a filter for long lists, data views as figures → timeline → grouped details?
+9. Does it look as finished as the Recap, side by side?
+10. Reduce Motion, VoiceOver, and readable over a busy background?
+11. This file updated if anything here changed.

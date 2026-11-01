@@ -8,7 +8,7 @@ struct PanelLoopDetail: View {
   /// The Focused Loop filling the panel: a larger title.
   var prominent = false
   /// Keys that act on this Loop, shown with it rather than in the panel's footer.
-  var actions: [String] = []
+  var actions: [KeyHint] = []
 
   var body: some View {
     ScrollView {

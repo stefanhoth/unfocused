@@ -54,18 +54,13 @@ struct LoopsWindow: View {
     .frame(minWidth: 680, minHeight: 400)
     .overlay(alignment: .bottom) {
       if let confirmation {
-        HStack(spacing: 10) {
-          ConfirmationBar(confirmation: confirmation)
-          if let undo = confirmation.undo {
-            Button("Undo") {
-              undo()
-              withAnimation { self.confirmation = nil }
-            }
-            .keyboardShortcut("z", modifiers: .command)
+        ConfirmationBar(confirmation: confirmation, onUndo: undoLast)
+          .background {
+            // ⌘Z; the bar's own "⌘Z Undo" is the button for the mouse.
+            Button("Undo", action: undoLast).keyboardShortcut("z", modifiers: .command).hidden()
           }
-        }
-        .padding(.bottom, 18)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
+          .padding(.bottom, 18)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
       }
     }
     .navigationTitle("Loops")
@@ -97,6 +92,11 @@ struct LoopsWindow: View {
     } else {
       Button("Reopen") { model.reopen(loop) }
     }
+  }
+
+  private func undoLast() {
+    confirmation?.undo?()
+    withAnimation { confirmation = nil }
   }
 
   /// Closes or lets go of `loop`, then confirms with Undo, as in the panel.

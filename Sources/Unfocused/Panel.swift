@@ -259,7 +259,7 @@ struct PanelView: View {
     .tint(Style.brand)
     .overlay(alignment: .bottom) {
       if let confirmation {
-        ConfirmationBar(confirmation: confirmation)
+        ConfirmationBar(confirmation: confirmation, onUndo: undoLast)
           .padding(.bottom, 56)
           .transition(.move(edge: .bottom).combined(with: .opacity))
       }
@@ -323,7 +323,7 @@ struct PanelView: View {
       if !suggestions.isEmpty {
         completeMention()
       } else if let context, text.isEmpty {
-        text = suggestedTitle ?? context.anchor.title
+        fillContextTitle(context)
       } else if let last = mentioned.last {
         directions[last] = (directions[last] ?? .owed).toggled
       } else {
@@ -335,56 +335,38 @@ struct PanelView: View {
       guard press.modifiers.contains(.command), let existing = existingLoop, existing.state != .open else {
         return .ignored
       }
-      model.reopen(existing)
-      if let left = model.focus(existing, openAnchors: false) { askWhereILeftOff(left) } else { dismiss() }
+      reopen(existing)
       return .handled
     }
     // ⌘C Close Loop, ⌘L Let go, matching C and L in the Tie-off. With no Loop to act on, ⌘C copies
     // as usual. (⌘⌫ can't be used: the text field takes it for itself.)
     .onKeyPress(characters: ["c", "l"], phases: .down) { press in
       guard press.modifiers.contains(.command) else { return .ignored }
-      guard let loop = actionLoop else {
-        // ⌘C copies text as usual; ⌘L with nothing selected explains instead of doing nothing.
-        guard press.characters == "l" else { return .ignored }
-        confirm(Confirmation(text: "Select a Loop first: ↓", systemImage: "arrow.down", celebrate: false, undo: nil))
-        return .handled
-      }
-      // Letting go of what you chose to Focus on is a bigger step than switching: not from the Focused
-      // view, only from the list once it's no longer Focused.
-      if press.characters == "l", isHero {
-        confirm(
-          Confirmation(text: "Unfocus first (⌘U) to let it go", systemImage: "info.circle", celebrate: false, undo: nil)
-        )
-        return .handled
-      }
-      finish(loop, close: press.characters == "c")
+      // ⌘C with no Loop to act on copies text as usual.
+      guard actionLoop != nil || press.characters == "l" else { return .ignored }
+      finishActionLoop(close: press.characters == "c")
       return .handled
     }
     .onKeyPress(characters: ["e"], phases: .down) { press in
-      guard press.modifiers.contains(.command), let loop = actionLoop else { return .ignored }
-      dismiss()
-      model.editLoop?(loop)
+      guard press.modifiers.contains(.command), actionLoop != nil else { return .ignored }
+      editActionLoop()
       return .handled
     }
     .onKeyPress(characters: ["z"], phases: .down) { press in
-      guard press.modifiers.contains(.command), let undo = confirmation?.undo else { return .ignored }
-      withAnimation(reduceMotion ? .easeInOut(duration: 0.15) : .snappy) {
-        undo()
-        confirmation = nil
-      }
+      guard press.modifiers.contains(.command), confirmation?.undo != nil else { return .ignored }
+      undoLast()
       return .handled
     }
     .onKeyPress(characters: ["o"], phases: .down) { press in
-      guard press.modifiers.contains(.command), let loop = actionLoop else { return .ignored }
-      let anchors = model.anchors(of: loop)
-      guard !anchors.isEmpty else { return .ignored }
-      anchors.forEach(AnchorOpener.open)
-      dismiss()
+      guard press.modifiers.contains(.command), let loop = actionLoop, !model.anchors(of: loop).isEmpty else {
+        return .ignored
+      }
+      openAnchorsOfActionLoop()
       return .handled
     }
     .onKeyPress(characters: ["u"], phases: .down) { press in
       guard press.modifiers.contains(.command), model.focusedLoop != nil else { return .ignored }
-      if let left = model.unfocus() { askWhereILeftOff(left) } else { dismiss() }
+      unfocus()
       return .handled
     }
     .onKeyPress(characters: ["1", "2", "3"], phases: .down) { press in
@@ -395,8 +377,7 @@ struct PanelView: View {
     }
     .onKeyPress(.downArrow) {
       if isHero {
-        browsing = true
-        selection = 0
+        startBrowsing()
         return .handled
       }
       let count = suggestions.isEmpty ? results.count : suggestions.count
@@ -411,7 +392,11 @@ struct PanelView: View {
     }
 
     if isHero {
-      hints(["↓ Switch", "⌘↩ Capture new", "esc Hide"])
+      hints([
+        KeyHint("↓ Switch", action: startBrowsing),
+        KeyHint("⌘↩ Capture new", action: captureTyped),
+        KeyHint("esc Hide", action: close),
+      ])
     } else {
       searchBody
     }
@@ -442,11 +427,17 @@ struct PanelView: View {
             .padding(.vertical, 6)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Style.rowBackground(selected: index == selection))
+            .contentShape(Rectangle())
+            .onHover { if $0 { selection = index } }
+            .onTapGesture {
+              selection = index
+              completeMention()
+            }
         }
       }
       .padding(8)
       Spacer(minLength: 0)
-      hints(["↩ or ⇥ Add Person", "esc Hide"])
+      hints([KeyHint("↩ or ⇥ Add Person", action: completeMention), KeyHint("esc Hide", action: close)])
     } else {
       searchResults
     }
@@ -479,8 +470,7 @@ struct PanelView: View {
         Spacer()
         // Unfocus changes your state, not the Loop, so it sits with the state, apart from the
         // Loop's own actions.
-        KeyHints.Keycap(key: "⌘U")
-        Text("Unfocus").font(.callout).foregroundStyle(.secondary)
+        KeyHints.Hint(item: KeyHint("⌘U Unfocus", action: unfocus)).font(.callout).foregroundStyle(.secondary)
       }
       .padding(.horizontal, 22)
       .padding(.top, 22)
@@ -488,7 +478,11 @@ struct PanelView: View {
         model: model,
         loop: loop,
         prominent: true,
-        actions: ["⌘C Close Loop", "⌘O Open Anchors", "⌘E Edit"]
+        actions: [
+          KeyHint("⌘C Close Loop") { finishActionLoop(close: true) },
+          KeyHint("⌘O Open Anchors", action: openAnchorsOfActionLoop),
+          KeyHint("⌘E Edit", action: editActionLoop),
+        ]
       )
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -535,6 +529,17 @@ struct PanelView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(Style.rowBackground(selected: index == selection))
+            .contentShape(Rectangle())
+            // A click selects, a double-click Focuses, like ↓ and ↩. The cursor stays in the field.
+            .onTapGesture(count: 2) {
+              selection = index
+              focusSelected()
+            }
+            .onTapGesture {
+              selection = index
+              fieldFocused = true
+            }
+            .help("Click to see where you left off, double-click to Focus")
           }
         }
         .padding(10)
@@ -544,10 +549,16 @@ struct PanelView: View {
           PanelLoopDetail(
             model: model,
             loop: results[selection],
-            actions: ["↩ Focus", "⌘O Open Anchors", "⌘E Edit", "⌘C Close Loop", "⌘L Let go"]
+            actions: [
+              KeyHint("↩ Focus", action: focusSelected),
+              KeyHint("⌘O Open Anchors", action: openAnchorsOfActionLoop),
+              KeyHint("⌘E Edit", action: editActionLoop),
+              KeyHint("⌘C Close Loop") { finishActionLoop(close: true) },
+              KeyHint("⌘L Let go") { finishActionLoop(close: false) },
+            ]
           )
         } else {
-          Text("↓ to pick a Loop and see where you left off").font(.callout).foregroundStyle(.tertiary)
+          Text("↓ or click a Loop to see where you left off").font(.callout).foregroundStyle(.tertiary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
       }
@@ -560,9 +571,16 @@ struct PanelView: View {
 
     Spacer(minLength: 0)
     hints(
-      context == nil
-        ? ["↑↓ Choose", "⌘↩ Capture new", "@ Person", "esc Hide"]
-        : ["↑↓ Choose", "⌘↩ Capture new", "⌥↩ Add here", "@ Person", "esc Hide"]
+      [
+        "↑↓ Choose",
+        KeyHint("⌘↩ Capture new", action: captureTyped),
+      ]
+        + (context == nil || !results.indices.contains(selection)
+          ? [] : [KeyHint("⌥↩ Add here", action: addContextToSelected)])
+        + [
+          KeyHint("@ Person", action: startMention),
+          KeyHint("esc Hide", action: close),
+        ]
     )
   }
 
@@ -574,12 +592,20 @@ struct PanelView: View {
       VStack(alignment: .leading, spacing: 4) {
         Text("Add to an existing Loop instead?").font(.caption).foregroundStyle(.secondary)
         ForEach(Array(related.enumerated()), id: \.element.loop.id) { index, item in
-          HStack {
-            Text("⌘\(index + 1)").font(.caption.monospaced()).foregroundStyle(.secondary)
-            Text(item.loop.title).lineLimit(1)
-            Text(item.reasons.map(\.label).joined(separator: " · ")).font(.caption).foregroundStyle(.tertiary)
-            Spacer()
+          Button {
+            addToRelated(item.loop)
+          } label: {
+            HoverHighlight {
+              HStack {
+                Text("⌘\(index + 1)").font(.caption.monospaced()).foregroundStyle(.secondary)
+                Text(item.loop.title).lineLimit(1)
+                Text(item.reasons.map(\.label).joined(separator: " · ")).font(.caption).foregroundStyle(.tertiary)
+                Spacer()
+              }
+            }
           }
+          .buttonStyle(.plain)
+          .help("Add to this Loop instead")
         }
       }
       .padding(.horizontal, 16)
@@ -610,6 +636,9 @@ struct PanelView: View {
     .padding(.horizontal, 12)
     .padding(.vertical, 10)
     .background(RoundedRectangle(cornerRadius: Style.rowRadius).strokeBorder(.quaternary))
+    .contentShape(RoundedRectangle(cornerRadius: Style.rowRadius))
+    .onTapGesture(perform: captureTyped)
+    .help("Capture as a new Loop")
     .padding(8)
   }
 
@@ -637,12 +666,15 @@ struct PanelView: View {
         Text("for \(Self.shortAge(start))").font(.callout).monospacedDigit().foregroundStyle(.secondary)
       }
       Spacer()
-      KeyHints.Keycap(key: "⌘U")
-      Text("Unfocus").font(.callout).foregroundStyle(.secondary)
+      KeyHints.Hint(item: KeyHint("⌘U Unfocus", action: unfocus)).font(.callout).foregroundStyle(.secondary)
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 10)
     .background(Style.logoLinearGradient.opacity(0.16))
+    .contentShape(Rectangle())
+    // Clicking the strip goes back to the Focused Loop, like ↑ past the top.
+    .onTapGesture(perform: stopBrowsing)
+    .help("Back to the Focused Loop")
     .overlay(alignment: .bottom) { Divider().opacity(0.5) }
   }
 
@@ -655,9 +687,11 @@ struct PanelView: View {
           .padding(.horizontal, 8)
           .padding(.vertical, 3)
           .background(.quaternary, in: Capsule())
-          .help(direction.help)
+          .contentShape(Capsule())
+          .onTapGesture { directions[name] = direction.toggled }
+          .help("\(direction.help). Click or ⇥ to switch who's waiting.")
       }
-      Text("⇥ switches who's waiting").font(.caption2).foregroundStyle(.tertiary)
+      Text("⇥ or click switches who's waiting").font(.caption2).foregroundStyle(.tertiary)
       Spacer()
     }
     .padding(.horizontal, 16)
@@ -668,9 +702,10 @@ struct PanelView: View {
     Label {
       Text(
         loop.state == .closed
-          ? "You closed a Loop here: “\(loop.title)”. ⌘R reopens it."
-          : "You let go of a Loop here: “\(loop.title)”. ⌘R reopens it."
+          ? "You closed a Loop here: “\(loop.title)”."
+          : "You let go of a Loop here: “\(loop.title)”."
       )
+      KeyHints.Hint(item: KeyHint("⌘R Reopen") { reopen(loop) })
     } icon: {
       Image(systemName: "arrow.uturn.backward.circle")
     }
@@ -678,6 +713,92 @@ struct PanelView: View {
     .foregroundStyle(.secondary)
     .padding(.horizontal, 16)
     .padding(.bottom, 10)
+  }
+
+  // MARK: Actions shared by keys and clicks
+
+  /// From the Focused Loop into the list (↓, or a click on Switch).
+  private func startBrowsing() {
+    browsing = true
+    selection = 0
+    fieldFocused = true
+  }
+
+  /// Back from the list to the Focused Loop (↑ past the top, or a click on the strip).
+  private func stopBrowsing() {
+    text = ""
+    browsing = false
+    selection = -1
+    fieldFocused = true
+  }
+
+  /// Starts an @mention in the field, as typing @ would.
+  private func startMention() {
+    if !text.isEmpty, !text.hasSuffix(" ") { text += " " }
+    text += "@"
+    fieldFocused = true
+  }
+
+  private func fillContextTitle(_ context: CaptureContext) {
+    guard text.isEmpty else { return }
+    text = suggestedTitle ?? context.anchor.title
+    fieldFocused = true
+  }
+
+  /// ⌘C Close Loop or ⌘L Let go on the Focused Loop or the selected row.
+  private func finishActionLoop(close: Bool) {
+    guard let loop = actionLoop else {
+      confirm(Confirmation(text: "Select a Loop first: ↓", systemImage: "arrow.down", celebrate: false, undo: nil))
+      return
+    }
+    // Letting go of what you chose to Focus on is a bigger step than switching: not from the Focused
+    // view, only from the list once it's no longer Focused.
+    if !close, isHero {
+      confirm(
+        Confirmation(text: "Unfocus first (⌘U) to let it go", systemImage: "info.circle", celebrate: false, undo: nil)
+      )
+      return
+    }
+    finish(loop, close: close)
+    fieldFocused = true
+  }
+
+  private func editActionLoop() {
+    guard let loop = actionLoop else { return }
+    dismiss()
+    model.editLoop?(loop)
+  }
+
+  private func openAnchorsOfActionLoop() {
+    guard let loop = actionLoop else { return }
+    let anchors = model.anchors(of: loop)
+    guard !anchors.isEmpty else { return }
+    anchors.forEach(AnchorOpener.open)
+    dismiss()
+  }
+
+  private func unfocus() {
+    guard model.focusedLoop != nil else { return }
+    if let left = model.unfocus() { askWhereILeftOff(left) } else { dismiss() }
+  }
+
+  private func reopen(_ loop: Loop) {
+    model.reopen(loop)
+    if let left = model.focus(loop, openAnchors: false) { askWhereILeftOff(left) } else { dismiss() }
+  }
+
+  private func undoLast() {
+    guard let undo = confirmation?.undo else { return }
+    withAnimation(reduceMotion ? .easeInOut(duration: 0.15) : .snappy) {
+      undo()
+      confirmation = nil
+    }
+    fieldFocused = true
+  }
+
+  private func saveWhereILeftOff(_ loop: Loop) {
+    model.setWhereILeftOff(loop, to: text)
+    close()
   }
 
   /// Adds what's in front of the user as an Anchor to the selected Loop, then Focuses it.
@@ -787,7 +908,9 @@ struct PanelView: View {
       .padding(.horizontal, 10)
       .padding(.vertical, 5)
       .background(Capsule().fill(Color.primary.opacity(0.06)))
-      .help("Where you are now. ⌘↩ captures with it as the Anchor; ⇥ copies its title into the field.")
+      .contentShape(Capsule())
+      .onTapGesture { fillContextTitle(context) }
+      .help("Where you are now. ⌘↩ captures with it as the Anchor; ⇥ or a click copies its title into the field.")
       if context.missingAccessibility {
         HStack(spacing: 10) {
           Image(systemName: "hand.raised").font(.system(size: 15, weight: .medium)).foregroundStyle(Style.looseEnd)
@@ -845,8 +968,7 @@ struct PanelView: View {
         )
         .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.06)))
         .onKeyPress(.return) {
-          model.setWhereILeftOff(loop, to: text)
-          close()
+          saveWhereILeftOff(loop)
           return .handled
         }
       }
@@ -856,8 +978,8 @@ struct PanelView: View {
 
     Spacer(minLength: 0)
     hints([
-      loop.whereILeftOff != nil && !typed ? "↩ Keep" : "↩ Save",
-      "esc Skip",
+      KeyHint(loop.whereILeftOff != nil && !typed ? "↩ Keep" : "↩ Save") { saveWhereILeftOff(loop) },
+      KeyHint("esc Skip", action: close),
     ])
   }
 
@@ -907,7 +1029,7 @@ struct PanelView: View {
     .padding(.horizontal, 16)
 
     Spacer(minLength: 0)
-    hints(["↩ Continue", "⌘C Close Loop", "⌘L Let go", "⌘U Unfocus", "esc Ask me later"])
+    hints(["↩ Continue", "⌘C Close Loop", "⌘L Let go", "⌘U Unfocus", KeyHint("esc Ask me later", action: dismiss)])
   }
 
   // MARK: Shared
@@ -932,7 +1054,7 @@ struct PanelView: View {
       }
   }
 
-  private func hints(_ items: [String]) -> some View {
+  private func hints(_ items: [KeyHint]) -> some View {
     KeyHints(items: items)
   }
 
@@ -950,6 +1072,8 @@ struct Confirmation: Identifiable {
 
 struct ConfirmationBar: View {
   let confirmation: Confirmation
+  /// Makes "⌘Z Undo" clickable; the caller handles ⌘Z itself.
+  var onUndo: (() -> Void)?
 
   var body: some View {
     HStack(spacing: 10) {
@@ -958,8 +1082,7 @@ struct ConfirmationBar: View {
         .foregroundStyle(confirmation.celebrate ? AnyShapeStyle(Style.logoLinearGradient) : AnyShapeStyle(.secondary))
       Text(confirmation.text).font(.callout.weight(.medium)).lineLimit(1)
       if confirmation.undo != nil {
-        KeyHints.Keycap(key: "⌘Z")
-        Text("Undo").font(.callout).foregroundStyle(.secondary)
+        KeyHints.Hint(item: KeyHint("⌘Z Undo", action: onUndo)).font(.callout).foregroundStyle(.secondary)
       }
     }
     .padding(.horizontal, 16)
