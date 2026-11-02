@@ -58,7 +58,9 @@ final class PanelController {
       )
     )
     panel.center()
-    NSApp.activate()
+    // Takes the keys without activating unfocused (a non-activating panel), so the app the user was
+    // in stays in front: it gets focus back when the panel hides, and the next showing reads it as
+    // the window in front instead of unfocused itself.
     panel.makeKeyAndOrderFront(nil)
     // On a panel's first showing, SwiftUI's focus request arrives before the window can take it.
     // Once SwiftUI has laid the view out, put the cursor in the text field directly.
