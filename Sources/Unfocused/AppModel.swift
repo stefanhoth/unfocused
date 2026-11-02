@@ -188,7 +188,10 @@ final class AppModel {
   /// existing Loop rather than capturing a new one.
   func add(to loop: Loop, anchor: Anchor?, mentionsIn text: String, directions: [String: Direction]) {
     perform("adding to a Loop") {
-      if let anchor { try core.addAnchor(anchor, to: loop.id) }
+      if let anchor {
+        try core.addAnchor(anchor, to: loop.id)
+        log.info("Added an Anchor to Loop \(loop.id)")
+      }
       for name in try core.mentionedNames(in: text) {
         let person = try core.addPerson(named: name, evenIfSimilar: true)
         let direction = directions.first { $0.key.lowercased() == name.lowercased() }?.value ?? .owed
@@ -232,7 +235,10 @@ final class AppModel {
   }
 
   func addAnchor(_ anchor: Anchor, to loop: Loop) {
-    perform("adding an Anchor") { try core.addAnchor(anchor, to: loop.id) }
+    perform("adding an Anchor") {
+      try core.addAnchor(anchor, to: loop.id)
+      log.info("Added an Anchor to Loop \(loop.id)")
+    }
   }
 
   /// Opens Edit Loop for `loop`; wired up by the app delegate.
