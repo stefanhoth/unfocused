@@ -35,6 +35,7 @@
 <header class="hero" id="top">
   <img class="hero__room" src="img/knot-class-1919.webp" width="1800" height="1212" alt="A room of young sailors in 1919, each holding a length of rope, learning knots from an instructor.">
   <div class="hero__card">
+    <p class="beta-banner" data-rise data-i="0"><span class="beta-badge">Public Beta</span><span>unfocused is in public beta. The builds aren't signed or notarized by Apple yet, so macOS asks you to approve the app once. <a class="link-plain" href="#install">How to open it</a></span></p>
     <h1 class="hero__title" data-rise data-i="0">
       <span>Finish what</span> <span>you</span> <span>started.</span>
     </h1>
@@ -178,7 +179,8 @@
     <p><b>Which apps can it anchor to?</b> Pages in Safari, Chrome and Firefox, Slack conversations, Mail messages, Notion pages, Obsidian notes, Todoist tasks, files in Finder, and documents open in Pages, Numbers, Preview or TextEdit. Any other app gets an Anchor that reopens it with its window title.</p>
     <p><b>Does it read what I type?</b> No. Activity records which app and window was in front, and when. It never records content, keystrokes or screenshots.</p>
     <p><b>Why does it ask for Accessibility?</b> To read window titles, so Capture can grab the exact thread or document in front of you. It asks only when a feature first needs it, and Capture works without it.</p>
-    <p><b>Why does macOS warn me when I open it?</b> The builds aren't notarized by Apple yet. Approve it once in System Settings, Privacy &amp; Security, Open Anyway, after installing and after each update.</p>
+    <div class="faq__item"><p><b>Why does macOS warn me when I open it?</b></p>
+    <p class="notice"><span class="beta-badge">Public Beta</span> unfocused is in public beta, and the builds aren't signed or notarized by Apple yet. That is why macOS warns you. Approve it once in System Settings, Privacy &amp; Security, Open Anyway, after installing and after each update.</p></div>
     <p><b>How do I update?</b> Run <code>brew upgrade --cask unfocused</code>. Your Loops and the Accessibility permission stay.</p>
     <p><b>Where is my data?</b> In <code>~/Library/Application Support/unfocused/</code>, one SQLite file. Logs are in <code>~/Library/Logs/unfocused/</code>.</p>
     <p><b>How do I remove it?</b> Run <code>brew uninstall --cask unfocused</code>. Delete the folder above to remove your data as well.</p>
@@ -218,7 +220,8 @@
 brew install --cask stefanhoth/unfocused/unfocused</code></pre>
         <button class="copy" type="button" data-copy="cmd-install">Copy</button>
       </div>
-      <p class="ticket__then">Then open unfocused from Applications. macOS says it can't check the app, because the builds aren't notarized yet. Open System Settings, go to Privacy &amp; Security and click Open Anyway. You do this once after installing and once after each update.</p>
+      <p class="notice"><span class="beta-badge">Public Beta</span> The builds aren't signed or notarized by Apple yet, so macOS shows a warning on first launch. It's safe to continue: the source is on GitHub.</p>
+      <p class="ticket__then">Then open unfocused from Applications. Open System Settings, go to Privacy &amp; Security and click Open Anyway. You do this once after installing and once after each update.</p>
     </div>
     <div class="ticket__stub">
       <p class="ticket__req">macOS 26 or later<br>Free</p>
