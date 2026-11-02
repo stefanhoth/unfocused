@@ -85,6 +85,14 @@ code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: inheri
 .hero { position: relative; min-height: 100svh; display: grid; place-items: center; padding: clamp(1rem, 4vw, 3.5rem) var(--margin); overflow: hidden; background: var(--ink); }
 .hero__room { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.55) grayscale(0.2); }
 .hero__card { position: relative; width: min(84rem, 100%); background: var(--paper); padding: clamp(1.25rem, 2.6vw, 2.75rem); display: grid; gap: clamp(1.75rem, 3.5vw, 3.5rem); }
+.beta-badge { display: inline-block; flex: none; background: var(--ink); color: var(--paper-ink); font-size: var(--step-small); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1; padding: 0.45rem 0.7rem; }
+.beta-banner { max-width: none; display: flex; align-items: center; gap: 1rem; background: var(--peach); border-left: 6px solid var(--loose); padding: 0.9rem 1.25rem; font-size: var(--step-small); line-height: 1.4; font-weight: 500; }
+.beta-banner .beta-badge { font-size: var(--step-body); padding: 0.55rem 0.9rem; }
+.notice { max-width: none; background: var(--peach); border-left: 6px solid var(--loose); padding: 0.9rem 1.1rem; font-size: var(--step-small); line-height: 1.5; }
+.notice .beta-badge { margin-right: 0.5rem; font-size: 0.75rem; padding: 0.35rem 0.55rem; vertical-align: 0.05em; }
+.faq__item { break-inside: avoid; }
+.faq__item p { margin-bottom: 0.6rem; }
+.faq__text .notice { margin-bottom: 1.4rem; font-size: var(--step-small); }
 .hero__title { font-size: var(--step-display); line-height: 0.95; letter-spacing: -0.045em; }
 .hero__body { display: grid; grid-template-columns: 5fr 7fr; gap: var(--gutter); align-items: center; }
 .hero__text { display: grid; gap: 2rem; align-content: start; }
@@ -262,6 +270,7 @@ kbd { display: inline-grid; place-items: center; min-width: 2.2em; height: 1.7em
   .foot__side { padding: 3rem var(--margin) 2rem; }
 }
 @media (max-width: 40rem) {
+  .beta-banner { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
   .hero { padding: 0.75rem 0.75rem; }
   .hero__foot { grid-template-columns: 1fr; justify-items: start; }
   .hero__foot .button { width: 100%; }
