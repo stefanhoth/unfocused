@@ -1,6 +1,6 @@
 cask "unfocused" do
-  version "2026.11.01"
-  sha256 "900b1c1918af6fef8fe34ebcffde4dc54c2cd12a44af47f13954f7e9e2bc5c42"
+  version "2026.11.02"
+  sha256 "30da4b0c7f82e17e427c4bf1457bd0408d6179561ee7e652f19b6ac405f93470"
 
   url "https://github.com/stefanhoth/unfocused/releases/download/v#{version}/Unfocused-#{version}.zip"
   name "unfocused"
