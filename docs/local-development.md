@@ -159,3 +159,12 @@ make demo SHOW=panel FOCUSED=1 # with one Loop Focused (build/demo-home-focused)
 ## unfocused-mcp
 
 `swift run unfocused-mcp` speaks MCP over stdio (one JSON-RPC message per line; ADR 0007). Try it with `printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | swift run -q unfocused-mcp`. It opens `~/Library/Application Support/unfocused/unfocused.sqlite` read-only, writes protocol messages to stdout only, and logs to `~/Library/Logs/unfocused/unfocused-mcp.log` and stderr. To add a tool, create `Sources/UnfocusedMCP/Tools/<Name>Tool.swift` (an `MCPTool`) and add it to `ToolRegistry.all`.
+
+### Running it against your builds
+
+- **Which binary:** the dev bundle's `build/Unfocused Dev.app/Contents/MacOS/unfocused-mcp` (after `make app`) is what your changes produced; `swift run unfocused-mcp` builds a debug one. The cask's `PATH` link points at the installed release. Check with `which unfocused-mcp`.
+- **Shared database:** dev builds and releases use the same file, so `unfocused-mcp` reads whatever the app last wrote. It never creates or migrates it. A fresh `HOME` (`HOME=$(mktemp -d) unfocused-mcp`) answers "Open unfocused once", which is the quick way to see the never-opened error.
+- **Superseded by a dev build:** if a dev build has added migrations, the installed (older) `unfocused-mcp` refuses with "The data was written by a newer unfocused. Update unfocused." Run the dev binary instead, or upgrade the release. The reverse ("open unfocused once to update") appears when the binary is newer than what the app has migrated: open the app once.
+- **Switches:** calls are refused until **Settings → Agent access** is on (Activity tools need the second switch too). The binary cannot write, so flip them in the dev build's Settings.
+- **Testing with an inspector:** `npx @modelcontextprotocol/inspector "build/Unfocused Dev.app/Contents/MacOS/unfocused-mcp"` lists the tools and lets you call them. Or add it to Claude Code with `claude mcp add unfocused-dev -- "$PWD/build/Unfocused Dev.app/Contents/MacOS/unfocused-mcp"`.
+- **Logs:** `tail -f ~/Library/Logs/unfocused/unfocused-mcp.log` shows each call (time, the Agent's name, the tool, answered or refused; never Loop titles or arguments). stderr carries the same lines, which most Agents show in their MCP log. stdout is protocol only, so never print to it.
