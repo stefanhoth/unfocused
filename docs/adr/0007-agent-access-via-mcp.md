@@ -69,4 +69,4 @@ The tools are read-only: each is marked with `readOnlyHint` and answers from exi
 - The cask gains a `binary` stanza, and the release workflow builds the second product.
 - The binary gets contract tests from recorded JSON-RPC requests and responses, run against an in-memory database, plus the read-only opening cases above.
 - `DESIGN.md` gains the Agent access part of Settings. The glossary's _Avoid_ "client" applies to domain language; "MCP client" stays as the protocol term in technical docs.
-- Spec #1 lists "a CLI and data export" as out of scope for v1. This ADR moves Agent access to a milestone after v1.
+- Spec #1 lists "a CLI and data export" as out of scope for v1. This ADR moves Agent access to a milestone after v1, specified in #97.
