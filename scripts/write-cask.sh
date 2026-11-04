@@ -16,6 +16,7 @@ cask "unfocused" do
   depends_on macos: :tahoe
 
   app "Unfocused.app"
+  binary "#{appdir}/Unfocused.app/Contents/MacOS/unfocused-mcp"
 
   zap trash: [
     "~/Library/Application Support/unfocused",

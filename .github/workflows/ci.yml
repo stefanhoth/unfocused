@@ -33,6 +33,7 @@ jobs:
           persist-credentials: false
       - run: make build CONFIG=release
       - run: make app
+      - run: scripts/check-bundle.sh "build/Unfocused Dev.app"
 
   test:
     name: Test

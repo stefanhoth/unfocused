@@ -116,7 +116,36 @@ Glass is for floating chrome only. Anything with a lot of text to read (windows,
 - **People:** a filter field and a one-line explanation above the list. Each name shows how many open Loops involve them. Deleting a person asks first, since it can't be undone.
 - **Activity:** one day at a time with previous/next and Today. Figures (recorded, toward Loops, Unfocused time), a timeline, then entries grouped by hour, merged, with the app icon, the Loop chip and a short duration.
 - **Recap:** day or week; Focus periods in the timeline use the logo gradient, Unfocused time is gray.
-- **Settings:** a section like the others, not a window of its own, so everything the app keeps is one click away from it. ⌘, (from the menu or while the app is active) opens the main window there.
+- **Settings:** a section like the others, not a window of its own, so everything the app keeps is one click away from it. ⌘, (from the menu or while the app is active) opens the main window there. Agent access is one of its groups (below).
+
+### Settings: Agent access
+
+An Agent (an app the user chose, usually driven by an AI model) can read Loops, and separately Activity, through `unfocused-mcp`. Nothing is shared until the user allows it here. Spec: #97, ADR 0007.
+
+- **Place:** a titled group in Settings, below the existing groups, solid like the rest of the window. It is the only group that is about sharing, so it stays together and nothing else is mixed into it. No new sidebar entry and no extra window.
+- **Top to bottom:**
+  1. Title "Agent access" with a one-line explanation: "Let an app you chose read your Loops, for example Claude or a local model. It can only read. It can't change anything."
+  2. Switch **Loops**: "Let Agents read my Loops". Off by default.
+  3. Switch **Activity**: "Let Agents read my Activity". Off by default. Caption under it: "Window titles, pages and conversations you were in, and your time."
+  4. Where the data goes (below).
+  5. Setup command with a copy button (below).
+  6. The "Last used by … at …" line (below).
+- **Switches:** native switches with a text label to the left. The state is always the word as well as the control position ("On" / "Off" next to it), so meaning never depends on the control alone. Turning one on or off applies on the next call, even to an Agent that is already connected, and the caption says so: "Takes effect on the next request."
+- **Activity depends on Loops.** While Agent access for Loops is off, the Activity switch is disabled and stays off, with the reason in its caption: "Turn on Loops first. Activity is shared in addition to Loops." Turning Loops off does not clear the user's Activity choice; the Activity switch shows disabled and Off until Loops is on again, then returns to what the user chose. (The tools check both switches on every call.)
+- **Where answers go** (always visible, not a tooltip). A small semibold heading, then four rows, each a secondary SF Symbol and a callout line that wraps (never truncates). Plain and calm, it doesn't warn:
+  - "To the app that calls unfocused."
+  - "With a remote model, that app passes them on to the provider's servers."
+  - "With a local model, they stay on this Mac."
+  - "unfocused itself sends nothing anywhere."
+- **Honest note** (secondary text under it): "This switch is your consent, not a lock. Any program running as you can read unfocused's data file directly. The switch makes sure unfocused itself only shares what you agreed to."
+- **Setup command:** a monospaced, selectable line `claude mcp add unfocused -- unfocused-mcp` in a quiet rounded box (radius 10, `Style.rowBackground`), with a **Copy** button on the right (label "Copy", keycap-style button, no key because it is a Settings control). A click answers in place: the label changes to "Copied" for 2 s (and is announced to VoiceOver), then returns to "Copy". Below it, one secondary line: "Other apps: use `unfocused-mcp` as the command. It needs no macOS permission." The command is shown even while the switches are off, since the tools answer with how to turn access on.
+- **Last used line:** "Last used by Claude at 14:32" for the most recent call (Agent name as it announced itself, time through `Style.relative` or a short time for today, English). Secondary text, below the setup command. A call that was refused because access was off still counts, with the suffix "(refused: access was off)", so the user notices use they didn't expect.
+- **Empty state:** "Not used yet." No Agent name, no time. It is also what shows when the log can't be read.
+- **Words:** "Agent" in all UI text, never "client", "bot", "assistant" or "integration". "MCP" appears only inside the command, since that is the tool's name. The log holds no Loop titles or Activity, and the Last used line shows none.
+- **Mouse and keys:** everything is a standard control, so Tab reaches each switch and the Copy button, and Space toggles. No custom shortcuts. Cursor-in-field does not apply, since there is no text field.
+- **Feedback:** switching changes the control and its caption at once; nothing ends a Loop here, so no Undo is needed.
+- **The checklist below, run against this section:** (1) belongs to Settings in the main window, keeps the Settings order; (2) every action is a click as well as Tab and Space; (3) no conflict with "finish before you start" or the Focused Loop: Agent access never starts or changes a Loop; (4) glossary words, "Agent", no _Avoid_ terms; (5) Copy answers with "Copied"; (6) not applicable, no text field; (7) tokens, solid window, no glass, no system accent (the switches use `Style.brand`, not the default tint); (8) the Settings detail has an explanation above the controls, none scrolls under the title; (9) to be compared side by side with the Recap when built; (10) VoiceOver reads state and captions, Reduce Motion has nothing to change; (11) this file updated.
+- **Departures from existing rules:** none in the rules. Two firsts to note: Settings now holds a group with switches (earlier Settings had none that share data), and the monospaced line with a Copy button is the first copyable text in the app. Both reuse existing tokens; the Copy button is a normal button, not a keycap hint, because it has no key.
 
 ## Window rules
 

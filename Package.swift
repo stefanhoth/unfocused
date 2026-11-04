@@ -13,6 +13,8 @@ let package = Package(
     // UI-free domain core (ADR 0005); the app and a future CLI both depend on it.
     .library(name: "UnfocusedCore", targets: ["UnfocusedCore"]),
     .executable(name: "Unfocused", targets: ["Unfocused"]),
+    // Read-only Agent access over MCP/stdio (ADR 0007); depends on Core only.
+    .executable(name: "unfocused-mcp", targets: ["unfocused-mcp"]),
     // Runs the Reasoner's example set against the real on-device model (`make reasoner-examples`).
     .executable(name: "reasoner-examples", targets: ["ReasonerExamples"]),
   ],
@@ -36,6 +38,17 @@ let package = Package(
       dependencies: ["UnfocusedCore", "UnfocusedReasoner"],
       swiftSettings: strictSettings
     ),
+    // The protocol layer and tools of `unfocused-mcp`, kept in a library so tests can drive it.
+    .target(
+      name: "UnfocusedMCP",
+      dependencies: ["UnfocusedCore"],
+      swiftSettings: strictSettings
+    ),
+    .executableTarget(
+      name: "unfocused-mcp",
+      dependencies: ["UnfocusedCore", "UnfocusedMCP"],
+      swiftSettings: strictSettings
+    ),
     .executableTarget(
       name: "ReasonerExamples",
       dependencies: ["UnfocusedCore", "UnfocusedReasoner"],
@@ -44,6 +57,11 @@ let package = Package(
     .testTarget(
       name: "UnfocusedCoreTests",
       dependencies: ["UnfocusedCore"],
+      swiftSettings: strictSettings
+    ),
+    .testTarget(
+      name: "UnfocusedMCPTests",
+      dependencies: ["UnfocusedCore", "UnfocusedMCP"],
       swiftSettings: strictSettings
     ),
   ]

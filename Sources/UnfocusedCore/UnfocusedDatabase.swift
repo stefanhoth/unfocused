@@ -8,9 +8,9 @@ import GRDB
 public final class UnfocusedDatabase: Sendable {
   let writer: any DatabaseWriter
 
-  private init(writer: any DatabaseWriter) throws {
+  private init(writer: any DatabaseWriter, migrate: Bool = true) throws {
     self.writer = writer
-    try Self.migrator.migrate(writer)
+    if migrate { try Self.migrator.migrate(writer) }
   }
 
   /// Opens (or creates) the database file at `url`, applying pending migrations.
@@ -22,9 +22,47 @@ public final class UnfocusedDatabase: Sendable {
     return try UnfocusedDatabase(writer: DatabasePool(path: url.path))
   }
 
+  /// Opens an existing database for reading only, so a second process (such as `unfocused-mcp`) can
+  /// read it safely next to the app. Never creates the file or its folder and never migrates; only
+  /// the app does. Checks the schema first and throws a ``ReadOnlyDatabaseError`` saying what to do.
+  public static func openReadOnly(at url: URL) throws -> UnfocusedDatabase {
+    guard FileManager.default.fileExists(atPath: url.path) else { throw ReadOnlyDatabaseError.neverOpened }
+    let queue = try readOnlyConnection(path: url.path)
+    let state = try queue.read { db -> ReadOnlyDatabaseError? in
+      if try migrator.appliedMigrations(db).isEmpty { return .neverOpened }
+      if try migrator.hasBeenSuperseded(db) { return .superseded }
+      if try !migrator.hasCompletedMigrations(db) { return .notYetMigrated }
+      return nil
+    }
+    if let state { throw state }
+    return try UnfocusedDatabase(writer: queue, migrate: false)
+  }
+
+  /// GRDB's `readonly` connection. Apple's SQLite cannot open a read-only WAL database whose `-wal`
+  /// and `-shm` files are gone (they vanish when the app's last connection closes), so then it
+  /// falls back to a connection that is allowed to create just those two files but is
+  /// `query_only`: it still cannot change a single row, and it never creates the database.
+  private static func readOnlyConnection(path: String) throws -> DatabaseQueue {
+    var readonly = Configuration()
+    readonly.readonly = true
+    do {
+      return try DatabaseQueue(path: path, configuration: readonly)
+    } catch let error as DatabaseError where error.resultCode == .SQLITE_CANTOPEN {
+      var queryOnly = Configuration()
+      queryOnly.prepareDatabase { db in try db.execute(sql: "PRAGMA query_only = ON") }
+      return try DatabaseQueue(path: path, configuration: queryOnly)
+    }
+  }
+
   /// A throwaway database that lives only in memory. Used by tests and previews.
   public static func inMemory() throws -> UnfocusedDatabase {
     try UnfocusedDatabase(writer: DatabaseQueue())
+  }
+
+  /// Closes the connections now. SQLite then removes the `-wal` and `-shm` files, if no other
+  /// process has the database open. Using the database afterwards throws.
+  public func close() throws {
+    try writer.close()
   }
 
   /// Identifiers of all migrations applied to this database, oldest first.
@@ -149,4 +187,22 @@ public final class UnfocusedDatabase: Sendable {
     }
     return migrator
   }()
+}
+
+/// Why ``UnfocusedDatabase/openReadOnly(at:)`` refused, each with the action for the user.
+public enum ReadOnlyDatabaseError: Error, Equatable, LocalizedError {
+  /// There is no database yet.
+  case neverOpened
+  /// The app has not applied all migrations of this build yet.
+  case notYetMigrated
+  /// A newer build migrated the database past this one.
+  case superseded
+
+  public var errorDescription: String? {
+    switch self {
+    case .neverOpened: "There is no unfocused data yet. Open unfocused once."
+    case .notYetMigrated: "unfocused has not finished updating its data. Open unfocused once to update."
+    case .superseded: "The data was written by a newer unfocused. Update unfocused."
+    }
+  }
 }
