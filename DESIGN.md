@@ -132,10 +132,10 @@ An Agent (an app the user chose, usually driven by an AI model) can read Loops, 
   6. The "Last used by … at …" line (below).
 - **Switches:** native switches with a text label to the left. The state is always the word as well as the control position ("On" / "Off" next to it), so meaning never depends on the control alone. Turning one on or off applies on the next call, even to an Agent that is already connected, and the caption says so: "Takes effect on the next request."
 - **Activity depends on Loops.** While Agent access for Loops is off, the Activity switch is disabled and stays off, with the reason in its caption: "Turn on Loops first. Activity is shared in addition to Loops." Turning Loops off does not clear the user's Activity choice; the Activity switch shows disabled and Off until Loops is on again, then returns to what the user chose. (The tools check both switches on every call.)
-- **Where your data goes** (always visible, body text, not a tooltip). It is plain and calm and doesn't warn:
-  - "What an Agent asks for is sent to the app that calls unfocused."
-  - "With a remote model, that app passes it on to the provider's servers."
-  - "With a local model, it stays on this Mac."
+- **Where answers go** (always visible, not a tooltip). A small semibold heading, then four rows, each a secondary SF Symbol and a callout line that wraps (never truncates). Plain and calm, it doesn't warn:
+  - "To the app that calls unfocused."
+  - "With a remote model, that app passes them on to the provider's servers."
+  - "With a local model, they stay on this Mac."
   - "unfocused itself sends nothing anywhere."
 - **Honest note** (secondary text under it): "This switch is your consent, not a lock. Any program running as you can read unfocused's data file directly. The switch makes sure unfocused itself only shares what you agreed to."
 - **Setup command:** a monospaced, selectable line `claude mcp add unfocused -- unfocused-mcp` in a quiet rounded box (radius 10, `Style.rowBackground`), with a **Copy** button on the right (label "Copy", keycap-style button, no key because it is a Settings control). A click answers in place: the label changes to "Copied" for 2 s (and is announced to VoiceOver), then returns to "Copy". Below it, one secondary line: "Other apps: use `unfocused-mcp` as the command. It needs no macOS permission." The command is shown even while the switches are off, since the tools answer with how to turn access on.

@@ -157,8 +157,6 @@ struct ActivityToolsTests {
   @Test(
     "a missing, malformed or reversed range is a readable error",
     arguments: [
-      "{}",
-      #"{"from":"2026-11-04T09:00:00+01:00"}"#,
       #"{"from":"yesterday","to":"today"}"#,
       #"{"from":"2026-11-04","to":"2026-11-05"}"#,
       #"{"from":"2026-11-05T09:00:00+01:00","to":"2026-11-04T09:00:00+01:00"}"#,
@@ -171,6 +169,38 @@ struct ActivityToolsTests {
       #expect(answer.isError)
       #expect(answer.text.contains("from") || answer.text.contains("to"))
     }
+  }
+
+  @Test("without a range, activity answers the last two hours, ending now")
+  func defaultsToLastTwoHours() throws {
+    let w = try makeWorld()
+    let answer = try call(w.core, "activity")
+    #expect(!answer.isError)
+    #expect(try #require(answer.json["stretches"] as? [[String: Any]]).count == 2)
+    w.clock.advance(minutes: 180)
+    let later = try call(w.core, "activity")
+    #expect(!later.isError)
+    #expect(try #require(later.json["stretches"] as? [[String: Any]]).isEmpty)
+    let time = try call(w.core, "unfocused_time")
+    #expect(!time.isError)
+  }
+
+  @Test("a lone 'to' covers the two hours before it; a lone 'from' runs until now")
+  func halfRanges() throws {
+    let w = try makeWorld()
+    let to = ISO8601.string(start + 3600)
+    let toOnly = try call(w.core, "activity", #"{"to":"\#(to)"}"#)
+    #expect(try #require(toOnly.json["stretches"] as? [[String: Any]]).count == 2)
+    let from = ISO8601.string(start)
+    let fromOnly = try call(w.core, "activity", #"{"from":"\#(from)"}"#)
+    #expect(try #require(fromOnly.json["stretches"] as? [[String: Any]]).count == 2)
+  }
+
+  @Test("a stretch carries the page link of its Anchor")
+  func stretchLink() throws {
+    let w = try makeWorld()
+    let stretches = try #require(try call(w.core, "activity").json["stretches"] as? [[String: Any]])
+    #expect(stretches[0]["link"] as? String == "https://example.com/spec")
   }
 
   @Test("a range over the cap is refused")

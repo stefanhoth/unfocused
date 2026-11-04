@@ -59,17 +59,20 @@ struct AgentAccessSection: View {
         .foregroundStyle(.secondary)
       }
 
-      VStack(alignment: .leading, spacing: 2) {
-        Text("What an Agent asks for is sent to the app that calls unfocused.")
-        Text("With a remote model, that app passes it on to the provider's servers.")
-        Text("With a local model, it stays on this Mac.")
-        Text("unfocused itself sends nothing anywhere.")
+      VStack(alignment: .leading, spacing: 8) {
+        Text("Where answers go")
+          .font(.subheadline.weight(.semibold))
+        flowRow("arrow.right.circle", "To the app that calls unfocused.")
+        flowRow("cloud", "With a remote model, that app passes them on to the provider's servers.")
+        flowRow("laptopcomputer", "With a local model, they stay on this Mac.")
+        flowRow("lock", "unfocused itself sends nothing anywhere.")
       }
       Text(
         "This switch is your consent, not a lock. Any program running as you can read unfocused's data file directly. The switch makes sure unfocused itself only shares what you agreed to."
       )
       .font(.caption)
       .foregroundStyle(.secondary)
+      .fixedSize(horizontal: false, vertical: true)
 
       HStack {
         Text(Self.setupCommand)
@@ -85,6 +88,18 @@ struct AgentAccessSection: View {
         .font(.caption)
         .foregroundStyle(.secondary)
       LastUsedLine()
+    }
+  }
+
+  private func flowRow(_ symbol: String, _ text: String) -> some View {
+    HStack(alignment: .firstTextBaseline, spacing: 8) {
+      Image(systemName: symbol)
+        .frame(width: 18)
+        .foregroundStyle(.secondary)
+        .accessibilityHidden(true)
+      Text(text)
+        .font(.callout)
+        .fixedSize(horizontal: false, vertical: true)
     }
   }
 

@@ -14,14 +14,29 @@ enum ActivityTools {
     )
   }
 
+  /// Length of the range when the Agent names none: the last two hours.
+  static let defaultRangeHours = 2
+
   static let rangeProperties: JSONValue = [
-    "from": ["type": "string", "description": "Start, ISO 8601 with offset, such as 2026-11-04T09:00:00+01:00."],
-    "to": ["type": "string", "description": "End, ISO 8601 with offset. At most 31 days after from."],
+    "from": [
+      "type": "string",
+      "description":
+        .string(
+          "Optional start, ISO 8601 with offset, such as 2026-11-04T09:00:00+01:00. Defaults to \(defaultRangeHours) hours before 'to'."
+        ),
+    ],
+    "to": [
+      "type": "string",
+      "description": "Optional end, ISO 8601 with offset. Defaults to now. At most 31 days after from.",
+    ],
   ]
 
-  static func range(_ arguments: ToolArguments) throws -> (from: Date, to: Date) {
-    let from = try arguments.date("from")
-    let to = try arguments.date("to")
+  /// The range asked for. Without arguments it is the last two hours, ending now.
+  static func range(_ arguments: ToolArguments, now: Date) throws -> (from: Date, to: Date) {
+    let to = try arguments.optionalString("to") == nil ? now : arguments.date("to")
+    let from =
+      try arguments.optionalString("from") == nil
+      ? to.addingTimeInterval(-Double(defaultRangeHours) * 3_600) : arguments.date("from")
     guard from < to else { throw ToolError("'from' must be before 'to'.") }
     guard to.timeIntervalSince(from) <= Double(maxRangeDays) * 86_400 else {
       throw ToolError("The range is too long: ask for at most \(maxRangeDays) days at a time.")
@@ -40,6 +55,7 @@ enum ActivityTools {
     fields["title"] = .string(stretch.anchor.title)
     fields["source"] = .string(stretch.anchor.source.stored)
     fields["place"] = .string(stretch.anchor.place)
+    fields["link"] = .string(stretch.anchor.link)
     fields["loopId"] = stretch.loopID.map { .string($0.uuidString) } ?? .null
     fields["reason"] = .string(reason(stretch.reason))
     return .object(fields)

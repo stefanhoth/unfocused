@@ -7,7 +7,7 @@ public struct WorkLogTool: MCPTool {
   public let name = "work_log"
   public var requiredAccess: AgentAccessScope { .activity }
   public let description = ActivityTools.description(
-    "Lists when, where and why time went toward one Loop between two times, oldest first, each with seconds, text and the reason (anchor or focus). Get Loop ids from list_loops. At most 31 days and 500 stretches."
+    "Lists when, where and why time went toward one Loop (by default in the last 2 hours; pass from and to for another range), oldest first, each with seconds, text and the reason (anchor or focus). Get Loop ids from list_loops. At most 31 days and 500 stretches."
   )
   public let inputSchema: JSONValue = [
     "type": "object",
@@ -16,12 +16,12 @@ public struct WorkLogTool: MCPTool {
       "from": ActivityTools.rangeProperties.object?["from"] ?? .null,
       "to": ActivityTools.rangeProperties.object?["to"] ?? .null,
     ],
-    "required": ["loop", "from", "to"],
+    "required": ["loop"],
   ]
 
   public func call(arguments: ToolArguments, core: Core) throws -> String {
     let loop = try ActivityTools.requireLoop(arguments, core: core)
-    let range = try ActivityTools.range(arguments)
+    let range = try ActivityTools.range(arguments, now: core.now)
     let log = try core.workLog(for: loop.id, from: range.from, to: range.to)
     return ActivityTools.stretches(
       log,
