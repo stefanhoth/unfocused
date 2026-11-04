@@ -462,26 +462,24 @@ final class AppModel {
 
   /// Agent access for Loops (ADR 0007). Off until the user allows it; `unfocused-mcp` checks it on every call.
   var agentAccessLoops: Bool {
-    get {
-      _ = settingsRevision
-      return (try? core.isAgentAccessAllowed(.loops)) ?? false
-    }
-    set {
-      perform("saving Agent access") { try core.setAgentAccess(.loops, allowed: newValue) }
-      settingsRevision += 1
-    }
+    get { agentAccess(.loops) }
+    set { setAgentAccess(.loops, newValue) }
   }
 
   /// Agent access for Activity (ADR 0007): the user's own choice, shared only in addition to Loops.
   var agentAccessActivity: Bool {
-    get {
-      _ = settingsRevision
-      return (try? core.isAgentAccessAllowed(.activity)) ?? false
-    }
-    set {
-      perform("saving Agent access") { try core.setAgentAccess(.activity, allowed: newValue) }
-      settingsRevision += 1
-    }
+    get { agentAccess(.activity) }
+    set { setAgentAccess(.activity, newValue) }
+  }
+
+  private func agentAccess(_ scope: AgentAccessScope) -> Bool {
+    _ = settingsRevision
+    return (try? core.isAgentAccessAllowed(scope)) ?? false
+  }
+
+  private func setAgentAccess(_ scope: AgentAccessScope, _ allowed: Bool) {
+    perform("saving Agent access") { try core.setAgentAccess(scope, allowed: allowed) }
+    settingsRevision += 1
   }
 
   // MARK: Hotkey

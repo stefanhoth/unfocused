@@ -6,9 +6,19 @@ extension Loop {
     [
       "id": .string(id.uuidString),
       "title": .string(title),
-      "state": .string(state.rawValue == "dropped" ? "let_go" : state.rawValue),
+      "state": .string(stateName),
       "capturedAt": .string(ISO8601.string(capturedAt)),
       "whereILeftOff": whereILeftOff.map { .string($0) } ?? .null,
     ]
+  }
+}
+
+extension Loop {
+  fileprivate var stateName: String {
+    switch state {
+    case .open: "open"
+    case .closed: "closed"
+    case .letGo: "let_go"
+    }
   }
 }

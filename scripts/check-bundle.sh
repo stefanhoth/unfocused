@@ -14,13 +14,14 @@ MCP="$APP/Contents/MacOS/unfocused-mcp"
 codesign --verify --strict --verbose=2 "$APP"
 codesign --verify --strict --verbose=2 "$MCP"
 
-flags="$(codesign --display --verbose=2 "$MCP" 2>&1 | grep '^CodeDirectory' || true)"
+flags="$(codesign -dvv "$MCP" 2>&1 | grep -E '^CodeDirectory.*flags=' || true)"
 case "$flags" in
-  *runtime*) ;;
+  *flags=*runtime*) ;;
   *) echo "unfocused-mcp lacks the hardened runtime: $flags" >&2; exit 1 ;;
 esac
 
-if [ -n "$(codesign --display --entitlements - "$MCP" 2>/dev/null)" ]; then
+# Nothing, or an empty plist, means no entitlements; any <key> means some.
+if codesign --display --entitlements - "$MCP" 2>/dev/null | grep -q '<key>'; then
   echo "unfocused-mcp must have no entitlements" >&2
   exit 1
 fi

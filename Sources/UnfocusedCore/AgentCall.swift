@@ -22,9 +22,12 @@ public struct AgentCall: Sendable, Equatable, Codable {
     self.refused = refused
   }
 
+  /// The words shown wherever a refused call is mentioned (log line, Settings).
+  public static let refusedNote = "(refused: access was off)"
+
   /// The one line written to the rotating log file.
   public var logLine: String {
-    "tools/call \(tool) by \(agent)" + (refused ? " (refused: access was off)" : "")
+    "tools/call \(tool) by \(agent)" + (refused ? " \(Self.refusedNote)" : "")
   }
 
   /// The name is sent by the Agent, so it is trimmed, stripped of control characters and capped.

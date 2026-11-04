@@ -19,12 +19,18 @@ public struct RecapTool: MCPTool {
   ]
 
   public func call(arguments: ToolArguments, core: Core) throws -> String {
-    let period = try arguments.string("period")
+    guard let period = RecapPeriod(rawValue: try arguments.string("period")) else {
+      throw ToolError("Argument 'period' must be 'day' or 'week'.")
+    }
     let date = try arguments.optionalString("date") == nil ? core.now : arguments.date("date")
     switch period {
-    case "day": return try core.recap(day: date).markdown()
-    case "week": return try core.recap(weekOf: date).markdown()
-    default: throw ToolError("Argument 'period' must be 'day' or 'week'.")
+    case .day: return try core.recap(day: date).markdown()
+    case .week: return try core.recap(weekOf: date).markdown()
     }
   }
+}
+
+private enum RecapPeriod: String {
+  case day
+  case week
 }

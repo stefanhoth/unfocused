@@ -125,6 +125,6 @@ private struct LastUsedLine: View {
     let today = Calendar.current.isDate(call.date, inSameDayAs: now)
     formatter.dateFormat = today ? "HH:mm" : "MMM d, HH:mm"
     let when = formatter.string(from: call.date)
-    return "Last used by \(call.agent) at \(when)" + (call.refused ? " (refused: access was off)" : "")
+    return "Last used by \(call.agent) at \(when)" + (call.refused ? " \(AgentCall.refusedNote)" : "")
   }
 }

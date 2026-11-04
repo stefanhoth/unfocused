@@ -117,7 +117,7 @@ public struct MCPServer {
       } catch {
         // Fail closed: if the switch can't be read, nothing is shared.
         record(refused: true)
-        return Self.toolResult(Self.refusal(.loopsOff), isError: true)
+        return Self.toolResult(Self.unreadableRefusal, isError: true)
       }
       if decision != .allowed {
         record(refused: true)
@@ -146,6 +146,10 @@ public struct MCPServer {
       }
     }
   }
+
+  /// Fail-closed answer when the access switch itself couldn't be read.
+  static let unreadableRefusal =
+    "unfocused could not check whether Agent access is allowed, so it shares nothing. Ask the user to open unfocused and check Settings → Agent access, then try again."
 
   /// What the Agent tells the user when access is off.
   static func refusal(_ decision: AgentAccessDecision) -> String {

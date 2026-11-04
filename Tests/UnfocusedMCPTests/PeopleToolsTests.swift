@@ -115,15 +115,17 @@ struct PeopleToolsTests {
     #expect(byTitle == ["Reply to Anna": "owed", "Review draft": "waiting"])
   }
 
-  @Test("an exact name wins over longer names that also match")
-  func exactWins() throws {
+  @Test("an exact name does not win silently while longer names also match")
+  func exactDoesNotWin() throws {
     let (core, _) = try makeCore()
     let loop = try core.capture(title: "Ping")
     let anna = try core.addPerson(named: "Anna")
     _ = try core.addPerson(named: "Anna Berger", evenIfSimilar: true)
     try core.involve(anna.id, in: loop.id, as: .owed)
     let answer = try call(core, "loops_involving", #"{"person":"ANNA"}"#)
-    #expect((answer.json["person"] as? [String: Any])?["name"] as? String == "Anna")
+    #expect(answer.json["person"] == nil)
+    let candidates = try #require(answer.json["candidates"] as? [[String: Any]])
+    #expect(Set(candidates.compactMap { $0["name"] as? String }) == ["Anna", "Anna Berger"])
   }
 
   @Test("a name matching several People answers with the candidates, not a guess")
