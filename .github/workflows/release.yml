@@ -80,6 +80,8 @@ jobs:
           P12_BASE64: ${{ secrets.SIGNING_CERT_P12_BASE64 }}
           P12_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
         run: scripts/sign-app.sh build/Unfocused.app
+      - name: Check the signed bundle, including unfocused-mcp
+        run: scripts/check-bundle.sh build/Unfocused.app
       - name: Package
         id: package
         run: |

@@ -23,6 +23,8 @@ make run     # make app, then open it
 
 `make app` builds the release configuration and wraps it into a bundle with `scripts/build-app.sh` (Info.plist, icon from `Branding/AppIcon.png`, signing).
 
+`unfocused-mcp` (ADR 0007) lives inside the bundle at `Contents/MacOS/unfocused-mcp`: `build/Unfocused Dev.app/Contents/MacOS/unfocused-mcp` locally, `Unfocused.app/Contents/MacOS/unfocused-mcp` in a release. The cask links the release one onto `PATH`. It is signed before the bundle (inside out, hardened runtime, no entitlements), with the same certificate. `scripts/check-bundle.sh <app>` verifies both signatures and that the binary answers `initialize`; CI and the release workflow (dry run included) run it.
+
 ## Dev builds vs. releases
 
 | | Local (`make app`) | Release (CI, `UNFOCUSED_VERSION` set) |

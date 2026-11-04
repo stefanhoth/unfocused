@@ -32,6 +32,13 @@ security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD"
 security list-keychains -d user -s "$KEYCHAIN" $ORIGINAL_KEYCHAINS
 
 IDENTITY="$(security find-certificate -a -Z "$KEYCHAIN" | awk '/SHA-1 hash:/ { print $3; exit }')"
+# Inside out: the helper binary first (hardened runtime, no entitlements), then the bundle.
+MCP="$APP/Contents/MacOS/unfocused-mcp"
+if [ -f "$MCP" ]; then
+  codesign --force --options runtime --timestamp=none \
+    --keychain "$KEYCHAIN" --sign "$IDENTITY" "$MCP"
+  codesign --verify --strict --verbose=2 "$MCP"
+fi
 codesign --force --options runtime --timestamp=none --entitlements "$ENTITLEMENTS" \
   --keychain "$KEYCHAIN" --sign "$IDENTITY" "$APP"
 codesign --verify --strict --verbose=2 "$APP"

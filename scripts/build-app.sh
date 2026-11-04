@@ -17,11 +17,15 @@ case "$VERSION" in
 esac
 
 swift build -c release -Xswiftc -warnings-as-errors
-BIN="$(swift build -c release --show-bin-path)/Unfocused"
+BIN_DIR="$(swift build -c release --show-bin-path)"
+BIN="$BIN_DIR/Unfocused"
+MCP_BIN="$BIN_DIR/unfocused-mcp"
 
 rm -rf build/*.app
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Unfocused"
+# Read-only Agent access (ADR 0007); the cask links it onto PATH.
+cp "$MCP_BIN" "$APP/Contents/MacOS/unfocused-mcp"
 
 # App icon: a 1024×1024 PNG in Branding/AppIcon.png becomes AppIcon.icns (all sizes).
 ICON_KEY=""
@@ -74,6 +78,8 @@ if [ -z "${CI:-}" ] && [ -f "$SIGNING_DIR/unfocused-signing.p12" ] && [ -f "$SIG
     "$(dirname "$0")/sign-app.sh" "$APP" >/dev/null
   echo "Signed with the stable certificate"
 else
+  # Inside out, like sign-app.sh: the helper binary first, then the bundle.
+  codesign --force --sign - --options runtime --timestamp=none "$APP/Contents/MacOS/unfocused-mcp"
   codesign --force --sign - --timestamp=none "$APP"
 fi
 echo "Built $APP ($VERSION)"
