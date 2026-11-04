@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Read-only Agent access through a separate MCP binary
