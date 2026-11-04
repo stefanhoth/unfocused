@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Agents Capture Loops and add Anchors
