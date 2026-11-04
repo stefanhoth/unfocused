@@ -19,7 +19,8 @@ let databaseURL = FileManager.default.homeDirectoryForCurrentUser
 let backend = MCPServer.Backend.openReadOnly(at: databaseURL)
 if case .unavailable(let message) = backend { log("Database not available: \(message)") }
 
-var server = MCPServer(backend: backend, log: log)
+let lastCall = AgentCallStore(directory: logsDirectory)
+var server = MCPServer(backend: backend, log: log, onCall: { lastCall.record($0) })
 while let line = readLine(strippingNewline: true) {
   guard !line.trimmingCharacters(in: .whitespaces).isEmpty else { continue }
   if let response = server.handle(line: line) {
