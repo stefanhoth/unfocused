@@ -153,3 +153,7 @@ make demo SHOW=panel FOCUSED=1 # with one Loop Focused (build/demo-home-focused)
 
 - Commits are signed through the 1Password SSH agent. If 1Password is locked, `git commit` fails; unlock it rather than turning signing off.
 - Dependent PRs go through `gh stack`, not by setting `--base` and rebasing by hand.
+
+## unfocused-mcp
+
+`swift run unfocused-mcp` speaks MCP over stdio (one JSON-RPC message per line; ADR 0007). Try it with `printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | swift run -q unfocused-mcp`. It opens `~/Library/Application Support/unfocused/unfocused.sqlite` read-only, writes protocol messages to stdout only, and logs to `~/Library/Logs/unfocused/unfocused-mcp.log` and stderr. To add a tool, create `Sources/UnfocusedMCP/Tools/<Name>Tool.swift` (an `MCPTool`) and add it to `ToolRegistry.all`.
