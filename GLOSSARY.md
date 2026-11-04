@@ -11,7 +11,7 @@ Anything the user has started or committed to that isn't closed yet, from a two-
 _Avoid_: Task, todo, project, thread, item
 
 **Capture**:
-The conscious act of turning something the user is looking at or thinking about into a Loop.
+The conscious act of turning something the user is looking at or thinking about into a Loop, either directly or by asking an Agent to do it.
 _Avoid_: Add, create, import
 
 **Focus**:
@@ -19,7 +19,7 @@ The conscious switch of the user's attention into one Loop, which becomes the Fo
 _Avoid_: Activate, start, open, work on
 
 **Engagement**:
-Any sign that the user actually worked on a Loop: Focusing it, editing it, or being seen in one of its Anchors. Merely deciding to keep a Loop is not Engagement. Engagement restarts the countdown before a Loop becomes a Loose End.
+Any sign that the user actually worked on a Loop: Focusing it, editing it, or being seen in one of its Anchors. Merely deciding to keep a Loop, or an Agent adding an Anchor to it, is not Engagement. Engagement restarts the countdown before a Loop becomes a Loose End.
 _Avoid_: Touch, activity, update
 
 **Where I left off**:
@@ -88,3 +88,9 @@ _Avoid_: Assigned, my turn
 **Waiting**:
 The Loop's direction toward a Person the user is waiting on.
 _Avoid_: Blocked, delegated, their turn
+
+### Agents
+
+**Agent**:
+Another app, usually driven by an AI model, that the user has allowed to read their Loops and Activity and to Capture Loops for them.
+_Avoid_: Bot, assistant, client, integration
