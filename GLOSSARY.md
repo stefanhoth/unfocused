@@ -19,7 +19,7 @@ The conscious switch of the user's attention into one Loop, which becomes the Fo
 _Avoid_: Activate, start, open, work on
 
 **Engagement**:
-Any sign that the user actually worked on a Loop: Focusing it, editing it, or being seen in one of its Anchors. Merely deciding to keep a Loop is not Engagement. Engagement restarts the countdown before a Loop becomes a Loose End.
+Any sign that the user actually worked on a Loop: Focusing it, editing it, or being seen in one of its Anchors since it was added, unless that Anchor is coarse. Merely deciding to keep a Loop is not Engagement. Engagement restarts the countdown before a Loop becomes a Loose End.
 _Avoid_: Touch, activity, update
 
 **Where I left off**:
@@ -29,6 +29,10 @@ _Avoid_: Note, resume note, next step, comment
 **Anchor**:
 A link from a Loop back to the exact spot where the work lives, such as a Slack conversation, a Mail message, a web page or a file. A Loop has zero or more Anchors.
 _Avoid_: Link, reference, attachment
+
+**Coarse Anchor**:
+An Anchor that names only an app or a site, not a spot inside it, such as "Slack" or "claude.ai". It reopens the app or site but doesn't show which work is in front of the user.
+_Avoid_: Generic Anchor, app-only Anchor
 
 **Source**:
 The app or system an Anchor points into, such as Slack, Mail or Todoist.
