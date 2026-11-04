@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UnfocusedCore
 
 /// Settings → Agent access (DESIGN.md "Settings: Agent access", ADR 0007): the consent switch, where
 /// the data goes, and the setup command. Nothing is shared until the user turns the switch on.
@@ -58,6 +59,7 @@ struct AgentAccessSection: View {
       Text("Other apps: use `unfocused-mcp` as the command. It needs no macOS permission.")
         .font(.caption)
         .foregroundStyle(.secondary)
+      LastUsedLine()
     }
   }
 
@@ -69,5 +71,35 @@ struct AgentAccessSection: View {
       try? await Task.sleep(for: .seconds(2))
       copied = false
     }
+  }
+}
+
+/// "Last used by Claude at 14:32" (DESIGN.md "Settings: Agent access"). `unfocused-mcp` can't write to
+/// the database it reads, so it leaves its last call in a small file next to the logs
+/// (docs/DECISIONS.md, 2026-11-04); this polls that file while Settings is open.
+private struct LastUsedLine: View {
+  @State private var last: AgentCall?
+  private let store = AgentCallStore(directory: AppEnvironment.logsDirectory)
+
+  var body: some View {
+    Text(Self.text(for: last))
+      .font(.caption)
+      .foregroundStyle(.secondary)
+      .task {
+        while !Task.isCancelled {
+          last = store.last()
+          try? await Task.sleep(for: .seconds(2))
+        }
+      }
+  }
+
+  static func text(for call: AgentCall?, now: Date = Date()) -> String {
+    guard let call else { return "Not used yet." }
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    let today = Calendar.current.isDate(call.date, inSameDayAs: now)
+    formatter.dateFormat = today ? "HH:mm" : "MMM d, HH:mm"
+    let when = formatter.string(from: call.date)
+    return "Last used by \(call.agent) at \(when)" + (call.refused ? " (refused: access was off)" : "")
   }
 }

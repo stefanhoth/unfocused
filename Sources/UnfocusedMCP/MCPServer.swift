@@ -29,18 +29,27 @@ public struct MCPServer {
   private let backend: Backend
   private let tools: [any MCPTool]
   private let log: @Sendable (String) -> Void
+  private let onCall: @Sendable (AgentCall) -> Void
+  private let now: @Sendable () -> Date
   /// The Agent's name from `initialize`'s `clientInfo`, for the call log.
   public private(set) var clientName: String?
 
-  /// - Parameter log: receives one line per request: method and tool name, never arguments or results.
+  /// - Parameters:
+  ///   - log: receives one line per request: method and tool name, never arguments or results.
+  ///   - onCall: receives every `tools/call`, answered or refused (what Settings shows as last use).
+  ///   - now: the clock for the call record.
   public init(
     backend: Backend,
     tools: [any MCPTool] = ToolRegistry.all,
-    log: @escaping @Sendable (String) -> Void = { _ in }
+    log: @escaping @Sendable (String) -> Void = { _ in },
+    onCall: @escaping @Sendable (AgentCall) -> Void = { _ in },
+    now: @escaping @Sendable () -> Date = { Date() }
   ) {
     self.backend = backend
     self.tools = tools
     self.log = log
+    self.onCall = onCall
+    self.now = now
   }
 
   /// Handles one incoming message line. Returns the response line, or `nil` for notifications.
@@ -91,8 +100,14 @@ public struct MCPServer {
     guard let name = params["name"]?.string else {
       return Self.toolResult("Missing tool name. Call tools/list to see the tools.", isError: true)
     }
-    log("tools/call \(name)")
     let tool = tools.first(where: { $0.name == name })
+    // Only the name of a tool we offer is recorded; anything else an Agent sent stays out of the log.
+    let recordedTool = tool?.name ?? "unknown"
+    func record(refused: Bool) {
+      let call = AgentCall(date: now(), agent: clientName, tool: recordedTool, refused: refused)
+      log(call.logLine)
+      onCall(call)
+    }
     // The consent gate (ADR 0007): checked on every call, before anything else is answered, so a
     // refused call reveals no data, not even which tools exist beyond the listed ones.
     if case .ready(let core) = backend {
@@ -101,13 +116,15 @@ public struct MCPServer {
         decision = try core.agentAccessDecision(for: tool?.requiredAccess ?? .loops)
       } catch {
         // Fail closed: if the switch can't be read, nothing is shared.
+        record(refused: true)
         return Self.toolResult(Self.refusal(.loopsOff), isError: true)
       }
       if decision != .allowed {
-        log("refused \(name): \(decision)")
+        record(refused: true)
         return Self.toolResult(Self.refusal(decision), isError: true)
       }
     }
+    record(refused: false)
     guard let tool else {
       let known = tools.map(\.name).joined(separator: ", ")
       return Self.toolResult("Unknown tool '\(name)'. Available tools: \(known).", isError: true)
