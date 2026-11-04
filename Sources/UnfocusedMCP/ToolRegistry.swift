@@ -7,6 +7,8 @@ public enum ToolRegistry {
     FocusedLoopTool(),
     GetLoopTool(),
     ListLoopsTool(),
+    LooseEndsTool(),
+    LoopsInvolvingTool(),
     SearchOpenLoopsTool(),
   ]
 }
