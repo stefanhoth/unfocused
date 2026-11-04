@@ -4,6 +4,9 @@
 /// tickets adding tools rarely touch the same line.
 public enum ToolRegistry {
   public static let all: [any MCPTool] = [
-    FocusedLoopTool()
+    FocusedLoopTool(),
+    GetLoopTool(),
+    ListLoopsTool(),
+    SearchOpenLoopsTool(),
   ]
 }
