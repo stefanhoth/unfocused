@@ -53,6 +53,22 @@ Scenario: in the morning the user picks their three priorities for the day with 
   - Agents can only add. They can't Close, Let go, delete, rename or Focus.
   - Every Agent change is marked in the Loop's history.
   - At worst the user ends up with unwanted Loops they Let go.
+- Hard rules in Core, not model judgement:
+  - **Link schemes:** Anchors from Agents only accept an allowlist of schemes (`https`, `obsidian`, `slack`, `notion`, …). `file:`, `javascript:` and unknown schemes are refused. Each Anchor shows its host or target app, so the user sees where a click leads.
+  - **Title length:** titles from Agents are cut at a fixed length.
+  - **Visible origin:** Loops an Agent Captured are marked "via <Agent>" (from the MCP `clientInfo`).
+  - **Undo a batch:** everything one Agent Captured in one go can be Let go with one click.
+  - **Capture limit:** an Agent can Capture a fixed number of Loops per hour. When it hits the limit, the tool says so and points to Settings. There, under Agent access, the user can reset the limit at once or raise it, so a busy day isn't slowed down.
+
+## Considered: checking writes with the on-device model
+
+We considered having the Reasoner check each write for prompt injection first, and decided against it:
+
+- The injection happens in the Agent's context, for example when it reads a Slack message or a web page. unfocused only sees the resulting tool call, and an injected Capture looks just like a real one.
+- Detecting injection with a model is unreliable even for large models. The on-device model is only reliable for narrow questions (`docs/DECISIONS.md`, 2026-10-31).
+- False alarms would block Captures the user asked for.
+
+The hard rules above limit the harm without guessing.
 
 ## Considered options
 
