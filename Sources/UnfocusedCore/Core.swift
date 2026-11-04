@@ -14,6 +14,9 @@ public final class Core: Sendable {
     self.calendar = calendar
   }
 
+  /// The current time, from the same clock Core answers with.
+  public var now: Date { time.now }
+
   // MARK: Commands
 
   /// Captures a new Open Loop. With an Anchor, an empty title falls back to the Anchor's title.

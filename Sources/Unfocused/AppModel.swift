@@ -472,6 +472,18 @@ final class AppModel {
     }
   }
 
+  /// Agent access for Activity (ADR 0007): the user's own choice, shared only in addition to Loops.
+  var agentAccessActivity: Bool {
+    get {
+      _ = settingsRevision
+      return (try? core.isAgentAccessAllowed(.activity)) ?? false
+    }
+    set {
+      perform("saving Agent access") { try core.setAgentAccess(.activity, allowed: newValue) }
+      settingsRevision += 1
+    }
+  }
+
   // MARK: Hotkey
 
   /// Loads the saved hotkey and registers it. Returns `false` when it conflicts.

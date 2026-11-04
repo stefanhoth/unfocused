@@ -33,6 +33,31 @@ struct AgentAccessSection: View {
         Text("Takes effect on the next request.").font(.caption).foregroundStyle(.secondary)
       }
 
+      // Activity depends on Loops: disabled and Off while Loops is off, and the user's own choice
+      // returns when Loops is turned on again (DESIGN.md "Settings: Agent access").
+      let activityOn = isOn && model.agentAccessActivity
+      VStack(alignment: .leading, spacing: 2) {
+        HStack {
+          Toggle(
+            "Let Agents read my Activity",
+            isOn: Binding(get: { activityOn }, set: { model.agentAccessActivity = $0 })
+          )
+          .toggleStyle(.switch)
+          .tint(Style.brand)
+          .disabled(!isOn)
+          Text(activityOn ? "On" : "Off")
+            .foregroundStyle(.secondary)
+            .accessibilityHidden(true)
+        }
+        Text(
+          isOn
+            ? "Window titles, pages and conversations you were in, and your time."
+            : "Turn on Loops first. Activity is shared in addition to Loops."
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
+      }
+
       VStack(alignment: .leading, spacing: 2) {
         Text("What an Agent asks for is sent to the app that calls unfocused.")
         Text("With a remote model, that app passes it on to the provider's servers.")
