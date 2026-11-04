@@ -92,7 +92,23 @@ public struct MCPServer {
       return Self.toolResult("Missing tool name. Call tools/list to see the tools.", isError: true)
     }
     log("tools/call \(name)")
-    guard let tool = tools.first(where: { $0.name == name }) else {
+    let tool = tools.first(where: { $0.name == name })
+    // The consent gate (ADR 0007): checked on every call, before anything else is answered, so a
+    // refused call reveals no data, not even which tools exist beyond the listed ones.
+    if case .ready(let core) = backend {
+      let decision: AgentAccessDecision
+      do {
+        decision = try core.agentAccessDecision(for: tool?.requiredAccess ?? .loops)
+      } catch {
+        // Fail closed: if the switch can't be read, nothing is shared.
+        return Self.toolResult(Self.refusal(.loopsOff), isError: true)
+      }
+      if decision != .allowed {
+        log("refused \(name): \(decision)")
+        return Self.toolResult(Self.refusal(decision), isError: true)
+      }
+    }
+    guard let tool else {
       let known = tools.map(\.name).joined(separator: ", ")
       return Self.toolResult("Unknown tool '\(name)'. Available tools: \(known).", isError: true)
     }
@@ -111,6 +127,18 @@ public struct MCPServer {
       } catch {
         return Self.toolResult(error.localizedDescription, isError: true)
       }
+    }
+  }
+
+  /// What the Agent tells the user when access is off.
+  static func refusal(_ decision: AgentAccessDecision) -> String {
+    switch decision {
+    case .allowed, .loopsOff:
+      return
+        "Agent access is off, so unfocused shares nothing yet. To allow it, tell the user to open unfocused, go to Settings, and turn on \"Let Agents read my Loops\" under Agent access. It applies to the next request; no restart needed."
+    case .activityOff:
+      return
+        "Agent access to Activity is off. To allow it, tell the user to open unfocused, go to Settings, and turn on \"Let Agents read my Activity\" under Agent access. It applies to the next request; no restart needed."
     }
   }
 

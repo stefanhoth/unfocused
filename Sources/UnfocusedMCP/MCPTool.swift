@@ -14,9 +14,15 @@ public protocol MCPTool: Sendable {
   var description: String { get }
   /// JSON Schema of the arguments (an object schema).
   var inputSchema: JSONValue { get }
+  /// The Agent access switch this tool needs. Defaults to Loops; Activity tools return `.activity`.
+  var requiredAccess: AgentAccessScope { get }
   /// Answers the call from Core. Throw ``ToolError`` for bad arguments; any thrown error reaches the
   /// Agent as a readable tool error.
   func call(arguments: ToolArguments, core: Core) throws -> String
+}
+
+extension MCPTool {
+  public var requiredAccess: AgentAccessScope { .loops }
 }
 
 /// A problem the Agent can read and act on, such as a bad argument.

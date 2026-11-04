@@ -9,7 +9,7 @@ import UnfocusedMCP
 struct ContractTests {
   private func makeServer(_ core: Core? = nil) throws -> MCPServer {
     let core = try core ?? Core(database: .inMemory())
-    return MCPServer(backend: .ready(core))
+    return MCPServer(allowedCore: core)
   }
 
   /// Sends one request line and returns the parsed response, or `nil` if the server stayed silent.
@@ -207,7 +207,7 @@ struct ContractTests {
     let lines = LockedLines()
     let core = try Core(database: .inMemory())
     _ = try core.capture(title: "Secret plan")
-    var server = MCPServer(backend: .ready(core), log: { lines.add($0) })
+    var server = MCPServer(allowedCore: core, log: { lines.add($0) })
     _ = try send(
       &server,
       #"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"focused_loop","arguments":{"q":"Secret"}}}"#

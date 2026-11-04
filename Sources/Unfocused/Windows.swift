@@ -364,6 +364,7 @@ struct SettingsView: View {
         .font(.callout)
         Text("Everything runs on this Mac. Nothing is sent anywhere.").font(.caption).foregroundStyle(.secondary)
       }
+      AgentAccessSection(model: model)
       Section("Troubleshooting") {
         HStack {
           VStack(alignment: .leading, spacing: 2) {

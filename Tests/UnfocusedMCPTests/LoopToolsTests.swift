@@ -13,7 +13,7 @@ struct LoopToolsTests {
   }
 
   private func call(_ core: Core, _ name: String, _ arguments: String = "{}") throws -> Answer {
-    var server = MCPServer(backend: .ready(core))
+    var server = MCPServer(allowedCore: core)
     let request =
       #"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"\#(name)","arguments":\#(arguments)}}"#
     let reply = server.handle(line: request)

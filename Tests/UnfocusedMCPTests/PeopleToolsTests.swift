@@ -24,7 +24,7 @@ struct PeopleToolsTests {
     _ name: String,
     _ arguments: String = "{}"
   ) throws -> (json: [String: Any], isError: Bool) {
-    var server = MCPServer(backend: .ready(core))
+    var server = MCPServer(allowedCore: core)
     let request =
       #"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"\#(name)","arguments":\#(arguments)}}"#
     let reply = server.handle(line: request)
