@@ -18,9 +18,13 @@ Scenario: in the morning the user picks their three priorities for the day with 
 ## Tools and Core changes
 
 - **`capture_loop(title, anchors, people)`:**
-  - It deduplicates by Anchor. If one of the Anchors already belongs to an Open Loop, it returns that Loop and adds any missing Anchors, so running the morning routine twice changes nothing.
-  - If the Anchor only belongs to a Closed or Let go Loop, it returns that Loop with its state and changes nothing. The Agent tells the user, who decides whether to Reopen it in the app.
-  - Today `Core.loop(anchoredAt:)` returns Closed and Let go Loops too, so this needs an explicit rule in Core.
+  - The user decides whether a shared Anchor means the same work. Many Anchors are coarse: an app Anchor is only "Slack" or "Claude", and many unrelated Loops share it.
+  - If any of the Anchors already belongs to a Loop, in any state, the tool Captures nothing. It returns those Loops with their states.
+  - The Agent asks the user. The user then either:
+    - picks an existing Loop: the Agent adds the missing Anchors with `add_anchor`. A Closed or Let go Loop is Reopened in the app, not by the Agent.
+    - or confirms that this is new work: the Agent calls `capture_loop` again with `even_if_anchored: true`.
+  - The same pattern exists in Core already: `addPerson(named:evenIfSimilar:)` for near-duplicate People.
+  - Running the morning routine twice therefore Captures nothing twice without the user saying so.
 - **`add_anchor(loop, anchor)`:**
   - Core needs an Agent path that doesn't count as Engagement. Today `Core.addAnchor` marks the Loop as edited, which is Engagement.
 - **History:**
@@ -53,5 +57,6 @@ Scenario: in the morning the user picks their three priorities for the day with 
 ## Considered options
 
 - **Writes routed through the running app (XPC):** keeps a single writer, but fails when the app is closed and adds IPC between two binaries. Writing through Core keeps the rules in one place, and SQLite handles two writers.
+- **Deduplicate by Anchor automatically (return the existing Loop):** rejected. Coarse Anchors such as an app would merge unrelated work into one Loop without the user noticing.
 - **Agent writes become Candidates the user accepts:** safer against prompt injection, but the user already asked the Agent, so accepting again is friction for nothing. Candidates are also not built yet.
 - **Let Agents Close or Let go:** rejected. Both are conscious decisions the user makes, and one injected instruction could quietly remove Loops.
