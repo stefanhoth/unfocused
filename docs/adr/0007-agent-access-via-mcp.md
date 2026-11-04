@@ -45,7 +45,7 @@ Sketch:
 Domain answers (see `GLOSSARY.md`):
 
 1. A Loop an Agent Captures on the user's request is a **Capture**, not a Candidate: the user asked for it. Candidates stay for what unfocused infers on its own.
-2. An agent adding an Anchor is not **Engagement**. It's bookkeeping, not work on the Loop, so it never hides a Loose End.
+2. An Agent adding an Anchor is not **Engagement**. It's bookkeeping, not work on the Loop, so it never hides a Loose End.
 3. Loop events record when a change came through an Agent, so the user can always tell which Loops and Anchors they added themselves.
 4. "Priority for today" gets no term in unfocused. A Loop is something the user committed to, whenever and wherever, so planning the day stays in the planning tool (ADR 0001).
 
