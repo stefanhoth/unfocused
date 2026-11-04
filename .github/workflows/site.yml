@@ -38,7 +38,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: 4.156.2
+          wranglerVersion: 4.157.0
           workingDirectory: site
           command: versions upload --preview-alias ${{ env.PR_ALIAS }}
       - name: Register GitHub deployment
@@ -84,6 +84,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: 4.156.2
+          wranglerVersion: 4.157.0
           workingDirectory: site
           command: deploy
