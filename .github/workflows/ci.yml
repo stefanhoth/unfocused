@@ -82,4 +82,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: make test
+      # xcbeautify turns failing tests and warnings into annotations on the pull request and keeps the
+      # log readable. pipefail keeps a failing test failing the job.
+      - name: Install xcbeautify
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: command -v xcbeautify || brew install xcbeautify
+      - name: Run tests
+        shell: bash
+        run: set -o pipefail && make test 2>&1 | xcbeautify --renderer github-actions
