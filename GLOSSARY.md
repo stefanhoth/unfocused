@@ -69,6 +69,10 @@ _Avoid_: Trail, log, tracking, history, timeline
 Activity that didn't go toward the Focused Loop: time spent elsewhere during Focus, and all time with no Loop Focused. It's reported plainly, not judged.
 _Avoid_: Detour, distraction, wasted time
 
+**Drift**:
+While a Loop is Focused, spending a large part of the last minutes outside that Loop's Anchors and outside anything the user called related, whatever the activity. unfocused notices it and offers the way back; it doesn't judge.
+_Avoid_: Distraction, procrastination, off-task
+
 ### Rituals
 
 **Tie-off**:
