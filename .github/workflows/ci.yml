@@ -14,8 +14,44 @@ permissions:
 
 # GitHub-hosted macOS runners are free for this public repo (ADR 0003).
 jobs:
+  # Documentation-only changes don't need the macOS jobs. They are skipped, not removed: a job skipped
+  # with `if` counts as passing for the required checks, whereas a workflow-level `paths-ignore` would
+  # leave Lint, Build and Test pending forever and block the pull request. Anything that isn't plainly
+  # documentation (and any doubt) runs everything.
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          code=true
+          if [ -n "$BASE" ] && git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            files=$(git diff --name-only "$BASE" HEAD)
+            echo "Changed files:"; echo "$files"
+            code=false
+            while IFS= read -r file; do
+              case "$file" in
+                *.md | docs/*) ;;
+                *) code=true ;;
+              esac
+            done <<< "$files"
+            [ -n "$files" ] || code=true
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "Run the macOS jobs: $code"
+
   lint:
     name: Lint
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: macos-26
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -26,6 +62,8 @@ jobs:
 
   build:
     name: Build
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: macos-26
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -37,6 +75,8 @@ jobs:
 
   test:
     name: Test
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: macos-26
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
