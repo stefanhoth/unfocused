@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Coarse Anchors only reopen, they never count
