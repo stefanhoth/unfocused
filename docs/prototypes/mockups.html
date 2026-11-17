@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>unfocused panel mockups</title>
+<style>
+:root{--bg:#161616;--panel:#1f1f1f;--card:#2a2a2a;--t1:#f2f2f2;--t2:#a0a0a0;--t3:#6d6d6d;--key:#383838;--orange:#ffb340;--blue:#5aa7ff;--peach:#f0a487}
+*{box-sizing:border-box}
+body{margin:0;padding:32px 40px 80px;background:var(--bg);color:var(--t1);font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif}
+h1{font-size:24px;margin:0 0 4px}h2{font-size:19px;margin:44px 0 4px}
+.sub{color:var(--t2);margin:0 0 20px;max-width:900px}
+.row{display:flex;flex-wrap:wrap;gap:36px}
+.v{width:640px}
+.v h3{font-size:15px;margin:0 0 2px}.v p{margin:0 0 10px;color:var(--t2);font-size:13px;min-height:54px}
+.panel{position:relative;width:640px;min-height:400px;background:var(--panel);border-radius:22px;border:1.5px solid transparent;
+ background:linear-gradient(var(--panel),var(--panel)) padding-box,linear-gradient(120deg,var(--blue),var(--peach)) border-box;box-shadow:0 12px 40px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column}
+.pad{padding:18px 22px}
+.search{display:flex;align-items:center;gap:10px;font-size:20px;color:var(--t3)}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#2c2c2c;border-radius:14px;padding:3px 10px;font-size:12px;color:var(--t2)}
+.dot{width:14px;height:14px;border-radius:4px;background:#e8704f;display:inline-block}
+.k{display:inline-block;background:var(--key);border-radius:5px;padding:0 6px;font-size:11px;color:var(--t2);margin-right:5px;font-family:ui-monospace,Menlo,monospace}
+.hint{color:var(--t2);font-size:12px;margin-right:14px;white-space:nowrap}
+.foot{margin-top:auto;border-top:1px solid #333;padding:10px 22px;display:flex;flex-wrap:wrap;gap:2px}
+.grad{background:linear-gradient(90deg,var(--blue),var(--peach));-webkit-background-clip:text;color:transparent;font-weight:600}
+.title{font-size:27px;font-weight:650;margin:2px 0 10px;letter-spacing:-.3px}
+.box{background:var(--card);border-radius:12px;padding:10px 14px;font-size:14px}
+.box small{display:block;color:var(--t2);font-size:11px;font-weight:600;margin-bottom:3px}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--t2);margin-bottom:6px}
+.anch{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.anch span{display:inline-flex;align-items:center;gap:6px;font-size:13px;background:#262626;border:1px solid #363636;border-radius:10px;padding:4px 10px}
+.ico{width:13px;height:13px;border-radius:3px;display:inline-block}
+.list .r{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px}
+.list .r.sel{background:#303030;border:1px solid #444}
+.mark{width:16px;height:16px;border-radius:50%;border:2px solid #666;flex:none}
+.mark.le{border-color:var(--orange);background:radial-gradient(var(--orange) 40%,transparent 45%)}
+.mark.none{border-color:transparent}
+.r .t{flex:1}.r .t small{display:block;color:var(--t2);font-size:12px}.r .t small.le{color:var(--orange)}
+.r .age{color:var(--t3);font-size:12px;font-family:ui-monospace,Menlo,monospace}
+.cols{display:grid;grid-template-columns:1fr 1fr;flex:1}
+.cols>div{padding:16px 22px}.cols>div+div{border-left:1px solid #333}
+.sec{color:var(--t2);font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin:6px 12px 2px}
+.empty{color:var(--t3);font-size:13px;margin:auto;text-align:center;padding:30px}
+.btn{display:inline-flex;align-items:center;gap:6px;background:#303030;border-radius:16px;padding:6px 13px;font-size:13px;margin-right:8px}
+.btn.p{background:linear-gradient(90deg,#3e6fb0,#b8785f)}
+.note{margin-top:10px;color:var(--t2);font-size:12px;max-width:640px}
+</style>
+<body>
+<h1>Panel mockups</h1>
+<p class="sub">Rough sketches on made-up data, not pixel-exact and not code. They show structure and what is removed, so you can pick by feel. Keys stay visible (DESIGN.md principle 4), the Focused Loop stays first (principle 2).</p>
+
+<h2>1. Focused panel</h2>
+<p class="sub">Today: status line, big title, "last worked on", an action row, the Where I left off box, "last seen", Anchors, then search, chip, "Add as Anchor" and a footer. Four places hold keys and the content scrolls inside the panel.</p>
+<div class="row">
+
+<div class="v"><h3>A: One footer for all keys</h3>
+<p>All keys move to one footer line. Content is only title, Where I left off and Anchors. "Last worked on" and "Last seen" are gone. The search sits in a single quiet row.</p>
+<div class="panel">
+ <div class="pad">
+  <div class="top"><span><span class="grad">◎ Focused</span> · 25m</span><span><span class="k">⌘U</span>Unfocus</span></div>
+  <div class="title">Vacation policy for the holidays</div>
+  <div class="box"><small>🔖 Where I left off</small>Carry-over days are settled. Still open: who covers on-call between Christmas and New Year.</div>
+  <div class="anch"><span><i class="ico" style="background:#4a8af4"></i>Holiday vacation policy · Acme Docs ↗</span></div>
+ </div>
+ <div class="pad" style="padding-top:6px"><div class="search">⌕ Switch to another Loop…</div></div>
+ <div class="foot"><span class="hint"><span class="k">⌘C</span>Close Loop</span><span class="hint"><span class="k">⌘O</span>Open Anchors</span><span class="hint"><span class="k">⌘E</span>Edit</span><span class="hint"><span class="k">↓</span>Switch</span><span class="hint"><span class="k">⌘↩</span>Capture new</span><span class="hint"><span class="k">esc</span>Hide</span></div>
+</div></div>
+
+<div class="v"><h3>B: Two columns</h3>
+<p>The Loop on the left (title, status, actions as buttons), what you need to get back in on the right (Where I left off, Anchors). Nothing scrolls. The switch search is a thin line at the bottom.</p>
+<div class="panel">
+ <div class="cols">
+  <div>
+   <div class="top"><span><span class="grad">◎ Focused</span> · 25m</span></div>
+   <div class="title" style="font-size:24px">Vacation policy for the holidays</div>
+   <div style="margin-top:18px"><span class="btn p"><span class="k">⌘C</span>Close Loop</span></div>
+   <div style="margin-top:10px"><span class="btn"><span class="k">⌘O</span>Open Anchors</span><span class="btn"><span class="k">⌘E</span>Edit</span></div>
+   <div style="margin-top:18px;font-size:12px;color:var(--t3)"><span class="k">⌘U</span>Unfocus</div>
+  </div>
+  <div>
+   <div class="box"><small>🔖 Where I left off</small>Carry-over days are settled. Still open: who covers on-call between Christmas and New Year.</div>
+   <div class="anch" style="flex-direction:column;align-items:flex-start"><span><i class="ico" style="background:#4a8af4"></i>Holiday vacation policy · Acme Docs ↗</span></div>
+  </div>
+ </div>
+ <div class="foot"><span class="hint" style="color:var(--t3);flex:1">⌕ Switch to another Loop… <span class="k" style="margin-left:6px">↓</span></span><span class="hint"><span class="k">⌘↩</span>Capture new</span><span class="hint" style="margin:0"><span class="k">esc</span>Hide</span></div>
+</div></div>
+
+<div class="v"><h3>C: Minimal, the rest behind ⌘K</h3>
+<p>Only title, Where I left off and one prominent Close Loop button. Everything else (Open Anchors, Edit, Switch, Capture) lives in a command line opened with ⌘K or by typing. Calmest, but the keys are no longer all visible.</p>
+<div class="panel">
+ <div class="pad" style="padding-top:28px">
+  <div class="top"><span><span class="grad">◎ Focused</span> · 25m</span><span><span class="k">⌘U</span>Unfocus</span></div>
+  <div class="title" style="font-size:30px;margin-bottom:18px">Vacation policy for the holidays</div>
+  <div class="box" style="font-size:15px;padding:14px 16px"><small>🔖 Where I left off</small>Carry-over days are settled. Still open: who covers on-call between Christmas and New Year.</div>
+  <div style="margin-top:22px"><span class="btn p"><span class="k">⌘C</span>Close Loop</span><span class="btn"><span class="k">⌘O</span>Open Anchors</span></div>
+ </div>
+ <div class="foot"><span class="hint" style="flex:1;color:var(--t3)">⌕ Type to switch or capture…</span><span class="hint"><span class="k">⌘K</span>All actions</span><span class="hint" style="margin:0"><span class="k">esc</span>Hide</span></div>
+</div></div>
+
+</div>
+
+<h2>2. Panel with nothing selected</h2>
+<p class="sub">Today: the right half is a grey hint, the aging mark is missing on one row so titles don't line up, and the chip repeats the app name ("Claude: Claude").</p>
+<div class="row">
+
+<div class="v"><h3>A: List only, full width</h3>
+<p>The list uses the whole width, with small headings (Loose Ends, Open) and every row aligned. The detail column slides in when you press ↓ or click. Nothing is preselected.</p>
+<div class="panel">
+ <div class="pad"><div class="search">⌕ Search your Loops, or type something new…</div></div>
+ <div class="list" style="padding:0 10px">
+  <div class="sec">Loose Ends</div>
+  <div class="r"><i class="mark le"></i><div class="t">Q1 plan in Notion<small class="le">Untouched for 6 active days</small></div><span class="age">6d</span></div>
+  <div class="sec" style="margin-top:12px">Open</div>
+  <div class="r"><i class="mark"></i><div class="t">Review Sam's RFC<small>Read up to section 4. Ask how the retry…</small></div><span class="age">1d</span></div>
+  <div class="r"><i class="mark"></i><div class="t">Vacation policy for the holidays<small>Carry-over days are settled. Still open…</small></div><span class="age">10h</span></div>
+ </div>
+ <div class="foot"><span class="hint"><span class="k">↑↓</span>Choose</span><span class="hint"><span class="k">⌘↩</span>Capture new</span><span class="hint"><span class="k">@</span>Person</span><span class="hint"><span class="k">esc</span>Hide</span><span class="hint" style="margin-left:auto;margin-right:0"><span class="chip"><i class="dot"></i>Claude</span></span></div>
+</div></div>
+
+<div class="v"><h3>B: Split, with a useful empty side</h3>
+<p>Keeps the split, but the right side is not empty: it shows the state of your Loops in one calm line each (what is Focused, what is loose, what you did today). Still nothing selected.</p>
+<div class="panel">
+ <div class="pad"><div class="search">⌕ Search your Loops, or type something new…</div></div>
+ <div class="cols" style="grid-template-columns:1.15fr 1fr">
+  <div class="list" style="padding:0 4px">
+   <div class="r"><i class="mark le"></i><div class="t">Q1 plan in Notion<small class="le">Loose End · 6 days</small></div></div>
+   <div class="r"><i class="mark"></i><div class="t">Review Sam's RFC</div><span class="age">1d</span></div>
+   <div class="r"><i class="mark"></i><div class="t">Vacation policy for the holidays</div><span class="age">10h</span></div>
+  </div>
+  <div style="color:var(--t2);font-size:13px;line-height:1.9">
+   <div style="color:var(--t3);font-size:11px;font-weight:600;letter-spacing:.4px">TODAY</div>
+   Nothing Focused<br>1 Loose End<br>1 Loop closed · 55m toward Loops<br><span style="color:var(--t3)">↓ to pick one</span>
+  </div>
+ </div>
+ <div class="foot"><span class="hint"><span class="k">↑↓</span>Choose</span><span class="hint"><span class="k">⌘↩</span>Capture new</span><span class="hint"><span class="k">@</span>Person</span><span class="hint"><span class="k">esc</span>Hide</span></div>
+</div></div>
+
+<div class="v"><h3>C: Next-up suggestion on top</h3>
+<p>The most useful next step is offered as one card: your oldest Loose End with its Where I left off and ↩ to Focus it. The other Loops are a plain list below. It leans against "nothing selected", because the card is a suggestion and not a selection.</p>
+<div class="panel">
+ <div class="pad"><div class="search">⌕ Search your Loops, or type something new…</div></div>
+ <div style="padding:0 22px 8px"><div class="box" style="border:1px solid #4a4030"><small style="color:var(--orange)">NEXT UP · LOOSE END</small>
+  <div style="font-size:17px;font-weight:600;margin-bottom:3px">Q1 plan in Notion</div>
+  <span style="color:var(--t2)">Goals and the hiring section are written. The budget table still needs numbers from finance.</span>
+  <div style="margin-top:8px"><span class="btn p"><span class="k">F</span>Focus</span><span style="color:var(--t3);font-size:12px">untouched for 6 active days</span></div></div></div>
+ <div class="list" style="padding:0 10px">
+  <div class="r"><i class="mark"></i><div class="t">Review Sam's RFC</div><span class="age">1d</span></div>
+  <div class="r"><i class="mark"></i><div class="t">Vacation policy for the holidays</div><span class="age">10h</span></div>
+ </div>
+ <div class="foot"><span class="hint"><span class="k">↑↓</span>Choose</span><span class="hint"><span class="k">⌘↩</span>Capture new</span><span class="hint"><span class="k">@</span>Person</span><span class="hint"><span class="k">esc</span>Hide</span></div>
+</div></div>
+
+</div>
+<p class="note">Same in all variants for the nothing-selected panel: every row has a mark slot so titles line up, and the "where you are" chip shows only the app when the window title equals the app name.</p>
+</body></html>
