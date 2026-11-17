@@ -30,6 +30,10 @@ _Avoid_: Note, resume note, next step, comment
 A link from a Loop back to the exact spot where the work lives, such as a Slack conversation, a Mail message, a web page or a file. A Loop has zero or more Anchors.
 _Avoid_: Link, reference, attachment
 
+**Coarse Anchor**:
+An Anchor that names only an app or a website, not a spot inside it. It reopens that app or site but never counts as Engagement, never attributes time and never matches another Loop's Anchor.
+_Avoid_: Weak anchor, generic anchor
+
 **Source**:
 The app or system an Anchor points into, such as Slack, Mail or Todoist.
 _Avoid_: Integration, app, origin
