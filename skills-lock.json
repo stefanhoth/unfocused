@@ -1,17 +1,60 @@
 {
   "version": 1,
   "skills": {
+    "accessibility-inclusive-design": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/accessibility-inclusive-design/SKILL.md",
+      "computedHash": "9e36e28d5ebc4a621c83d89dc19141097d91d928fccd4a8ba6cdb630b48962cc"
+    },
+    "agentic-ai-generative-ux": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/agentic-ai-generative-ux/SKILL.md",
+      "computedHash": "6eb51f57653e010b9fdb82d947220f5c652e08671a2d656f621abb4f6e2f2eaa"
+    },
+    "ai-design-generation": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/ai-design-generation/SKILL.md",
+      "computedHash": "414a7deafd18aaafa23a11969826f496b96765f6c4825f731cce411228293138"
+    },
+    "ai-spatial-voice-ux": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/ai-spatial-voice-ux/SKILL.md",
+      "computedHash": "435926ba9092c5b8bc42b179858b26d49c06b29652ca3008f59f180c69298207"
+    },
+    "ambient-calm-zero-ui": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/ambient-calm-zero-ui/SKILL.md",
+      "computedHash": "f2df20b894691024a35baaf94e6501c73c16f78549260a1cb39aa14aa10447f9"
+    },
+    "animation-recipe-library": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/animation-recipe-library/SKILL.md",
+      "computedHash": "dc4577fd2617474d77fa7d88710780585f528e023affc9a5d21ec1e856fc10d3"
+    },
     "ask-matt": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/ask-matt/SKILL.md",
       "computedHash": "d1c5b4151720e96135154bd593ac4986a1030a2bc81e2aaf129f8b11224af9a9"
     },
-    "chief-of-staff": {
-      "source": "mattpocock/skills",
+    "business-design-templates": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
       "sourceType": "github",
-      "skillPath": "skills/in-progress/chief-of-staff/SKILL.md",
-      "computedHash": "34a606e582e2021a552296f08268f8fe4c2f96e70428d20157f0dc001e708892"
+      "skillPath": "skills/business-design-templates/SKILL.md",
+      "computedHash": "5081ccbfab3a446eb1bf0bf2818a9985b73fe78138275ffad44067961d67e9a2"
     },
     "claude-handoff": {
       "source": "mattpocock/skills",
@@ -31,6 +74,96 @@
       "skillPath": "skills/engineering/codebase-design/SKILL.md",
       "computedHash": "aa11a96c08451f4ff86052d5da94004a8c97bb4ea41b2ac8a4300c189f66c89c"
     },
+    "cognitive-psychology-ux": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/cognitive-psychology-ux/SKILL.md",
+      "computedHash": "b4d503ad2ca76c1059fec60d0939b86e97d7947bb8cddc3d1a5c414a35b4d864"
+    },
+    "color-palette-library": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/color-palette-library/SKILL.md",
+      "computedHash": "482fb3c0fcce3d55066fdbe832fa6ee3d1de5de590e7851b5592d6467afd9949"
+    },
+    "component-patterns-code": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/component-patterns-code/SKILL.md",
+      "computedHash": "cbdeab7f1173350527adedb458389e6aaae857eb6b7f64823189e61fb67c1ff3"
+    },
+    "conversion-optimization-patterns": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/conversion-optimization-patterns/SKILL.md",
+      "computedHash": "19174b5c4faf69c3313cd01fa21c174db77eb6f7baca4e613a462cd1e9b5686f"
+    },
+    "cross-cultural-i18n-ux": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/cross-cultural-i18n-ux/SKILL.md",
+      "computedHash": "c8952abad746b5fd05221bb19b3f44862ffd9b5be8ac0dae319aeeebba1a2c47"
+    },
+    "data-visualization-mastery": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/data-visualization-mastery/SKILL.md",
+      "computedHash": "781edae2872edc80b2d7ac4754e6f01131c72953bba96fc1c132eb1a18fe095a"
+    },
+    "design-critique-case-studies": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/design-critique-case-studies/SKILL.md",
+      "computedHash": "f4d62e4d5949d1474a9ecb8dd7e3a674dd4908917e43036d13007a7fa6e5e000"
+    },
+    "design-memory": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/design-memory/SKILL.md",
+      "computedHash": "e4013582a0a63cc1093fb2155b4c639baedc61d03f32d8a4cbdbcc8ceba83939"
+    },
+    "design-process-methods": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/design-process-methods/SKILL.md",
+      "computedHash": "d47e2777327ccdfa2ee71aff4f4b9af953070111fb135707e44c209054c914dd"
+    },
+    "design-systems-architecture": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/design-systems-architecture/SKILL.md",
+      "computedHash": "1886ddcec028e10461aaa07bb39db301e4f173a2bdb5978197a34773812f0483"
+    },
+    "design-taste-frontend": {
+      "source": "Leonxlnx/taste-skill",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill/SKILL.md",
+      "computedHash": "6ac8ba6089dcbc303744a507a4587113c5d845ca2f658b3ce2b0b5eab108fb0d"
+    },
+    "design-token-presets": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/design-token-presets/SKILL.md",
+      "computedHash": "52aba830eea89b567089fccc7e932e5106be4ed2c7f469faead62a7bcbe369ee"
+    },
+    "desktop-app-design": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/desktop-app-design/SKILL.md",
+      "computedHash": "3b3934cfe6e949dd7b3cbc215b7c14c72001f3a4d75b6e5cf00aa5e0c6e54bbb"
+    },
     "diagnosing-bugs": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -42,6 +175,20 @@
       "sourceType": "github",
       "skillPath": "skills/engineering/domain-modeling/SKILL.md",
       "computedHash": "b3eb40152b81f0c98fd2095a023c019452dbdce56f7540cc67fece2972db8369"
+    },
+    "figma-design-tool-workflows": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/figma-design-tool-workflows/SKILL.md",
+      "computedHash": "92b310d869f3cee34bb872fa49abca80097c4bbbbb254cbd080f0b37ea39eb67"
+    },
+    "form-design-encyclopedia": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/form-design-encyclopedia/SKILL.md",
+      "computedHash": "6e175d0a9d1f5ce3dceed82f5d2c26ef717d2c82088bd62e81a28accecea203c"
     },
     "git-guardrails-claude-code": {
       "source": "mattpocock/skills",
@@ -73,6 +220,20 @@
       "skillPath": "skills/productivity/handoff/SKILL.md",
       "computedHash": "8ebcf017c0a59681f3c2f1ebf90e32f481954a068181a75151c44aa2c55de4b4"
     },
+    "icon-illustration-systems": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/icon-illustration-systems/SKILL.md",
+      "computedHash": "c1c2ec1972f44531822dadc73d51bf8c27b11bd7bc35017f38f2c472e6ad99d2"
+    },
+    "image-media-patterns": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/image-media-patterns/SKILL.md",
+      "computedHash": "1a0cbaffa418156eddc3c42da70411f83b6f80224b5cbe52e1aaf1ad864c38fb"
+    },
     "implement": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -91,17 +252,80 @@
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
       "computedHash": "f768cb44209e0d30e3449b8f95ea3dc8293093f73cfe02127d530db43412cf76"
     },
+    "interaction-motion-design": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/interaction-motion-design/SKILL.md",
+      "computedHash": "d61d9a43da8596aa3c93f5835f8dbcedc97b0624af9e3ed7b798a9cd1ceab064"
+    },
+    "layout-block-intelligence": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/layout-block-intelligence/SKILL.md",
+      "computedHash": "ed863f339361270957ad747c1af77b3fcb6c7def0bf2e12de11efd7248e8bfe8"
+    },
     "loop-me": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/in-progress/loop-me/SKILL.md",
       "computedHash": "72e01a16929dbf6583afc469a49d64b28b1be4a6034c900decd94cd5a69ba6e6"
     },
+    "micro-copy-intelligence": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/micro-copy-intelligence/SKILL.md",
+      "computedHash": "ab266fd92a6f6af21b679a8bd4297fe5f15f105c6e09c99ec764d9033a3c2c24"
+    },
     "migrate-to-shoehorn": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/misc/migrate-to-shoehorn/SKILL.md",
       "computedHash": "6397731ced114f3657aa88b55ed13d1344a56d77ca449c568e3200c21740fa99"
+    },
+    "mobile-ux-design": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/mobile-ux-design/SKILL.md",
+      "computedHash": "995006a93c6ce1608e9574d243bc96c799719d7a3a961249fe9c3fa528f8e565"
+    },
+    "navigation-pattern-encyclopedia": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/navigation-pattern-encyclopedia/SKILL.md",
+      "computedHash": "6270086fa774a06f9a3097da7e396cb3829bbf023a319eba1d2a0d05bae52709"
+    },
+    "nng-ux-heuristics": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/nng-ux-heuristics/SKILL.md",
+      "computedHash": "f7accb85a25b82ac8c39186d6ad917c2451731eea7b2c96a84dcc97901d7bf7c"
+    },
+    "page-composition-engine": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/page-composition-engine/SKILL.md",
+      "computedHash": "06a3902987c81f2c9f3fefe00bd78674958c5c0631df783adfaf13eb6070e3ca"
+    },
+    "performance-states-patterns": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/performance-states-patterns/SKILL.md",
+      "computedHash": "40000dc4616728233179df3a51f75ba9d1c78236b7e2a6a386e6664cf16c0448"
+    },
+    "platform-visual-standards": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/platform-visual-standards/SKILL.md",
+      "computedHash": "0187d65ed33ea2657313e184006770ce9fd98aa6dfac25a66a2d1e00ee9e5bb9"
     },
     "pr": {
       "source": "mattpocock/skills",
@@ -115,11 +339,25 @@
       "skillPath": "skills/engineering/prototype/SKILL.md",
       "computedHash": "d3fc74689bd993e39c44bfae510d014eecffbeec2922764b065377fd1327c0f6"
     },
+    "reference-intelligence": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/reference-intelligence/SKILL.md",
+      "computedHash": "40ad3106b9aeb65a7c5d2882f88248c1a7038e9eb96cb867efa8db19089659af"
+    },
     "research": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/research/SKILL.md",
       "computedHash": "5d85b64ecceed6b3f6d5996dc8af07180be8d1ff11ef3d26eda2acff078fbd39"
+    },
+    "responsive-block-patterns": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/responsive-block-patterns/SKILL.md",
+      "computedHash": "f63b333b1e47dc034aa0e2347c407b78d91cd1d438f350e68a96117d05a68160"
     },
     "retro": {
       "source": "mattpocock/skills",
@@ -132,6 +370,20 @@
       "sourceType": "github",
       "skillPath": "skills/misc/scaffold-exercises/SKILL.md",
       "computedHash": "354c91f6dbc9b058632f30594aacb4edc6d25012596585abb00402af8d7ec5e9"
+    },
+    "screen-flow-patterns": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/screen-flow-patterns/SKILL.md",
+      "computedHash": "9d7cf11fe456c83cb0378b0d451a06607286e6f4caa045c5591f77945e7739a4"
+    },
+    "sector-style-intelligence": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/sector-style-intelligence/SKILL.md",
+      "computedHash": "25ecd5fa3147d4f5380ae8ce32580930b0a12b435b09c715fc064f532bee953a"
     },
     "setup-matt-pocock-skills": {
       "source": "mattpocock/skills",
@@ -150,6 +402,20 @@
       "sourceType": "github",
       "skillPath": "skills/in-progress/setup-ts-deep-modules/SKILL.md",
       "computedHash": "61508216ede38d8cfa712879197a76f75f4896615dbf7abc3f62571f8f5923cc"
+    },
+    "shadow-elevation-density": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/shadow-elevation-density/SKILL.md",
+      "computedHash": "82234aac9d67ebb1b33088c79f7fbce8bcfcdaab7501dd14e0809888c7d39bda"
+    },
+    "sumi-orchestrator": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/sumi-orchestrator/SKILL.md",
+      "computedHash": "abd522a5da2282bdb9b4f3737c68d1fa1706b9fb65329f0bf3e4c98105fac2d9"
     },
     "tdd": {
       "source": "mattpocock/skills",
@@ -186,6 +452,61 @@
       "sourceType": "github",
       "skillPath": "skills/engineering/triage/SKILL.md",
       "computedHash": "a683e69163e23630f39c05a50fb9d83a3795a6a6fbd317357669e082cd43a158"
+    },
+    "typography-pairing-recipes": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/typography-pairing-recipes/SKILL.md",
+      "computedHash": "4b5e6d916f8aa63a2bf02864da620c2cac8318a4ee5555d3bec4322ba15b2097"
+    },
+    "ui-pattern-intelligence": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/ui-pattern-intelligence/SKILL.md",
+      "computedHash": "8e8ef96e338459de1773447ff9e87194a3996c76047406be540ff1c0c820b8d4"
+    },
+    "ui-visual-design-system": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/ui-visual-design-system/SKILL.md",
+      "computedHash": "8995043214f59a4fe3689faf928c21618637c985d50b1817d5eba19b106fb382"
+    },
+    "unslop": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "skillPath": "harness/pstack/claude-code/skills/unslop/SKILL.md",
+      "computedHash": "eca0ad9fa3a3867c83f3aaf3a058e247a569c8976a68ca423a569b93eb86de5d"
+    },
+    "ux-ethics-content-strategy": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/ux-ethics-content-strategy/SKILL.md",
+      "computedHash": "8d1fbdaa7cc5d45be02a043d42aa4b26ed97fe0eff31ab87934fd96a6c4950b0"
+    },
+    "ux-metrics-measurement": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/ux-metrics-measurement/SKILL.md",
+      "computedHash": "6e1e70e54815047a25221bed13f2b326581a2e27add4eba980b6dfffb02b4bf9"
+    },
+    "ux-research-methods": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/ux-research-methods/SKILL.md",
+      "computedHash": "a4b2f1ba88c688c9c255c3503432a6711b6532daa7caa569c4ce0c398be89e40"
+    },
+    "visual-design-mastery": {
+      "source": "phazurlabs/sumi",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/visual-design-mastery/SKILL.md",
+      "computedHash": "907631c8243f4316a6340f9545e1ade1e828be426d91520661c790bf56599cc3"
     },
     "wait-what": {
       "source": "mattpocock/skills",
