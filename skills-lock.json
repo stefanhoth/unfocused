@@ -56,12 +56,6 @@
       "skillPath": "skills/business-design-templates/SKILL.md",
       "computedHash": "5081ccbfab3a446eb1bf0bf2818a9985b73fe78138275ffad44067961d67e9a2"
     },
-    "chief-of-staff": {
-      "source": "mattpocock/skills",
-      "sourceType": "github",
-      "skillPath": "skills/in-progress/chief-of-staff/SKILL.md",
-      "computedHash": "34a606e582e2021a552296f08268f8fe4c2f96e70428d20157f0dc001e708892"
-    },
     "claude-handoff": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -149,6 +143,12 @@
       "sourceType": "github",
       "skillPath": "skills/design-systems-architecture/SKILL.md",
       "computedHash": "1886ddcec028e10461aaa07bb39db301e4f173a2bdb5978197a34773812f0483"
+    },
+    "design-taste-frontend": {
+      "source": "Leonxlnx/taste-skill",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill/SKILL.md",
+      "computedHash": "6ac8ba6089dcbc303744a507a4587113c5d845ca2f658b3ce2b0b5eab108fb0d"
     },
     "design-token-presets": {
       "source": "phazurlabs/sumi",
@@ -473,6 +473,12 @@
       "sourceType": "github",
       "skillPath": "skills/ui-visual-design-system/SKILL.md",
       "computedHash": "8995043214f59a4fe3689faf928c21618637c985d50b1817d5eba19b106fb382"
+    },
+    "unslop": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "skillPath": "harness/pstack/claude-code/skills/unslop/SKILL.md",
+      "computedHash": "eca0ad9fa3a3867c83f3aaf3a058e247a569c8976a68ca423a569b93eb86de5d"
     },
     "ux-ethics-content-strategy": {
       "source": "phazurlabs/sumi",
